@@ -1,0 +1,6 @@
+{
+  "name": "SunnyBuilder",
+  "description": "An advanced Grand Theft Auto SCM and CLEO script compiler and editor with built-in opcode reference database and an AI scripting assistant.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
