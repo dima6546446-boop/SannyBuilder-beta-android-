@@ -4,7 +4,7 @@
 
 - **Движок:** Three.js r170 (WebGL 2) + Vite. Физика, ИИ трафика, звук и все модели написаны с нуля.
 - **Платформа:** Android — нативная обёртка на Kotlin с WebView (`WebViewAssetLoader`); также работает в браузере.
-- **Размер:** APK ≈ 2,5 МБ. Модели, текстуры и звук генерируются процедурно, файлов‑ассетов нет.
+- **Размер:** APK ≈ 3,9 МБ. Машины — модели из Blender (GLB + Draco); текстуры и звук генерируются процедурно.
 
 | Гараж и тюнинг | Ночной город (bloom) | Парковка «Между двух ДПС» |
 |---|---|---|
@@ -40,6 +40,43 @@
 
 \* Измерено в симуляции (`VehiclePhysics`), тормозной путь со 100 км/ч — 32–43 м. В трафике также ездят ДПС (2107 с мигалками) и такси (Гранта с шашечками).
 
+## Скачать
+
+- **APK:** GitHub → вкладка **Releases** → «Лада Паркинг — последняя сборка» → `LadaParking.apk`. Собирается автоматически (GitHub Actions, `.github/workflows/lada-parking-apk.yml`) при каждом изменении в `autovaz-sim/`; там же лежит `LadaParking-source.zip` с исходниками.
+- Тот же APK и исходники доступны в Actions → последний запуск → артефакт `LadaParking`.
+
+## Модели машин (Blender)
+
+![](docs/models_classic.png)
+![](docs/models_90s.png)
+![](docs/models_modern.png)
+
+Все 10 машин + ДПС и такси собраны в **Blender 4.2** скриптами из `tools/blender/` по реальным габаритам и форме прототипов. Итог — `public/models/<id>.glb` (Draco, ~120 КБ на машину), в каждом файле три уровня детализации:
+
+| Уровень | Треугольники | Где |
+|---|---|---|
+| `LOD_hi` | 24–36 тыс. | машина игрока и 3D‑гараж: салон, кресла, руль, рассеиватели фар, молдинги, швы дверей |
+| `LOD0` | ~4 тыс. | трафик вблизи |
+| `LOD1` | ~1 тыс. | трафик вдали |
+
+Как устроено:
+- кузов — каркас из поперечных сечений (как на плазовых чертежах: порог, боковина, линия плеч, линия окон, свод крыши);
+- характерные линии задаются жёсткостью рёбер (crease), затем Subdivision Surface;
+- колёсные арки вырезаются булевой операцией;
+- стёкла утоплены в хромированные или резиновые рамки;
+- фары, решётки, бамперы, фонари, зеркала, ручки и салон ставятся точно на поверхность кузова (raycast).
+
+Формы кузовов — `tools/blender/shapes.py`, детали по стилю каждой модели — `details.py`.
+
+Пересобрать модели (нужен Blender 4.2+ в PATH):
+
+```bash
+npm run models        # = node tools/blender/export-dims.mjs && blender -b --python tools/blender/build_cars.py -- public/models
+blender -b --python tools/blender/preview.py -- out.png vaz2107,niva front34   # рендер-превью (Cycles)
+```
+
+Если GLB не найден, игра использует процедурную модель из `CarFactory.js`.
+
 ## Запуск
 
 ```bash
@@ -56,8 +93,7 @@ npm run build      # сборка в dist/
 ```bash
 cd autovaz-sim && npm run build
 cd android
-gradle wrapper --gradle-version 8.9   # один раз (или открыть android/ в Android Studio)
-./gradlew assembleDebug               # → app/build/outputs/apk/debug/app-debug.apk
+./gradlew assembleDebug               # → app/build/outputs/apk/debug/app-debug.apk (нужны JDK 17 и Android SDK)
 ```
 
 ## Управление

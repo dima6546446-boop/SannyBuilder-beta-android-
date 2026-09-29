@@ -7,7 +7,8 @@ import { Menus } from './ui/Menus.js';
 import { ParkingMode } from './gameplay/ParkingMode.js';
 import { FreeRideMode } from './gameplay/FreeRideMode.js';
 import { ExamMode } from './gameplay/ExamMode.js';
-import { CAR_BY_ID } from './config/cars.js';
+import { CAR_BY_ID, allRenderModels } from './config/cars.js';
+import { ModelLibrary } from './vehicles/ModelLibrary.js';
 
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -29,6 +30,11 @@ class App {
 
   async boot() {
     this.menus = new Menus(this);
+    this.menus._loading('ВЫГОНЯЕМ МАШИНЫ ИЗ ГАРАЖА…');
+    await ModelLibrary.load(allRenderModels().map((m) => m.key), (p) => {
+      const el = document.querySelector('.loading small');
+      if (el) el.textContent = `ЗАГРУЗКА МОДЕЛЕЙ ${Math.round(p * 100)}%`;
+    });
     this.menus._loading('СТРОИМ АВТОЗАВОДСКИЙ РАЙОН…');
     await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 30)));
 

@@ -1,0 +1,626 @@
+{
+ "vaz2101": {
+  "id": "vaz2101",
+  "name": "ВАЗ-2101",
+  "dims": {
+   "W": 1.61,
+   "cabinW": 1.39,
+   "front": 1.93,
+   "rear": -2.14,
+   "axleF": 1.14,
+   "axleR": -1.284,
+   "track": 1.35,
+   "wheelR": 0.29,
+   "wheelW": 0.165,
+   "sill": 0.3,
+   "archR": 0.37
+  },
+  "head": {
+   "style": "round4",
+   "y": 0.66,
+   "r": 0.082,
+   "xs": [
+    0.46,
+    0.65
+   ]
+  },
+  "tail": {
+   "style": "vertical",
+   "y": 0.66,
+   "h": 0.24,
+   "w": 0.2,
+   "x": 0.64
+  },
+  "grille": {
+   "style": "chrome-mesh",
+   "w": 1.46,
+   "h": 0.2,
+   "y": 0.66
+  },
+  "bumper": {
+   "style": "chrome",
+   "y": 0.43,
+   "h": 0.09,
+   "fangs": true
+  },
+  "trim": 0.71,
+  "pillars": [
+   -0.26
+  ],
+  "glassBottom": 0.99,
+  "fixedColor": null,
+  "police": false,
+  "taxi": false,
+  "rails": false
+ },
+ "vaz2106": {
+  "id": "vaz2106",
+  "name": "ВАЗ-2106",
+  "dims": {
+   "W": 1.61,
+   "cabinW": 1.39,
+   "front": 1.99,
+   "rear": -2.18,
+   "axleF": 1.14,
+   "axleR": -1.284,
+   "track": 1.36,
+   "wheelR": 0.29,
+   "wheelW": 0.175,
+   "sill": 0.3,
+   "archR": 0.37
+  },
+  "head": {
+   "style": "round4",
+   "y": 0.67,
+   "r": 0.085,
+   "xs": [
+    0.44,
+    0.64
+   ],
+   "panel": true
+  },
+  "tail": {
+   "style": "wide",
+   "y": 0.72,
+   "h": 0.2,
+   "w": 0.42,
+   "x": 0.56
+  },
+  "grille": {
+   "style": "black-chrome",
+   "w": 1.5,
+   "h": 0.23,
+   "y": 0.67
+  },
+  "bumper": {
+   "style": "chrome",
+   "y": 0.44,
+   "h": 0.11,
+   "strip": true
+  },
+  "trim": 0.72,
+  "pillars": [
+   -0.27
+  ],
+  "glassBottom": 1,
+  "fixedColor": null,
+  "police": false,
+  "taxi": false,
+  "rails": false
+ },
+ "vaz2107": {
+  "id": "vaz2107",
+  "name": "ВАЗ-2107",
+  "dims": {
+   "W": 1.62,
+   "cabinW": 1.4,
+   "front": 1.98,
+   "rear": -2.18,
+   "axleF": 1.14,
+   "axleR": -1.284,
+   "track": 1.36,
+   "wheelR": 0.29,
+   "wheelW": 0.175,
+   "sill": 0.3,
+   "archR": 0.37
+  },
+  "head": {
+   "style": "rect",
+   "y": 0.68,
+   "h": 0.18,
+   "w": 0.34,
+   "x": 0.61
+  },
+  "tail": {
+   "style": "wide",
+   "y": 0.72,
+   "h": 0.2,
+   "w": 0.44,
+   "x": 0.56
+  },
+  "grille": {
+   "style": "chrome-bars",
+   "w": 0.8,
+   "h": 0.25,
+   "y": 0.68
+  },
+  "bumper": {
+   "style": "chrome",
+   "y": 0.44,
+   "h": 0.12,
+   "strip": true
+  },
+  "trim": 0.72,
+  "pillars": [
+   -0.28
+  ],
+  "glassBottom": 1,
+  "fixedColor": null,
+  "police": false,
+  "taxi": false,
+  "rails": false
+ },
+ "oka": {
+  "id": "oka",
+  "name": "ВАЗ-1111",
+  "dims": {
+   "W": 1.42,
+   "cabinW": 1.26,
+   "front": 1.4,
+   "rear": -1.8,
+   "axleF": 0.85,
+   "axleR": -1.33,
+   "track": 1.21,
+   "wheelR": 0.26,
+   "wheelW": 0.145,
+   "sill": 0.27,
+   "archR": 0.33
+  },
+  "head": {
+   "style": "rect",
+   "y": 0.59,
+   "h": 0.13,
+   "w": 0.26,
+   "x": 0.47
+  },
+  "tail": {
+   "style": "vertical",
+   "y": 0.72,
+   "h": 0.22,
+   "w": 0.14,
+   "x": 0.57
+  },
+  "grille": {
+   "style": "slot",
+   "w": 0.5,
+   "h": 0.07,
+   "y": 0.6
+  },
+  "bumper": {
+   "style": "black",
+   "y": 0.38,
+   "h": 0.15
+  },
+  "trim": null,
+  "pillars": [
+   -0.55
+  ],
+  "glassBottom": 0.97,
+  "fixedColor": null,
+  "police": false,
+  "taxi": false,
+  "rails": false
+ },
+ "vaz2109": {
+  "id": "vaz2109",
+  "name": "ВАЗ-2109",
+  "dims": {
+   "W": 1.65,
+   "cabinW": 1.44,
+   "front": 1.71,
+   "rear": -2.3,
+   "axleF": 0.98,
+   "axleR": -1.48,
+   "track": 1.4,
+   "wheelR": 0.28,
+   "wheelW": 0.165,
+   "sill": 0.29,
+   "archR": 0.36
+  },
+  "head": {
+   "style": "wedge",
+   "y": 0.62,
+   "h": 0.12,
+   "w": 0.44,
+   "x": 0.56
+  },
+  "tail": {
+   "style": "hatch",
+   "y": 0.78,
+   "h": 0.16,
+   "w": 0.44,
+   "x": 0.55
+  },
+  "grille": {
+   "style": "slot",
+   "w": 0.58,
+   "h": 0.08,
+   "y": 0.62
+  },
+  "bumper": {
+   "style": "black",
+   "y": 0.41,
+   "h": 0.2
+  },
+  "trim": null,
+  "pillars": [
+   -0.35,
+   -1.28
+  ],
+  "glassBottom": 0.99,
+  "fixedColor": null,
+  "police": false,
+  "taxi": false,
+  "rails": false
+ },
+ "niva": {
+  "id": "niva",
+  "name": "ВАЗ-2121",
+  "dims": {
+   "W": 1.68,
+   "cabinW": 1.5,
+   "front": 1.73,
+   "rear": -2.01,
+   "axleF": 1.05,
+   "axleR": -1.15,
+   "track": 1.43,
+   "wheelR": 0.35,
+   "wheelW": 0.185,
+   "sill": 0.42,
+   "archR": 0.44
+  },
+  "head": {
+   "style": "round2",
+   "y": 0.85,
+   "r": 0.09,
+   "xs": [
+    0.6
+   ]
+  },
+  "tail": {
+   "style": "vertical",
+   "y": 0.92,
+   "h": 0.24,
+   "w": 0.13,
+   "x": 0.72
+  },
+  "grille": {
+   "style": "black-bars",
+   "w": 0.84,
+   "h": 0.24,
+   "y": 0.86
+  },
+  "bumper": {
+   "style": "black",
+   "y": 0.56,
+   "h": 0.15
+  },
+  "trim": null,
+  "pillars": [
+   -0.52
+  ],
+  "glassBottom": 1.15,
+  "fixedColor": null,
+  "police": false,
+  "taxi": false,
+  "rails": false
+ },
+ "priora": {
+  "id": "priora",
+  "name": "Lada Priora",
+  "dims": {
+   "W": 1.68,
+   "cabinW": 1.47,
+   "front": 1.83,
+   "rear": -2.52,
+   "axleF": 1,
+   "axleR": -1.49,
+   "track": 1.43,
+   "wheelR": 0.3,
+   "wheelW": 0.185,
+   "sill": 0.3,
+   "archR": 0.38
+  },
+  "head": {
+   "style": "modern",
+   "y": 0.7,
+   "h": 0.15,
+   "w": 0.42,
+   "x": 0.58
+  },
+  "tail": {
+   "style": "modern",
+   "y": 0.84,
+   "h": 0.13,
+   "w": 0.42,
+   "x": 0.57
+  },
+  "grille": {
+   "style": "modern-chrome",
+   "w": 0.52,
+   "h": 0.12,
+   "y": 0.67
+  },
+  "bumper": {
+   "style": "body",
+   "y": 0.42,
+   "h": 0.26
+  },
+  "trim": null,
+  "pillars": [
+   -0.38
+  ],
+  "glassBottom": 1,
+  "fixedColor": null,
+  "police": false,
+  "taxi": false,
+  "rails": false
+ },
+ "granta": {
+  "id": "granta",
+  "name": "Lada Granta",
+  "dims": {
+   "W": 1.7,
+   "cabinW": 1.48,
+   "front": 1.78,
+   "rear": -2.48,
+   "axleF": 0.98,
+   "axleR": -1.5,
+   "track": 1.43,
+   "wheelR": 0.305,
+   "wheelW": 0.185,
+   "sill": 0.31,
+   "archR": 0.39
+  },
+  "head": {
+   "style": "modern",
+   "y": 0.74,
+   "h": 0.16,
+   "w": 0.46,
+   "x": 0.56
+  },
+  "tail": {
+   "style": "modern",
+   "y": 0.88,
+   "h": 0.14,
+   "w": 0.42,
+   "x": 0.56
+  },
+  "grille": {
+   "style": "granta",
+   "w": 0.56,
+   "h": 0.16,
+   "y": 0.7
+  },
+  "bumper": {
+   "style": "body",
+   "y": 0.44,
+   "h": 0.28
+  },
+  "trim": null,
+  "pillars": [
+   -0.36
+  ],
+  "glassBottom": 1.05,
+  "fixedColor": null,
+  "police": false,
+  "taxi": false,
+  "rails": false
+ },
+ "vesta": {
+  "id": "vesta",
+  "name": "Lada Vesta",
+  "dims": {
+   "W": 1.76,
+   "cabinW": 1.52,
+   "front": 1.89,
+   "rear": -2.52,
+   "axleF": 1.05,
+   "axleR": -1.585,
+   "track": 1.51,
+   "wheelR": 0.315,
+   "wheelW": 0.195,
+   "sill": 0.32,
+   "archR": 0.4
+  },
+  "head": {
+   "style": "modern",
+   "y": 0.77,
+   "h": 0.14,
+   "w": 0.5,
+   "x": 0.6
+  },
+  "tail": {
+   "style": "modern",
+   "y": 0.9,
+   "h": 0.13,
+   "w": 0.46,
+   "x": 0.6
+  },
+  "grille": {
+   "style": "xface",
+   "w": 0.92,
+   "h": 0.3,
+   "y": 0.62
+  },
+  "bumper": {
+   "style": "body",
+   "y": 0.44,
+   "h": 0.3
+  },
+  "trim": null,
+  "pillars": [
+   -0.4
+  ],
+  "glassBottom": 1.07,
+  "fixedColor": null,
+  "police": false,
+  "taxi": false,
+  "rails": false
+ },
+ "largus": {
+  "id": "largus",
+  "name": "Lada Largus",
+  "dims": {
+   "W": 1.75,
+   "cabinW": 1.56,
+   "front": 1.93,
+   "rear": -2.54,
+   "axleF": 1.15,
+   "axleR": -1.755,
+   "track": 1.47,
+   "wheelR": 0.31,
+   "wheelW": 0.185,
+   "sill": 0.33,
+   "archR": 0.4
+  },
+  "head": {
+   "style": "modern",
+   "y": 0.8,
+   "h": 0.17,
+   "w": 0.45,
+   "x": 0.58
+  },
+  "tail": {
+   "style": "vertical",
+   "y": 0.86,
+   "h": 0.28,
+   "w": 0.16,
+   "x": 0.72
+  },
+  "grille": {
+   "style": "modern-chrome",
+   "w": 0.62,
+   "h": 0.18,
+   "y": 0.76
+  },
+  "bumper": {
+   "style": "body",
+   "y": 0.46,
+   "h": 0.28
+  },
+  "trim": null,
+  "pillars": [
+   -0.42,
+   -1.45
+  ],
+  "glassBottom": 1.08,
+  "fixedColor": null,
+  "police": false,
+  "taxi": false,
+  "rails": true
+ },
+ "police": {
+  "id": "police",
+  "name": "ДПС",
+  "dims": {
+   "W": 1.62,
+   "cabinW": 1.4,
+   "front": 1.98,
+   "rear": -2.18,
+   "axleF": 1.14,
+   "axleR": -1.284,
+   "track": 1.36,
+   "wheelR": 0.29,
+   "wheelW": 0.175,
+   "sill": 0.3,
+   "archR": 0.37
+  },
+  "head": {
+   "style": "rect",
+   "y": 0.68,
+   "h": 0.18,
+   "w": 0.34,
+   "x": 0.61
+  },
+  "tail": {
+   "style": "wide",
+   "y": 0.72,
+   "h": 0.2,
+   "w": 0.44,
+   "x": 0.56
+  },
+  "grille": {
+   "style": "chrome-bars",
+   "w": 0.8,
+   "h": 0.25,
+   "y": 0.68
+  },
+  "bumper": {
+   "style": "chrome",
+   "y": 0.44,
+   "h": 0.12,
+   "strip": true
+  },
+  "trim": 0.72,
+  "pillars": [
+   -0.28
+  ],
+  "glassBottom": 1,
+  "fixedColor": 15921906,
+  "police": true,
+  "taxi": false,
+  "rails": false
+ },
+ "taxi": {
+  "id": "taxi",
+  "name": "Такси",
+  "dims": {
+   "W": 1.7,
+   "cabinW": 1.48,
+   "front": 1.78,
+   "rear": -2.48,
+   "axleF": 0.98,
+   "axleR": -1.5,
+   "track": 1.43,
+   "wheelR": 0.305,
+   "wheelW": 0.185,
+   "sill": 0.31,
+   "archR": 0.39
+  },
+  "head": {
+   "style": "modern",
+   "y": 0.74,
+   "h": 0.16,
+   "w": 0.46,
+   "x": 0.56
+  },
+  "tail": {
+   "style": "modern",
+   "y": 0.88,
+   "h": 0.14,
+   "w": 0.42,
+   "x": 0.56
+  },
+  "grille": {
+   "style": "granta",
+   "w": 0.56,
+   "h": 0.16,
+   "y": 0.7
+  },
+  "bumper": {
+   "style": "body",
+   "y": 0.44,
+   "h": 0.28
+  },
+  "trim": null,
+  "pillars": [
+   -0.36
+  ],
+  "glassBottom": 1.05,
+  "fixedColor": 15909376,
+  "police": false,
+  "taxi": true,
+  "rails": false
+ }
+}

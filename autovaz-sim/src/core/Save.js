@@ -73,7 +73,7 @@ export class Save {
       color: t.color,
       wheels: t.wheels,
       height: TUNING.height.find((x) => x.id === t.height)?.value ?? 0,
-      tint: TUNING.tint.find((x) => x.id === t.tint)?.value ?? 0.88,
+      tint: TUNING.tint.find((x) => x.id === t.tint)?.value ?? 0.6,
       engine: TUNING.engine.find((x) => x.id === t.engine)?.value ?? 1,
       tires: TUNING.tires.find((x) => x.id === t.tires)?.value ?? 1,
     };

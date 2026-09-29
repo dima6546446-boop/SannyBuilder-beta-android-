@@ -8,3 +8,4 @@ android/local.properties
 *.iml
 .idea/
 android/.kotlin/
+tools/blender/__pycache__/

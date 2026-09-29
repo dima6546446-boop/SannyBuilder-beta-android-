@@ -1,0 +1,70 @@
+# Сборка APK «Лада Паркинг» и публикация в GitHub Releases (скачать: вкладка Releases → «Лада Паркинг — последняя сборка»)
+name: Lada Parking APK
+
+on:
+  push:
+    branches: [ 'claude/autovaz-mobile-driving-sim-232iuq', main, master ]
+    paths: [ 'autovaz-sim/**', '.github/workflows/lada-parking-apk.yml' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: autovaz-sim
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: autovaz-sim/package-lock.json
+
+      - name: Веб-сборка (Three.js + модели)
+        run: |
+          npm ci
+          npm run build
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Сборка APK
+        working-directory: autovaz-sim/android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk ../LadaParking.apk
+
+      - name: ZIP с исходниками и веб-версией
+        run: |
+          mkdir -p out
+          cp LadaParking.apk out/
+          cp -r dist out/web
+          git archive --format=zip -o out/LadaParking-source.zip HEAD:autovaz-sim
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LadaParking
+          path: autovaz-sim/out/
+
+      - name: Публикация в Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: lada-parking-latest
+          name: Лада Паркинг — последняя сборка
+          prerelease: true
+          make_latest: false
+          body: |
+            Автоматическая сборка из ветки ${{ github.ref_name }} (${{ github.sha }}).
+            • LadaParking.apk — установить на Android 7+ (разрешить установку из неизвестных источников)
+            • LadaParking-source.zip — исходники проекта (npm install → npm run build → android/gradlew assembleDebug)
+          files: |
+            autovaz-sim/LadaParking.apk
+            autovaz-sim/out/LadaParking-source.zip

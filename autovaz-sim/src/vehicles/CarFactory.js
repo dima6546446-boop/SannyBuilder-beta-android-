@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { prep, merge } from '../utils/geometry.js';
+import { ModelLibrary, meshesFromLod } from './ModelLibrary.js';
 
 /**
  * Параметрический генератор автомобилей по описанию из config/cars.js.
@@ -502,7 +503,7 @@ export function buildWheel(def, style, mats, side) {
 }
 
 // ------------------------------------------------------------------ материалы игрока
-export function createCarMaterials({ color, envMap, T, quality, tint = 0.88 }) {
+export function createCarMaterials({ color, envMap, T, quality, tint = 0.6 }) {
   const physical = quality.name === 'high';
   const Std = (o) => new THREE.MeshStandardMaterial({ envMap, ...o });
   const paint = physical
@@ -518,6 +519,8 @@ export function createCarMaterials({ color, envMap, T, quality, tint = 0.88 }) {
       transparent: tg, opacity: tg ? tint : 1, depthWrite: !tg,
     }),
     rubber: new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.92 }),
+    under: new THREE.MeshLambertMaterial({ color: 0x0b0b0b }),
+    grilleDark: new THREE.MeshStandardMaterial({ color: 0x141414, roughness: 0.5, metalness: 0.3 }),
     black: new THREE.MeshStandardMaterial({ color: 0x1b1b1b, roughness: 0.7 }),
     interior: new THREE.MeshLambertMaterial({ color: 0x3a2e28 }),
     grille: Std({ map: T.grille, metalness: 0.6, roughness: 0.35 }),
@@ -546,14 +549,21 @@ export function buildPlayerModel(def, mats, wheelStyle = 'default') {
   const body = new THREE.Group();
   body.name = 'Body';
   root.add(body);
-  const byPart = {};
-  for (const { geo, part } of buildParts(def, 'high')) (byPart[part] ||= []).push(prep(geo));
-  for (const [part, list] of Object.entries(byPart)) {
-    const mesh = new THREE.Mesh(merge(list), mats[part] || mats.black);
-    mesh.name = part;
-    mesh.castShadow = part !== 'glass';
-    mesh.receiveShadow = part === 'paint';
-    body.add(mesh);
+  const lib = ModelLibrary.get(def.key || def.id);
+  if (lib) {
+    // модель из Blender: подмеши по материалам → игровые материалы
+    const map = new Proxy(mats, { get: (m, k) => (k === 'grille' ? m.grilleDark : m[k]) });
+    body.add(meshesFromLod(lib.hi, map, mats.black));
+  } else {
+    const byPart = {};
+    for (const { geo, part } of buildParts(def, 'high')) (byPart[part] ||= []).push(prep(geo));
+    for (const [part, list] of Object.entries(byPart)) {
+      const mesh = new THREE.Mesh(merge(list), mats[part] || mats.black);
+      mesh.name = part;
+      mesh.castShadow = part !== 'glass';
+      mesh.receiveShadow = part === 'paint';
+      body.add(mesh);
+    }
   }
   const wheels = buildWheels(def, mats, wheelStyle);
   for (const w of wheels) root.add(w.pivot);
@@ -577,10 +587,10 @@ export function buildWheels(def, mats, style) {
 
 // ------------------------------------------------------------------ инстансинг
 const DETAIL_COLORS = {
-  glass: 0x1a232b, chrome: 0xbdbdbd, rubber: 0x121212, black: 0x1c1c1c, grille: 0x2c2c2c,
+  glass: 0x161d23, chrome: 0xc8c8c8, rubber: 0x121212, black: 0x1c1c1c, grille: 0x2c2c2c,
   headLamp: 0xe0e0d8, tailLamp: 0x7a1010, reverseLamp: 0xb8b8b8, indL: 0xd07000, indR: 0xd07000,
   plate: 0xe6e6e6, rimDark: 0x3a3a3a, policeBlue: 0x1a3cff, policeRed: 0xff1a1a,
-  policeStripe: 0x1b3c9e, taxiSign: 0xffd000, interior: 0x3a2e28,
+  policeStripe: 0x1b3c9e, taxiSign: 0xffd000, interior: 0x3a2e28, under: 0x0b0b0b,
 };
 
 function withMask(geo, mask) {
@@ -595,6 +605,16 @@ function withMask(geo, mask) {
  * Итого 1 draw call на модель и уровень LOD.
  */
 export function buildInstanceGeometries(def) {
+  const lib = ModelLibrary.get(def.key || def.id);
+  const fixed = def.fixedColor !== undefined;
+  if (lib) {
+    const fromLod = (parts) => merge(parts.map((p) => {
+      const paint = p.material === 'paint';
+      const g = prep(p.geometry.clone(), paint ? (fixed ? def.fixedColor : 0xffffff) : DETAIL_COLORS[p.material] ?? 0x222222);
+      return withMask(g, paint && !fixed ? 1 : 0);
+    }));
+    return { lod0: fromLod(lib.lod0), lod1: fromLod(lib.lod1) };
+  }
   const build = (detail) => {
     const list = buildParts(def, detail).map(({ geo, part }) => {
       const paint = part === 'paint';

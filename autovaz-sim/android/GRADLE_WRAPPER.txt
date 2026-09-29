@@ -1,3 +1,0 @@
-Gradle Wrapper не хранится в репозитории (бинарный jar).
-Сгенерируйте его один раз:  cd android && gradle wrapper --gradle-version 8.9
-или просто откройте папку android/ в Android Studio — он создаст wrapper сам.

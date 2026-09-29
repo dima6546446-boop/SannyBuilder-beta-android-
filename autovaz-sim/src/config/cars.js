@@ -195,9 +195,9 @@ export const TUNING = {
     { id: 3, name: 'Лифт +5 см', value: 0.05, price: 6000 },
   ],
   tint: [
-    { id: 0, name: 'Заводская', value: 0.88, price: 0 },
-    { id: 1, name: '50%', value: 0.94, price: 2000 },
-    { id: 2, name: 'Наглухо', value: 0.985, price: 3500 },
+    { id: 0, name: 'Заводская', value: 0.6, price: 0 },
+    { id: 1, name: '50%', value: 0.82, price: 2000 },
+    { id: 2, name: 'Наглухо', value: 0.97, price: 3500 },
   ],
   engine: [
     { id: 0, name: 'Сток', value: 1.0, price: 0 },
