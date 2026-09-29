@@ -25,13 +25,31 @@ uniform vec3 bottomColor;
 uniform vec3 sunColor;
 uniform vec3 sunDir;
 uniform float sunDisk;
+uniform float time;
+uniform float cloudAmt;
+uniform vec3 cloudColor;
 varying vec3 vDir;
+float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vnoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+float fbm(vec2 p) { float s = 0.0, a = 0.5; for (int i = 0; i < 4; i++) { s += a * vnoise(p); p *= 2.03; a *= 0.5; } return s; }
 void main() {
   vec3 d = normalize(vDir);
   float h = d.y;
   vec3 col = h > 0.0 ? mix(horizonColor, topColor, pow(h, 0.45)) : mix(horizonColor, bottomColor, pow(-h, 0.35));
   float s = max(dot(d, sunDir), 0.0);
   col += sunColor * (pow(s, 900.0) * sunDisk + pow(s, 10.0) * 0.25);
+  if (cloudAmt > 0.0 && h > 0.0) {
+    // облака на «куполе»: проекция направления на плоскость
+    vec2 uv = d.xz / (h + 0.12) * 1.6 + vec2(time * 0.004, time * 0.0015);
+    float c = smoothstep(0.48, 0.78, fbm(uv));
+    float edge = smoothstep(0.0, 0.25, h);
+    vec3 cc = cloudColor + sunColor * pow(s, 4.0) * 0.35;
+    col = mix(col, cc, c * edge * cloudAmt);
+  }
   gl_FragColor = vec4(col, 1.0);
   #include <tonemapping_fragment>
   #include <colorspace_fragment>
@@ -81,6 +99,9 @@ export class DayNight {
       sunColor: { value: new THREE.Color() },
       sunDir: { value: new THREE.Vector3(0, 1, 0) },
       sunDisk: { value: 4 },
+      time: { value: 0 },
+      cloudAmt: { value: quality.clouds ? 0.85 : 0 },
+      cloudColor: { value: new THREE.Color(0xffffff) },
     };
     this.sky = new THREE.Mesh(
       new THREE.SphereGeometry(quality.drawDistance * 0.9, 24, 12),
@@ -155,6 +176,8 @@ export class DayNight {
     u.sunDisk.value = e >= 0 ? 4 : 1.5;
     u.bottomColor.value.copy(this.fog.color).multiplyScalar(0.6);
 
+    u.time.value += dt * 60;
+    u.cloudColor.value.copy(u.horizonColor.value).lerp(this._a.setRGB(1, 1, 1), 0.55 * (1 - this.night)).multiplyScalar(1 - this.night * 0.75);
     this.stars.material.opacity = this.night * 0.9;
     this.stars.visible = this.night > 0.01;
 

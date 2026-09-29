@@ -2,15 +2,16 @@ import * as THREE from 'three';
 import { damp, dampAngle, clamp } from '../utils/math.js';
 
 const MODES = [
-  { name: 'Сзади', type: 'chase', dist: 6.0, height: 2.0, look: 1.1 },
-  { name: 'Сзади (далеко)', type: 'chase', dist: 9.0, height: 3.2, look: 1.2 },
+  { name: 'Сзади', type: 'chase', dist: 6.2, height: 2.1, look: 1.1 },
+  { name: 'Сзади (далеко)', type: 'chase', dist: 9.5, height: 3.4, look: 1.2 },
+  { name: 'Сверху', type: 'top', dist: 5, height: 13, look: 0 },
   { name: 'Капот', type: 'attached', pos: [0, 1.22, 0.75], look: [0, 1.0, 12] },
   { name: 'Из салона', type: 'attached', pos: [0.36, 1.2, -0.22], look: [0.36, 1.08, 12] },
 ];
 
 /**
- * Камера: от третьего лица (с инерцией и защитой от «проваливания» в стены),
- * с капота и из салона (водитель слева). FOV растёт со скоростью, тряска при ударе.
+ * Камеры: сзади (с инерцией, облётом свайпом и защитой от стен), сверху (для парковки),
+ * с капота и из салона. FOV растёт со скоростью, тряска при ударе.
  */
 export class CameraRig {
   constructor(camera, collision) {
@@ -19,51 +20,56 @@ export class CameraRig {
     this.mode = 0;
     this.yaw = 0;
     this.shake = 0;
+    this.orbit = 0;
     this._pos = new THREE.Vector3();
     this._look = new THREE.Vector3();
-    this._tmp = new THREE.Vector3();
     this._init = false;
   }
 
   get modeName() { return MODES[this.mode].name; }
+  get isInterior() { return MODES[this.mode].type === 'attached'; }
 
-  next() {
-    this.mode = (this.mode + 1) % MODES.length;
-    this._init = false;
-    return this.modeName;
-  }
-
+  setMode(i) { this.mode = i % MODES.length; this._init = false; }
+  next() { this.setMode(this.mode + 1); return this.modeName; }
+  snap() { this._init = false; }
   addShake(v) { this.shake = Math.min(1, this.shake + v); }
 
-  update(dt, car) {
+  update(dt, car, orbit = 0) {
     const cam = this.camera;
     const m = MODES[this.mode];
     const p = car.physics;
     car.root.updateMatrixWorld();
+    const base = car.root.position;
 
-    if (m.type === 'chase') {
-      // за движением назад камера не разворачивается — смотрим по курсу кузова
-      if (!this._init) { this.yaw = p.heading; }
-      this.yaw = dampAngle(this.yaw, p.heading, 4.5, dt);
-      const fx = Math.sin(this.yaw), fz = Math.cos(this.yaw);
-      const base = car.root.position;
-      let dist = m.dist + clamp(p.speed / 30, 0, 1) * 1.2;
-      // не даём камере уйти за стену здания
-      const tx = base.x - fx * dist, tz = base.z - fz * dist;
-      const t = this.col.segmentHit(base.x, base.z, tx, tz);
-      if (t < 1) dist = Math.max(1.5, dist * t - 0.4);
+    if (m.type === 'chase' || m.type === 'top') {
+      // при движении задом камера не разворачивается — держим курс кузова
+      if (!this._init) this.yaw = p.heading;
+      this.yaw = dampAngle(this.yaw, p.heading, m.type === 'top' ? 3 : 4.5, dt);
+      const yaw = this.yaw + orbit;
+      const fx = Math.sin(yaw), fz = Math.cos(yaw);
+      let dist = m.dist + (m.type === 'chase' ? clamp(p.speed / 30, 0, 1) * 1.2 : 0);
+      if (m.type === 'chase') {
+        const t = this.col.segmentHit(base.x, base.z, base.x - fx * dist, base.z - fz * dist);
+        if (t < 1) dist = Math.max(1.5, dist * t - 0.4);
+      }
       this._pos.set(base.x - fx * dist, base.y + m.height, base.z - fz * dist);
       if (!this._init) cam.position.copy(this._pos);
-      cam.position.x = damp(cam.position.x, this._pos.x, 12, dt);
+      const k = m.type === 'top' ? 8 : 12;
+      cam.position.x = damp(cam.position.x, this._pos.x, k, dt);
       cam.position.y = damp(cam.position.y, this._pos.y, 6, dt);
-      cam.position.z = damp(cam.position.z, this._pos.z, 12, dt);
+      cam.position.z = damp(cam.position.z, this._pos.z, k, dt);
       const hx = Math.sin(p.heading), hz = Math.cos(p.heading);
-      this._look.set(base.x + hx * 2.5, base.y + m.look, base.z + hz * 2.5);
+      const ahead = m.type === 'top' ? 1.5 : 2.5;
+      this._look.set(base.x + hx * ahead, base.y + m.look, base.z + hz * ahead);
     } else {
       this._pos.fromArray(m.pos);
       car.root.localToWorld(this._pos);
       cam.position.copy(this._pos);
       this._look.fromArray(m.look);
+      if (orbit) {
+        const r = 12, a = orbit;
+        this._look.set(m.look[0] + Math.sin(a) * r, m.look[1], m.pos[2] + Math.cos(a) * r);
+      }
       car.root.localToWorld(this._look);
     }
     this._init = true;
@@ -76,7 +82,7 @@ export class CameraRig {
     }
     cam.lookAt(this._look);
 
-    const fov = (m.type === 'chase' ? 58 : 66) + clamp(p.speed / 40, 0, 1) * 10;
+    const fov = (m.type === 'attached' ? 68 : m.type === 'top' ? 55 : 58) + (m.type === 'chase' ? clamp(p.speed / 40, 0, 1) * 10 : 0);
     if (Math.abs(cam.fov - fov) > 0.05) {
       cam.fov = damp(cam.fov, fov, 3, dt);
       cam.updateProjectionMatrix();

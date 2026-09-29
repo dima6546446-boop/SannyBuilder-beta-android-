@@ -210,6 +210,108 @@ export function createTextures(aniso = 1) {
     T.plate = toTexture(c, { repeat: false });
   }
 
+  // --- Дорожные знаки: атлас 4×2 по 128 px ---
+  {
+    const [c, ctx] = makeCanvas(512, 256);
+    ctx.clearRect(0, 0, 512, 256);
+    const cell = (i) => [(i % 4) * 128, Math.floor(i / 4) * 128];
+    const blueSq = (x, y) => { ctx.fillStyle = '#fff'; ctx.fillRect(x + 6, y + 6, 116, 116); ctx.fillStyle = '#1f4fb0'; ctx.fillRect(x + 12, y + 12, 104, 104); };
+    // 0 — пешеходный переход (5.19)
+    let [x, y] = cell(0); blueSq(x, y);
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.moveTo(x + 64, y + 22); ctx.lineTo(x + 108, y + 104); ctx.lineTo(x + 20, y + 104); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#111'; ctx.beginPath(); ctx.arc(x + 66, y + 50, 7, 0, 7); ctx.fill();
+    ctx.lineWidth = 6; ctx.strokeStyle = '#111'; ctx.beginPath(); ctx.moveTo(x + 64, y + 58); ctx.lineTo(x + 60, y + 78); ctx.lineTo(x + 48, y + 96); ctx.moveTo(x + 60, y + 78); ctx.lineTo(x + 72, y + 96); ctx.moveTo(x + 50, y + 70); ctx.lineTo(x + 78, y + 64); ctx.stroke();
+    // 1 — ограничение 60
+    [x, y] = cell(1);
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(x + 64, y + 64, 58, 0, 7); ctx.fill();
+    ctx.lineWidth = 14; ctx.strokeStyle = '#d42020'; ctx.beginPath(); ctx.arc(x + 64, y + 64, 50, 0, 7); ctx.stroke();
+    ctx.fillStyle = '#111'; ctx.font = 'bold 52px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('60', x + 64, y + 67);
+    // 2 — остановка «А»
+    [x, y] = cell(2); blueSq(x, y);
+    ctx.fillStyle = '#fff'; ctx.fillRect(x + 28, y + 28, 72, 72); ctx.fillStyle = '#111'; ctx.font = 'bold 64px sans-serif'; ctx.fillText('А', x + 64, y + 68);
+    // 3 — ДПС
+    [x, y] = cell(3); ctx.fillStyle = '#fff'; ctx.fillRect(x + 4, y + 30, 120, 68); ctx.fillStyle = '#1b3c9e'; ctx.fillRect(x + 8, y + 34, 112, 60);
+    ctx.fillStyle = '#fff'; ctx.font = 'bold 44px sans-serif'; ctx.fillText('ДПС', x + 64, y + 66);
+    // 4 — АЗС
+    [x, y] = cell(4); blueSq(x, y); ctx.fillStyle = '#fff'; ctx.fillRect(x + 30, y + 26, 40, 76); ctx.fillStyle = '#1f4fb0'; ctx.fillRect(x + 36, y + 34, 28, 22);
+    ctx.fillStyle = '#fff'; ctx.fillRect(x + 76, y + 40, 8, 50); ctx.fillRect(x + 70, y + 36, 14, 8);
+    // 5 — парковка P
+    [x, y] = cell(5); blueSq(x, y); ctx.fillStyle = '#fff'; ctx.font = 'bold 86px sans-serif'; ctx.fillText('P', x + 64, y + 70);
+    // 6 — камера
+    [x, y] = cell(6); blueSq(x, y); ctx.fillStyle = '#fff'; ctx.fillRect(x + 26, y + 46, 56, 40); ctx.beginPath(); ctx.moveTo(x + 82, y + 56); ctx.lineTo(x + 104, y + 44); ctx.lineTo(x + 104, y + 88); ctx.lineTo(x + 82, y + 76); ctx.fill();
+    // 7 — ДОСААФ
+    [x, y] = cell(7); ctx.fillStyle = '#b71c1c'; ctx.fillRect(x + 2, y + 34, 124, 60); ctx.fillStyle = '#ffd54a'; ctx.font = 'bold 26px sans-serif'; ctx.fillText('ДОСААФ', x + 64, y + 66);
+    T.signs = toTexture(c, { repeat: false, aniso });
+  }
+
+  // --- Вывески магазинов: 8 строк 512×64 ---
+  {
+    const [c, ctx] = makeCanvas(512, 512);
+    const shops = [
+      ['ПРОДУКТЫ', '#1b5e20', '#fff'], ['АПТЕКА', '#fff', '#2e7d32'], ['ХЛЕБ', '#6d4c41', '#ffe082'],
+      ['ШИНОМОНТАЖ 24', '#212121', '#ffca28'], ['АВТОЗАПЧАСТИ ВАЗ', '#0d47a1', '#fff'], ['ПОЧТА', '#1565c0', '#fff'],
+      ['КАФЕ «ЛАДА»', '#b71c1c', '#fff59d'], ['ГАСТРОНОМ', '#4a148c', '#fff'],
+    ];
+    shops.forEach(([t, bg, fg], i) => {
+      ctx.fillStyle = bg; ctx.fillRect(0, i * 64, 512, 64);
+      ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(0, i * 64 + 58, 512, 6);
+      ctx.fillStyle = fg; ctx.font = 'bold 42px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(t, 256, i * 64 + 32);
+    });
+    T.shops = toTexture(c, { repeat: false, aniso });
+  }
+
+  // --- Рекламные щиты 1024×512: 4 плаката 512×256 ---
+  {
+    const [c, ctx] = makeCanvas(1024, 512);
+    const ads = [
+      ['РЕМОНТ ЖИГУЛЕЙ', 'недорого · 8-900-107-21-07', '#ff6f00', '#1a1a1a'],
+      ['ЛАДА ПАРКИНГ', 'сдай на права с первого раза!', '#0d47a1', '#ffffff'],
+      ['АВТОШКОЛА «КЛАКСОН»', 'категория B · ДОСААФ', '#c62828', '#ffffff'],
+      ['КУПЛЮ ВАШЕ ВЕДРО', 'в любом состоянии', '#2e7d32', '#ffffff'],
+    ];
+    ads.forEach(([t, sub, bg, fg], i) => {
+      const x = (i % 2) * 512, y = Math.floor(i / 2) * 256;
+      const g = ctx.createLinearGradient(x, y, x + 512, y + 256); g.addColorStop(0, bg); g.addColorStop(1, '#111');
+      ctx.fillStyle = g; ctx.fillRect(x, y, 512, 256);
+      ctx.fillStyle = fg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = 'bold 52px sans-serif'; ctx.fillText(t, x + 256, y + 100, 480);
+      ctx.font = 'bold 28px sans-serif'; ctx.fillText(sub, x + 256, y + 170, 480);
+      ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 6; ctx.strokeRect(x + 8, y + 8, 496, 240);
+    });
+    T.ads = toTexture(c, { repeat: false, aniso });
+  }
+
+  // --- Нормали асфальта (для «Высокого»): из высоты = шум зерна ---
+  {
+    const S = 256; const [c, ctx] = makeCanvas(S);
+    const hgt = new Float32Array(S * S);
+    for (let i = 0; i < S * S; i++) hgt[i] = rnd();
+    pixelFill(ctx, S, (x, y) => {
+      const hL = hgt[y * S + ((x + S - 1) % S)], hR = hgt[y * S + ((x + 1) % S)];
+      const hU = hgt[((y + S - 1) % S) * S + x], hD = hgt[((y + 1) % S) * S + x];
+      const nx = (hL - hR) * 0.9, ny = (hU - hD) * 0.9;
+      return [128 + nx * 127, 128 + ny * 127, 255];
+    });
+    T.asphaltNormal = toTexture(c, { srgb: false, aniso });
+  }
+
+  // --- Кирпич гаражной стены (для 3D-гаража в меню) ---
+  {
+    const S = 256; const [c, ctx] = makeCanvas(S);
+    ctx.fillStyle = '#6b4a3a'; ctx.fillRect(0, 0, S, S);
+    for (let row = 0; row < 16; row++) {
+      for (let col = 0; col < 5; col++) {
+        const off = row % 2 ? 25 : 0;
+        const v = 120 + rnd() * 50;
+        ctx.fillStyle = `rgb(${v},${v * 0.55},${v * 0.42})`;
+        ctx.fillRect(col * 51 + off - 25, row * 16 + 1, 49, 14);
+        ctx.fillRect(col * 51 + off + 230, row * 16 + 1, 49, 14);
+      }
+    }
+    T.brick = toTexture(c, { aniso });
+  }
+
   return T;
 }
 

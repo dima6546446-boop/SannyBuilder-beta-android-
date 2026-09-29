@@ -57,6 +57,7 @@ export class QuadBatch {
   }
 
   /** a,b,c,d — вершины [x,y,z] против часовой стрелки при взгляде с лицевой стороны. */
+  /** col — THREE.Color или массив из 4 цветов по вершинам (градиент, например AO у земли). */
   quad(a, b, c, d, nx, ny, nz, uvs = [0, 0, 1, 0, 1, 1, 0, 1], col) {
     const V = [a, b, c, a, c, d];
     const U = [0, 1, 2, 0, 2, 3];
@@ -65,8 +66,21 @@ export class QuadBatch {
       this.p.push(v[0], v[1], v[2]);
       this.n.push(nx, ny, nz);
       this.uv.push(uvs[U[k] * 2], uvs[U[k] * 2 + 1]);
-      if (this.c) this.c.push(col.r, col.g, col.b);
+      if (this.c) {
+        const cc = Array.isArray(col) ? col[U[k]] : col;
+        this.c.push(cc.r, cc.g, cc.b);
+      }
     }
+  }
+
+  /** Осевой параллелепипед (без нижней грани) с одной точкой UV. */
+  box(x0, y0, z0, x1, y1, z1, col, uv = [0, 0]) {
+    const u = [uv[0], uv[1], uv[0], uv[1], uv[0], uv[1], uv[0], uv[1]];
+    this.quad([x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1], 0, 0, 1, u, col);
+    this.quad([x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0], 0, 0, -1, u, col);
+    this.quad([x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1], 1, 0, 0, u, col);
+    this.quad([x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0], -1, 0, 0, u, col);
+    this.quad([x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0], 0, 1, 0, u, col);
   }
 
   /** Плоский прямоугольник на земле, ориентированный вдоль (dx,dz). */

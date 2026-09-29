@@ -26,16 +26,20 @@ export class TrafficCar {
     this.x = 0; this.z = 0; this.heading = 0;
     this.vx = 0; this.vz = 0;
     this.speed = 0;
-    this.colorIndex = 0;
+    this.model = 0;
+    this.color = null;
+    this.ind = null;
     this.braking = false;
     this.waitingLight = false;
   }
 
-  spawn(ctx, a, b, lane, s, cruise, colorIndex) {
+  spawn(ctx, a, b, lane, s, cruise, model, color) {
     this.ctx = ctx;
     this.active = true;
     this.cruise = cruise;
-    this.colorIndex = colorIndex;
+    this.model = model;
+    this.color = color;
+    this.ind = null;
     this.speed = cruise * 0.7;
     this.blocked = 0;
     this.stun = 0;
@@ -148,7 +152,7 @@ export class TrafficCar {
 
   update(dt) {
     const ctx = this.ctx;
-    if (this.stun > 0) { this.stun -= dt; this.speed = 0; this._pose(); return; }
+    if (this.stun > 0) { this.stun -= dt; this.speed = 0; this.ind = 'H'; this.braking = true; this._pose(); return; }
     if (this.ghost > 0) this.ghost -= dt;
 
     const fx = Math.sin(this.heading), fz = Math.cos(this.heading);
@@ -249,6 +253,12 @@ export class TrafficCar {
       this.honkCooldown = 4 + ctx.rnd() * 4;
       ctx.onHonk?.(this);
     }
+
+    // поворотник: за 45 м до перекрёстка и во время манёвра/перестроения
+    if (this.laneChange) this.ind = this.latTarget > this.lat ? 'R' : 'L';
+    else if (this.turn === TURN.RIGHT && (this.mode === MODE_TURN || this.edgeLen - this.s < 45)) this.ind = 'R';
+    else if ((this.turn === TURN.LEFT || this.turn === TURN.UTURN) && (this.mode === MODE_TURN || this.edgeLen - this.s < 45)) this.ind = 'L';
+    else this.ind = this.stun > 0 ? 'H' : null;
 
     // 6. продвижение по пути
     this.s += this.speed * dt;

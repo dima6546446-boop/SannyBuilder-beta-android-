@@ -11,7 +11,7 @@ export const QUALITY_PRESETS = {
     shadows: false, shadowMapSize: 512, shadowUpdateEvery: 0, shadowRange: 30,
     trafficCount: 10, drawDistance: 220, carLodDistance: 45,
     treeDensity: 0.45, treeLodDistance: 60,
-    carEnvMap: false, transparentGlass: false, streetLightPools: false,
+    carEnvMap: false, transparentGlass: false, streetLightPools: false, parkedDensity: 0.45, bloom: false, clouds: false, glow: true,
     anisotropy: 1, occlusion: true,
   },
   medium: {
@@ -21,7 +21,7 @@ export const QUALITY_PRESETS = {
     shadows: true, shadowMapSize: 1024, shadowUpdateEvery: 2, shadowRange: 40,
     trafficCount: 18, drawDistance: 320, carLodDistance: 70,
     treeDensity: 0.7, treeLodDistance: 90,
-    carEnvMap: true, transparentGlass: true, streetLightPools: true,
+    carEnvMap: true, transparentGlass: true, streetLightPools: true, parkedDensity: 0.8, bloom: false, clouds: true, glow: true,
     anisotropy: 2, occlusion: true,
   },
   high: {
@@ -31,7 +31,7 @@ export const QUALITY_PRESETS = {
     shadows: true, shadowMapSize: 2048, shadowUpdateEvery: 1, shadowRange: 55,
     trafficCount: 28, drawDistance: 450, carLodDistance: 100,
     treeDensity: 1.0, treeLodDistance: 130,
-    carEnvMap: true, transparentGlass: true, streetLightPools: true,
+    carEnvMap: true, transparentGlass: true, streetLightPools: true, parkedDensity: 1.0, bloom: true, clouds: true, glow: true,
     anisotropy: 4, occlusion: true,
   },
 };

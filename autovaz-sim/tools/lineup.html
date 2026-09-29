@@ -1,0 +1,31 @@
+<!doctype html><html><head><meta charset="utf-8"><style>body{margin:0;background:#222}canvas{display:block}</style></head>
+<body><script type="module">
+import * as THREE from 'three';
+import { allRenderModels } from '../src/config/cars.js';
+import { buildPlayerModel, createCarMaterials, buildInstanceGeometries, createInstanceMaterial } from '../src/vehicles/CarFactory.js';
+import { createTextures } from '../src/world/Textures.js';
+const params = new URLSearchParams(location.search);
+const r = new THREE.WebGLRenderer({ antialias: true }); r.setSize(innerWidth, innerHeight); document.body.appendChild(r.domElement);
+r.toneMapping = THREE.ACESFilmicToneMapping; r.shadowMap.enabled = true;
+const s = new THREE.Scene(); s.background = new THREE.Color(0x8fb0d0);
+s.add(new THREE.HemisphereLight(0xbcd8f7, 0x51493b, 1.2)); const sun = new THREE.DirectionalLight(0xffffff, 2.5); sun.position.set(10, 20, 14); sun.castShadow = true; Object.assign(sun.shadow.camera, {left:-30,right:30,top:20,bottom:-20}); sun.shadow.mapSize.set(2048,2048); s.add(sun);
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(200, 200).rotateX(-Math.PI/2), new THREE.MeshStandardMaterial({ color: 0x555555 })); ground.receiveShadow = true; s.add(ground);
+const pm = new THREE.PMREMGenerator(r); const env = pm.fromScene(new (await import('three/addons/environments/RoomEnvironment.js')).RoomEnvironment(), 0.04).texture;
+const T = createTextures(4);
+const only = params.get('only'); const models = allRenderModels().filter(m => !only || only.split(',').includes(m.key));
+const mode = params.get('m') || 'player';
+const imat = createInstanceMaterial();
+models.forEach((def, i) => {
+  const x = (i - (models.length - 1) / 2) * parseFloat(params.get('gap')||'2.4');
+  const color = def.fixedColor ?? def.colors[i % def.colors.length];
+  let obj;
+  if (mode === 'player') { const mats = createCarMaterials({ color, envMap: env, T, quality: { name: 'high', transparentGlass: true } }); obj = buildPlayerModel(def, mats, params.get('w') || 'default').root; }
+  else { const g = buildInstanceGeometries(def); const im = new THREE.InstancedMesh(mode === 'lod1' ? g.lod1 : g.lod0, imat, 1); im.setMatrixAt(0, new THREE.Matrix4()); im.setColorAt(0, new THREE.Color(color)); obj = im; obj.userData.tris = (g.lod0.attributes.position.count/3|0) + '/' + (g.lod1.attributes.position.count/3|0); console.log(def.id, obj.userData.tris); }
+  obj.traverse?.((o) => { o.castShadow = true; });
+  const holder = new THREE.Group(); holder.add(obj); holder.position.set(x, 0, 0); holder.rotation.y = parseFloat(params.get('rot') || '0.6'); s.add(holder);
+});
+const cam = new THREE.PerspectiveCamera(parseFloat(params.get('fov')||'40'), innerWidth / innerHeight, 0.1, 200);
+const [cx, cy, cz, tx] = (params.get('cam') || '0,6,18,0').split(',').map(Number);
+cam.position.set(cx, cy, cz); cam.lookAt(tx, 0.7, 0);
+r.render(s, cam); window.done = true;
+</script></body></html>

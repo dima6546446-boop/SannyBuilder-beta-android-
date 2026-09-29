@@ -19,7 +19,8 @@ const OFF = [[0.14, 0.02, 0.02], [0.14, 0.09, 0.02], [0.02, 0.12, 0.05]];
  * обновляются только при смене состояния.
  */
 export class TrafficLights {
-  constructor(scene, graph, collision, rnd) {
+  constructor(scene, graph, collision, rnd, glow = null) {
+    this.glow = glow;
     this.graph = graph;
     this.time = 0;
     this.offsets = graph.nodes.map(() => rnd() * CYCLE);
@@ -73,6 +74,10 @@ export class TrafficLights {
     this.lamps.instanceMatrix.needsUpdate = true;
     this.lamps.computeBoundingSphere();
     scene.add(this.lamps);
+    if (glow) {
+      glow.addStaticGroup('tl', lampPos.map((p) => [p[0], p[1], p[2]]), [1, 1, 1], 0.7);
+      glow.setGroup('tl', false);
+    }
     this._c = c;
     this.update(0);
   }
@@ -115,7 +120,10 @@ export class TrafficLights {
         const preGreen = (h.axis === AXIS.NS && p === 5) || (h.axis === AXIS.EW && p === 2);
         const red = !(p === g) && !(p === g + 1);
         const state = [red, yellow || preGreen, green];
-        for (let k = 0; k < 3; k++) this.lamps.setColorAt(h.base + k, this._c.setRGB(...(state[k] ? ON[k] : OFF[k])));
+        for (let k = 0; k < 3; k++) {
+          this.lamps.setColorAt(h.base + k, this._c.setRGB(...(state[k] ? ON[k] : OFF[k])));
+          if (this.glow) this.glow.setItem('tl', h.base + k, state[k], ON[k]);
+        }
       }
     }
     if (dirty) this.lamps.instanceColor.needsUpdate = true;

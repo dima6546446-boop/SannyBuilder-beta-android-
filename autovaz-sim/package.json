@@ -1,8 +1,8 @@
 {
-  "name": "autovaz-sim",
-  "version": "0.1.0",
+  "name": "lada-parking",
+  "version": "1.0.0",
   "private": true,
-  "description": "Мобильный 3D-симулятор вождения ВАЗ-2107 (Three.js + Android WebView)",
+  "description": "Лада Паркинг — мобильный 3D-симулятор парковки и вождения автомобилей АвтоВАЗ (Three.js + Android WebView)",
   "type": "module",
   "scripts": {
     "dev": "vite --host",

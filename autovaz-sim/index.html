@@ -3,60 +3,118 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <meta name="theme-color" content="#000000" />
-  <title>АвтоВАЗ Симулятор</title>
+  <meta name="theme-color" content="#0b0d10" />
+  <title>Лада Паркинг</title>
+  <link rel="icon" href="data:," />
   <link rel="stylesheet" href="./src/ui/style.css" />
 </head>
 <body>
   <canvas id="game"></canvas>
+  <div id="vignette"></div>
+  <div id="flash"></div>
 
+  <!-- ===================== HUD ===================== -->
   <div id="hud" class="hidden">
-    <canvas id="minimap" width="160" height="160"></canvas>
-    <div id="topbar"><span id="clock">12:00</span><span id="fps"></span></div>
-    <div id="speedo">
-      <div id="spd">0</div>
-      <div class="unit">км/ч</div>
-      <div id="gear">1</div>
+    <div id="hud-tl">
+      <canvas id="minimap" width="220" height="220"></canvas>
+      <div id="indicators">
+        <div id="ind-l" class="ibtn" data-ind="L"><svg viewBox="0 0 24 24"><path d="M14 5 6 12l8 7v-4h6V9h-6z"/></svg></div>
+        <div id="hazard" class="ibtn"><svg viewBox="0 0 24 24"><path d="M12 3 2 20h20zm0 5 5.6 10H6.4z"/></svg></div>
+        <div id="ind-r" class="ibtn" data-ind="R"><svg viewBox="0 0 24 24"><path d="M10 5l8 7-8 7v-4H4V9h6z"/></svg></div>
+      </div>
+    </div>
+
+    <div id="hud-top">
+      <div id="mission" class="hidden">
+        <div id="mission-title"></div>
+        <div id="mission-sub"></div>
+        <div id="mission-bar"><i></i></div>
+      </div>
+      <div id="combo" class="hidden"></div>
+    </div>
+
+    <div id="hud-tr">
+      <div id="money-box"><span id="money">0</span> ₽</div>
+      <div id="clock-row"><span id="clock">12:00</span> <span id="fps"></span></div>
+      <div class="btnrow">
+        <div id="btn-cam" class="cbtn" title="Камера"><svg viewBox="0 0 24 24"><path d="M4 7h3l2-2h6l2 2h3v12H4zm8 3a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"/></svg></div>
+        <div id="btn-lights" class="cbtn" title="Фары"><svg viewBox="0 0 24 24"><path d="M13 5c4 0 7 3 7 7s-3 7-7 7h-2V5zM2 7h7v2H2zm0 4h7v2H2zm0 4h7v2H2z"/></svg></div>
+        <div id="btn-pause" class="cbtn" title="Пауза"><svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg></div>
+      </div>
+    </div>
+
+    <div id="nav"><div id="nav-arrow"></div><div id="nav-dist"></div></div>
+    <div id="speed-limit" class="hidden">60</div>
+
+    <div id="sensors" class="hidden">
+      <div id="sensor-f" class="sensor"><i></i><i></i><i></i><i></i></div>
+      <div id="sensor-r" class="sensor"><i></i><i></i><i></i><i></i></div>
+    </div>
+
+    <div id="dash">
+      <div id="dash-ind-l" class="dind">◀</div>
+      <div id="dash-main">
+        <div id="spd">0</div>
+        <div class="unit">км/ч</div>
+      </div>
+      <div id="dash-side">
+        <div id="gear">D1</div>
+        <div id="fuel"><i></i></div>
+      </div>
+      <div id="dash-ind-r" class="dind">▶</div>
       <div id="rpmbar"><i></i></div>
     </div>
-    <div id="msg"></div>
   </div>
 
+  <!-- ===================== УПРАВЛЕНИЕ ===================== -->
   <div id="controls" class="hidden">
     <div id="wheel">
       <svg id="wheel-inner" viewBox="0 0 200 200" aria-hidden="true">
-        <circle cx="100" cy="100" r="88" fill="none" stroke="#1b1b1b" stroke-width="18" />
-        <circle cx="100" cy="100" r="88" fill="none" stroke="#3a3a3a" stroke-width="4" />
-        <path d="M22 108 L78 112 L100 140 L122 112 L178 108" fill="none" stroke="#1b1b1b" stroke-width="16" stroke-linejoin="round" />
-        <circle cx="100" cy="112" r="22" fill="#222" stroke="#555" stroke-width="3" />
-        <text x="100" y="118" text-anchor="middle" font-size="14" fill="#c9c9c9" font-family="sans-serif">ВАЗ</text>
-        <rect x="96" y="6" width="8" height="18" fill="#c33" />
+        <defs>
+          <radialGradient id="wg" cx="50%" cy="40%" r="60%"><stop offset="0" stop-color="#3a3a3a"/><stop offset="1" stop-color="#111"/></radialGradient>
+        </defs>
+        <circle cx="100" cy="100" r="86" fill="none" stroke="url(#wg)" stroke-width="20" />
+        <circle cx="100" cy="100" r="86" fill="none" stroke="#555" stroke-width="2" />
+        <path d="M18 106 L76 110 L100 142 L124 110 L182 106" fill="none" stroke="#1d1d1d" stroke-width="16" stroke-linejoin="round" />
+        <circle cx="100" cy="112" r="24" fill="#1a1a1a" stroke="#666" stroke-width="3" />
+        <path d="M86 118 L100 100 L114 118 Z" fill="none" stroke="#c9c9c9" stroke-width="3"/>
+        <rect x="95" y="4" width="10" height="20" rx="2" fill="#e53" />
       </svg>
     </div>
-    <div id="pedals">
-      <div id="brake" class="pedal">ТОРМОЗ</div>
-      <div id="gas" class="pedal">ГАЗ</div>
+    <div id="arrows" class="hidden">
+      <div id="arrow-l" class="abtn"><svg viewBox="0 0 24 24"><path d="M15 4 7 12l8 8z"/></svg></div>
+      <div id="arrow-r" class="abtn"><svg viewBox="0 0 24 24"><path d="M9 4l8 8-8 8z"/></svg></div>
     </div>
-    <div id="hb" class="btn big">РУЧНИК</div>
-    <div id="buttons">
-      <div id="btn-horn" class="btn">ГУДОК</div>
-      <div id="btn-cam" class="btn">КАМЕРА</div>
-      <div id="btn-lights" class="btn">ФАРЫ</div>
-      <div id="btn-time" class="btn">ВРЕМЯ</div>
+
+    <div id="right-cluster">
+      <div id="hb" class="hbtn">
+        <svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zm0 3a6 6 0 1 1 0 12 6 6 0 0 1 0-12zm-1 2v8h2V8z"/></svg>
+        <span>РУЧНИК</span>
+      </div>
+      <div id="lever">
+        <div class="lslot" data-sel="R">R</div>
+        <div class="lslot" data-sel="N">N</div>
+        <div class="lslot sel" data-sel="D">D</div>
+      </div>
+      <div id="shifter" class="hidden">
+        <div id="shift-up" class="sbtn">+</div>
+        <div id="shift-gear">1</div>
+        <div id="shift-down" class="sbtn">−</div>
+      </div>
+      <div id="brake" class="pedal"><div class="tread"></div><span>ТОРМОЗ</span></div>
+      <div id="gas" class="pedal"><div class="tread"></div><span>ГАЗ</span></div>
+    </div>
+
+    <div id="actions">
+      <div id="btn-horn" class="cbtn big" title="Гудок"><svg viewBox="0 0 24 24"><path d="M3 10v4h4l5 4V6L7 10zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg></div>
+      <div id="btn-taxi" class="cbtn big hidden" title="Такси"><svg viewBox="0 0 24 24"><path d="M8 3h8l1 3h2a2 2 0 0 1 2 2v8h-2a2 2 0 0 1-4 0H9a2 2 0 0 1-4 0H3V8a2 2 0 0 1 2-2h2zm1.4 3h5.2l-.4-1.2H9.8zM5 9v3h14V9z"/></svg></div>
+      <div id="btn-action" class="actbtn hidden">ДЕЙСТВИЕ</div>
     </div>
   </div>
 
-  <div id="start">
-    <div class="panel">
-      <h1>ВАЗ-2107</h1>
-      <p class="sub">Симулятор вождения · Автозаводский район</p>
-      <p id="loading">Загрузка…</p>
-      <div id="colors"></div>
-      <div id="quality"></div>
-      <button id="play" disabled>ПОЕХАЛИ</button>
-      <p class="hint">Руль — слева, педали — справа. Клавиатура: WASD/стрелки, Пробел — ручник, H — гудок, C — камера, L — фары, T — время.</p>
-    </div>
-  </div>
+  <!-- ===================== МЕНЮ (строится в Menus.js) ===================== -->
+  <div id="ui"></div>
+  <div id="toasts"></div>
 
   <script type="module" src="./src/main.js"></script>
 </body>
