@@ -47,7 +47,10 @@ jobs:
           mkdir -p out
           cp LadaParking.apk out/
           cp -r dist out/web
-          git archive --format=zip -o out/LadaParking-source.zip HEAD:autovaz-sim
+          cd .. && zip -qr autovaz-sim/out/LadaParking-source.zip autovaz-sim \
+            -x 'autovaz-sim/node_modules/*' 'autovaz-sim/dist/*' 'autovaz-sim/out/*' 'autovaz-sim/LadaParking.apk' \
+               'autovaz-sim/android/app/build/*' 'autovaz-sim/android/build/*' 'autovaz-sim/android/.gradle/*' 'autovaz-sim/android/.kotlin/*'
+          ls -la autovaz-sim/out
 
       - uses: actions/upload-artifact@v4
         with:
