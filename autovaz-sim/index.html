@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
+  <title>АвтоВАЗ Симулятор</title>
+  <link rel="stylesheet" href="./src/ui/style.css" />
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <div id="hud" class="hidden">
+    <canvas id="minimap" width="160" height="160"></canvas>
+    <div id="topbar"><span id="clock">12:00</span><span id="fps"></span></div>
+    <div id="speedo">
+      <div id="spd">0</div>
+      <div class="unit">км/ч</div>
+      <div id="gear">1</div>
+      <div id="rpmbar"><i></i></div>
+    </div>
+    <div id="msg"></div>
+  </div>
+
+  <div id="controls" class="hidden">
+    <div id="wheel">
+      <svg id="wheel-inner" viewBox="0 0 200 200" aria-hidden="true">
+        <circle cx="100" cy="100" r="88" fill="none" stroke="#1b1b1b" stroke-width="18" />
+        <circle cx="100" cy="100" r="88" fill="none" stroke="#3a3a3a" stroke-width="4" />
+        <path d="M22 108 L78 112 L100 140 L122 112 L178 108" fill="none" stroke="#1b1b1b" stroke-width="16" stroke-linejoin="round" />
+        <circle cx="100" cy="112" r="22" fill="#222" stroke="#555" stroke-width="3" />
+        <text x="100" y="118" text-anchor="middle" font-size="14" fill="#c9c9c9" font-family="sans-serif">ВАЗ</text>
+        <rect x="96" y="6" width="8" height="18" fill="#c33" />
+      </svg>
+    </div>
+    <div id="pedals">
+      <div id="brake" class="pedal">ТОРМОЗ</div>
+      <div id="gas" class="pedal">ГАЗ</div>
+    </div>
+    <div id="hb" class="btn big">РУЧНИК</div>
+    <div id="buttons">
+      <div id="btn-horn" class="btn">ГУДОК</div>
+      <div id="btn-cam" class="btn">КАМЕРА</div>
+      <div id="btn-lights" class="btn">ФАРЫ</div>
+      <div id="btn-time" class="btn">ВРЕМЯ</div>
+    </div>
+  </div>
+
+  <div id="start">
+    <div class="panel">
+      <h1>ВАЗ-2107</h1>
+      <p class="sub">Симулятор вождения · Автозаводский район</p>
+      <p id="loading">Загрузка…</p>
+      <div id="colors"></div>
+      <div id="quality"></div>
+      <button id="play" disabled>ПОЕХАЛИ</button>
+      <p class="hint">Руль — слева, педали — справа. Клавиатура: WASD/стрелки, Пробел — ручник, H — гудок, C — камера, L — фары, T — время.</p>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+{
+  "name": "autovaz-sim",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Мобильный 3D-симулятор вождения ВАЗ-2107 (Three.js + Android WebView)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "copy-basis": "node scripts/copy-basis.mjs",
+    "android:assets": "npm run build && node scripts/check-dist.mjs"
+  },
+  "dependencies": {
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

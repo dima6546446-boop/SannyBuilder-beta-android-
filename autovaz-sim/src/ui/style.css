@@ -1,0 +1,97 @@
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden; background: #000; color: #eee;
+  font-family: system-ui, -apple-system, 'Roboto', sans-serif;
+  user-select: none; -webkit-user-select: none; touch-action: none;
+  overscroll-behavior: none;
+}
+#game { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; touch-action: none; }
+.hidden { display: none !important; }
+
+/* ---------- HUD ---------- */
+#hud { position: fixed; inset: 0; pointer-events: none; }
+#minimap {
+  position: absolute; left: calc(10px + env(safe-area-inset-left)); top: 10px;
+  width: 120px; height: 120px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35);
+  background: #25331f; opacity: .9;
+}
+#topbar {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+  font-size: 15px; background: rgba(0,0,0,.45); padding: 4px 12px; border-radius: 12px;
+  display: flex; gap: 14px; font-variant-numeric: tabular-nums;
+}
+#fps { color: #9c9; }
+#speedo {
+  position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
+  width: 150px; text-align: center; background: rgba(0,0,0,.5); border-radius: 14px; padding: 6px 8px 8px;
+  font-variant-numeric: tabular-nums;
+}
+#spd { font-size: 40px; font-weight: 700; line-height: 1; }
+#speedo .unit { font-size: 11px; opacity: .7; }
+#gear { position: absolute; right: 10px; top: 8px; font-size: 18px; font-weight: 700; color: #fc6; }
+#rpmbar { height: 6px; background: #333; border-radius: 3px; margin-top: 6px; overflow: hidden; }
+#rpmbar i { display: block; height: 100%; width: 10%; background: linear-gradient(90deg, #4c4, #ec4 70%, #e44); }
+#msg {
+  position: absolute; top: 48px; left: 50%; transform: translateX(-50%);
+  font-size: 16px; background: rgba(0,0,0,.55); padding: 4px 14px; border-radius: 10px;
+  opacity: 0; transition: opacity .3s;
+}
+#msg.show { opacity: 1; }
+
+/* ---------- Сенсорное управление ---------- */
+#controls { position: fixed; inset: 0; pointer-events: none; }
+#controls > * { pointer-events: auto; }
+#wheel {
+  position: absolute; left: calc(18px + env(safe-area-inset-left)); bottom: 18px;
+  width: min(34vh, 190px); height: min(34vh, 190px); touch-action: none;
+}
+#wheel-inner { width: 100%; height: 100%; will-change: transform; opacity: .92; }
+#pedals {
+  position: absolute; right: calc(18px + env(safe-area-inset-right)); bottom: 18px;
+  display: flex; gap: 14px; align-items: flex-end;
+}
+.pedal {
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  font-weight: 700; font-size: 13px; letter-spacing: .5px;
+  background: rgba(40,40,40,.75); border: 2px solid rgba(255,255,255,.3); border-radius: 12px;
+  touch-action: none;
+}
+#brake { width: 84px; height: 84px; }
+#gas { width: 70px; height: 128px; }
+.pedal.on { background: rgba(200,60,40,.8); }
+#gas.on { background: rgba(60,170,60,.8); }
+.btn {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 64px; height: 40px; padding: 0 10px; font-size: 12px; font-weight: 700;
+  background: rgba(30,30,30,.6); border: 1px solid rgba(255,255,255,.3); border-radius: 10px;
+  touch-action: none;
+}
+.btn.on { background: rgba(220,160,40,.8); color: #111; }
+.btn.big {
+  position: absolute; right: calc(190px + env(safe-area-inset-right)); bottom: 22px;
+  width: 80px; height: 64px;
+}
+#buttons {
+  position: absolute; right: calc(10px + env(safe-area-inset-right)); top: 10px;
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: 60vw;
+}
+
+/* ---------- Стартовый экран ---------- */
+#start {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(30,30,40,.8), rgba(0,0,0,.95));
+}
+#start .panel { text-align: center; max-width: 560px; padding: 16px; }
+#start h1 { margin: 0; font-size: 44px; letter-spacing: 3px; color: #e8e8e8; }
+#start .sub { margin: 4px 0 14px; opacity: .8; }
+#colors, #quality { display: flex; gap: 8px; justify-content: center; margin: 10px 0; flex-wrap: wrap; }
+.swatch { width: 38px; height: 38px; border-radius: 50%; border: 3px solid transparent; }
+.swatch.sel { border-color: #fff; }
+.qbtn { padding: 6px 12px; border-radius: 8px; background: #333; border: 1px solid #555; font-size: 13px; }
+.qbtn.sel { background: #c8a030; color: #111; }
+#play {
+  margin-top: 8px; font-size: 22px; font-weight: 800; padding: 12px 42px; border-radius: 12px;
+  border: none; background: #d33; color: #fff; letter-spacing: 2px;
+}
+#play:disabled { opacity: .4; }
+.hint { font-size: 12px; opacity: .6; margin-top: 12px; }
