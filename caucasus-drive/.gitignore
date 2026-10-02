@@ -9,3 +9,4 @@ android/local.properties
 .idea/
 android/.kotlin/
 tools/blender/__pycache__/
+out/
