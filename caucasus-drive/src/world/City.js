@@ -527,6 +527,25 @@ export class City {
             signPole(sx, sz, 2.8, -dx * side, -dz * side, SIGN.BUS, 0.6);
             this.busStops.push({ x, z, nx, nz });
           }
+          // билборды вдоль дорог (в основном — наш Telegram), двусторонние, за тротуаром
+          if (edgeIdx % 3 === 2) {
+            const side = edgeIdx % 2 ? 1 : -1;
+            const [x, z] = P(SEG_LEN * 0.5, side * (HALF + SIDEWALK + 3.2));
+            let blocked = false;
+            this.col.collideCircle(x, z, 3.6, () => { blocked = true; });
+            if (!blocked) {
+              const nx = -rx * side, nz = -rz * side; // к дороге
+              const W = 6, H = 3, Y = CURB + 5.4;
+              for (const s of [-2.2, 2.2]) {
+                this.propParts.push(prep(new THREE.BoxGeometry(0.22, Y, 0.22).translate(x + dx * s, Y / 2, z + dz * s)));
+                this.col.addCircle(x + dx * s, z + dz * s, 0.16, 'pole');
+              }
+              this.propParts.push(prep(new THREE.BoxGeometry(Math.abs(dx) * (W + 0.3) + Math.abs(nx) * 0.28, H + 0.3, Math.abs(dz) * (W + 0.3) + Math.abs(nz) * 0.28).translate(x, Y, z)));
+              const front = this.rnd() < 0.75 ? 1 : (this.rnd() * 4) | 0, back = this.rnd() < 0.5 ? 1 : (this.rnd() * 4) | 0;
+              panel(this.ads, x + nx * 0.15, Y, z + nz * 0.15, nx, nz, W, H, adUV(front));
+              panel(this.ads, x - nx * 0.15, Y, z - nz * 0.15, -nx, -nz, W, H, adUV(back));
+            }
+          }
           // камеры «Стрелка»
           if (!isDps && edgeIdx % 7 === 3) {
             const [x, z] = P(28, HALF + 0.6);
@@ -559,7 +578,7 @@ export class City {
     adSpots.forEach(([x, z, nx, nz], k) => {
       for (const s of [-2.5, 2.5]) this.propParts.push(prep(new THREE.BoxGeometry(0.25, 6, 0.25).translate(x + nz * s, CURB + 3, z + nx * s)));
       this.propParts.push(prep(new THREE.BoxGeometry(Math.abs(nz) * 8 + 0.2, 4, Math.abs(nx) * 8 + 0.2).translate(x - nx * 0.15, CURB + 7, z - nz * 0.15)));
-      panel(this.ads, x - nx * 0.04, CURB + 7, z - nz * 0.04, nx, nz, 7.8, 3.9, adUV(k % 4));
+      panel(this.ads, x - nx * 0.04, CURB + 7, z - nz * 0.04, nx, nz, 7.8, 3.9, adUV(k % 2 === 0 ? 1 : k % 4));
     });
   }
 

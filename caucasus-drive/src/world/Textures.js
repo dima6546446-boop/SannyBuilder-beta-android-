@@ -266,7 +266,7 @@ export function createTextures(aniso = 1) {
     const [c, ctx] = makeCanvas(1024, 512);
     const ads = [
       ['РЕМОНТ ЖИГУЛЕЙ', 'недорого · 8-900-107-21-07', '#ff6f00', '#1a1a1a'],
-      ['CAUCASUS DRIVE', 'гоняй · паркуйся · сдавай на права', '#0d47a1', '#ffffff'],
+      ['', '', '#2aabee', '#ffffff'], // Telegram — рисуется отдельно ниже
       ['АВТОШКОЛА «КЛАКСОН»', 'категория B · ДОСААФ', '#c62828', '#ffffff'],
       ['КУПЛЮ ВАШЕ ВЕДРО', 'в любом состоянии', '#2e7d32', '#ffffff'],
     ];
@@ -279,6 +279,24 @@ export function createTextures(aniso = 1) {
       ctx.font = 'bold 28px sans-serif'; ctx.fillText(sub, x + 256, y + 170, 480);
       ctx.strokeStyle = 'rgba(255,255,255,.6)'; ctx.lineWidth = 6; ctx.strokeRect(x + 8, y + 8, 496, 240);
     });
+    // ячейка 1 — наш Telegram-канал (билборды в городе и плакат в гараже)
+    {
+      const x = 512, y = 0;
+      const g = ctx.createLinearGradient(x, y, x + 512, y + 256); g.addColorStop(0, '#2aabee'); g.addColorStop(1, '#1565c0');
+      ctx.fillStyle = g; ctx.fillRect(x, y, 512, 256);
+      // круг с бумажным самолётиком
+      ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x + 100, y + 128, 74, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#2aabee';
+      ctx.beginPath(); ctx.moveTo(x + 52, y + 124); ctx.lineTo(x + 150, y + 84); ctx.lineTo(x + 132, y + 172); ctx.lineTo(x + 104, y + 148); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#c8e6fa';
+      ctx.beginPath(); ctx.moveTo(x + 92, y + 140); ctx.lineTo(x + 150, y + 84); ctx.lineTo(x + 98, y + 166); ctx.closePath(); ctx.fill();
+      ctx.textAlign = 'left'; ctx.textBaseline = 'middle'; ctx.fillStyle = '#ffffff';
+      ctx.font = 'italic 900 30px sans-serif'; ctx.fillText('CAUCASUS DRIVE', x + 196, y + 70, 300);
+      ctx.font = 'bold 22px sans-serif'; ctx.fillStyle = '#e3f2fd'; ctx.fillText('новости · обновления · APK', x + 196, y + 106, 300);
+      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 34px sans-serif'; ctx.fillText('t.me/caucasusdrive', x + 196, y + 160, 300);
+      ctx.fillStyle = '#ffeb3b'; ctx.font = 'bold 24px sans-serif'; ctx.fillText('ПОДПИШИСЬ!', x + 196, y + 204, 300);
+      ctx.strokeStyle = 'rgba(255,255,255,.7)'; ctx.lineWidth = 6; ctx.strokeRect(x + 8, y + 8, 496, 240);
+    }
     T.ads = toTexture(c, { repeat: false, aniso });
   }
 

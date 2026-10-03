@@ -29,6 +29,14 @@ function carStats(def) {
  * DOM-меню. Экраны: главное, уровни, гараж (покупка/тюнинг), настройки, пауза, результат.
  * Фоном служит 3D-гараж (GarageScene).
  */
+export const TELEGRAM_URL = 'https://t.me/caucasusdrive';
+
+/** Внешняя ссылка: в APK её перехватывает MainActivity и открывает Telegram/браузер. */
+function openLink(url) {
+  if (/; wv\)/.test(navigator.userAgent)) location.href = url;
+  else window.open(url, '_blank', 'noopener');
+}
+
 export class Menus {
   constructor(app) {
     this.app = app;
@@ -76,8 +84,9 @@ export class Menus {
       </div>
       <div class="main-foot">
         <div>Автозаводский район · ${CAR_BY_ID[s.current].name} ${CAR_BY_ID[s.current].nick}</div>
-        <div class="links"><div class="linkbtn" data-go="help">Как играть</div><div class="linkbtn" data-go="settings">Настройки</div></div>
+        <div class="links"><div class="linkbtn tg" id="tg-link">✈ Наш Telegram</div><div class="linkbtn" data-go="help">Как играть</div><div class="linkbtn" data-go="settings">Настройки</div></div>
       </div>`);
+    el.querySelector('#tg-link').addEventListener('click', () => openLink(TELEGRAM_URL));
     el.querySelectorAll('[data-act]').forEach((t) => t.addEventListener('click', () => {
       this.app.audio.click();
       const a = t.dataset.act;

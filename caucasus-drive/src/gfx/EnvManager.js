@@ -3,7 +3,7 @@ import * as THREE from 'three';
 /**
  * Окружение для PBR-отражений (краска, хром, стёкла, асфальт на «Высоком»):
  * PMREM из того же шейдерного неба, что и в сцене — отражения меняются вместе
- * со временем суток. Перегенерация редкая (при смене времени на ~20 игровых минут).
+ * со временем суток. Перегенерация редкая (при смене времени на ~1,5 игровых часа).
  */
 export class EnvManager {
   constructor(renderer, skyMaterial, groundColor) {
@@ -30,7 +30,7 @@ export class EnvManager {
   }
 
   update(time, groundColor, night, force = false) {
-    const key = Math.round(time * 3); // шаг 20 игровых минут
+    const key = Math.round(time / 1.5); // шаг 1,5 игровых часа (~1 мин): PMREM дорогой, на телефоне — рывок
     if (!force && key === this.lastKey) return this.texture;
     this.lastKey = key;
     if (groundColor) this.groundMat.color.copy(groundColor).multiplyScalar(0.5);

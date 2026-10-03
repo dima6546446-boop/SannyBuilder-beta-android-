@@ -284,13 +284,19 @@ export function buildInterior(def, { driver = true } = {}) {
   const W2 = A.W / 2;
   const belt = (z) => interp(A.belt, z);
   const roofAt = (z) => interp(A.top, z);
-  const floorY = A.sill + 0.06;
+  const floorY = A.floor + 0.12;
   const hwB = W2 - 0.085;                 // внутренняя полуширина на уровне окон
   const hwR = W2 - A.tumble - 0.07;       // под крышей
   const zDashF = A.zW0 + 0.04;
   const zDash = A.zW0 - st.depth;         // задняя (к водителю) плоскость торпедо
   const yDashTop = belt(A.zW0) + (st.dash === 'block' || st.dash === 'angular' ? 0.03 : 0.0);
-  const Hz = zDash - 0.68, Hy = floorY + (key === 'niva' ? 0.24 : 0.2);  // H-точка водителя
+  // потолок (по самой низкой точке крыши над салоном)
+  const zr0 = A.zW1 - 0.03, zr1 = A.zB1 + 0.03;
+  let roofMin = 9; for (let z = zr1; z <= zr0; z += 0.1) roofMin = Math.min(roofMin, roofAt(z));
+  const ceiling = roofMin - 0.055;
+  // H-точка водителя: посадка такая, чтобы над глазами оставалось ~20 см до потолка
+  const Hz = zDash - 0.68;
+  const Hy = Math.min(Math.max(ceiling - 0.95, floorY + 0.12), floorY + (key === 'niva' ? 0.26 : 0.22));
   const DX = 0.36;
   const trim = st.trim, dark = 0x121212, chrome = 0xb8bcc0;
 
@@ -440,8 +446,6 @@ export function buildInterior(def, { driver = true } = {}) {
     P.box(0.02, 0.12, 0.5, 0x161616, sx * (W2 - 0.08), floorY + 0.12, Hz + 0.3);
   }
   // потолок
-  const zr0 = A.zW1 - 0.03, zr1 = A.zB1 + 0.03;
-  let roofMin = 9; for (let z = zr1; z <= zr0; z += 0.1) roofMin = Math.min(roofMin, roofAt(z));
   P.box(hwR * 2, 0.02, zr0 - zr1, 0xc9c4b8, 0, roofMin - 0.045, (zr0 + zr1) / 2);
   P.box(0.12, 0.02, 0.06, 0xeeeeee, 0, roofMin - 0.058, (zr0 + zr1) / 2);                                  // плафон
   // козырьки и зеркало
@@ -530,7 +534,7 @@ export function buildInterior(def, { driver = true } = {}) {
     drv = buildCharacter(OUTFITS.player, { shadows: false });
     drv.root.position.set(DX, Hy - 0.98 + 0.04, Hz - 0.04);
     const B = drv.bones;
-    B.spine.rotation.x = -0.2; B.chest.rotation.x = 0.02; B.neck.rotation.x = 0.1; B.head.rotation.x = 0.08;
+    B.spine.rotation.x = -0.24; B.chest.rotation.x = 0.02; B.neck.rotation.x = 0.1; B.head.rotation.x = 0.08;
     for (const s of ['L', 'R']) {
       const sx = s === 'L' ? 1 : -1;
       B['thigh' + s].rotation.set(-1.42, 0, sx * 0.1);
@@ -546,7 +550,7 @@ export function buildInterior(def, { driver = true } = {}) {
     group.updateMatrixWorld(true);
     const inv = new THREE.Matrix4().copy(group.matrixWorld).invert();
     const hp = drv.bones.head.getWorldPosition(new THREE.Vector3()).applyMatrix4(inv);
-    eye.set(DX - 0.035, hp.y + 0.14, hp.z + 0.09);
+    eye.set(DX - 0.035, hp.y + 0.11, hp.z + 0.09);
   }
   const _t = new THREE.Vector3();
   const state = { steerA: 0 };

@@ -14,7 +14,7 @@
 export const QUALITY_PRESETS = {
   low: {
     name: 'low', label: 'Низкое',
-    renderHeight: 600, minRenderHeight: 420,
+    renderHeight: 540, minRenderHeight: 300,
     antialias: true, precision: 'highp',
     shadows: false, shadowMapSize: 512, shadowUpdateEvery: 0, shadowRange: 30,
     trafficCount: 10, drawDistance: 220, carLodDistance: 45,
@@ -25,7 +25,7 @@ export const QUALITY_PRESETS = {
   },
   medium: {
     name: 'medium', label: 'Среднее',
-    renderHeight: 800, minRenderHeight: 540,
+    renderHeight: 680, minRenderHeight: 320,
     antialias: true, precision: 'highp',
     shadows: true, shadowMapSize: 1024, shadowUpdateEvery: 2, shadowRange: 40,
     trafficCount: 18, drawDistance: 320, carLodDistance: 70,
@@ -36,7 +36,7 @@ export const QUALITY_PRESETS = {
   },
   high: {
     name: 'high', label: 'Высокое',
-    renderHeight: 1080, minRenderHeight: 600,
+    renderHeight: 860, minRenderHeight: 340,
     antialias: true, precision: 'highp',
     shadows: true, shadowMapSize: 2048, shadowUpdateEvery: 1, shadowRange: 55,
     trafficCount: 28, drawDistance: 450, carLodDistance: 100,
@@ -49,12 +49,13 @@ export const QUALITY_PRESETS = {
 
 /**
  * pixelRatio рендера, при котором короткая сторона холста ≈ targetHeight физических пикселей.
- * Никогда не выше devicePixelRatio (нативное разрешение) и не ниже 1 CSS-пикселя.
+ * Никогда не выше devicePixelRatio (нативное разрешение) и не ниже 0.75 CSS-пикселя
+ * (так низко регулятор опускается только на очень слабых GPU).
  */
 export function pixelRatioFor(targetHeight) {
   const dpr = window.devicePixelRatio || 1;
   const cssShort = Math.max(1, Math.min(window.innerWidth, window.innerHeight));
-  return Math.min(dpr, Math.max(1, targetHeight / cssShort));
+  return Math.min(dpr, Math.max(0.75, targetHeight / cssShort));
 }
 
 export const STORAGE_KEY = 'caucasusdrive.quality';

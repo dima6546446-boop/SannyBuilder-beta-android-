@@ -1,6 +1,8 @@
 package com.caucasusdrive.game
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
 import android.graphics.Color
 import android.os.Bundle
 import android.view.View
@@ -61,6 +63,14 @@ class MainActivity : ComponentActivity() {
             webViewClient = object : WebViewClientCompat() {
                 override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? =
                     assetLoader.shouldInterceptRequest(request.url)
+
+                // внешние ссылки (Telegram-канал и т.п.) — в приложении Telegram / браузере, а не в игре
+                override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                    val url = request.url
+                    if (url.host == "appassets.androidplatform.net") return false
+                    runCatching { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url.toString())).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                    return true
+                }
             }
             webChromeClient = WebChromeClient()
         }

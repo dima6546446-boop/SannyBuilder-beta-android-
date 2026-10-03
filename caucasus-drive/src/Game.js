@@ -130,7 +130,7 @@ export class Game {
     this.postfx = q.bloom ? new PostFX(renderer, scene, this.camera) : null;
     this.base = {
       shadowUpdateEvery: q.shadowUpdateEvery, shadowMapSize: q.shadowMapSize,
-      carLodDistance: q.carLodDistance, treeLodDistance: q.treeLodDistance,
+      carLodDistance: q.carLodDistance, treeLodDistance: q.treeLodDistance, shadows: q.shadows,
       cloudAmt: this.dayNight.skyUniforms.cloudAmt.value,
     };
     this.parkedR = 160;
@@ -311,40 +311,38 @@ export class Game {
     this.postfx?.setSize(w, h);
   }
 
-  /** Ступеней деградации эффектов у регулятора качества (см. PerfMonitor). */
-  get degradeLevels() { return 4; }
 
   /**
-   * Ступень деградации k (0 — пресет как есть). Всё переключается без перекомпиляции шейдеров,
-   * поэтому регулятор может свободно ходить вверх-вниз прямо во время езды.
+   * Уровень эффектов k (0 — пресет как есть), см. PerfMonitor:
+   *  1 — без bloom и облаков, тени через кадр;
+   *  2 — тени только от зданий, карта ≤1024, реже; меньше прохожих и машин во дворах;
+   *  3 — тени выключены (одна перекомпиляция шейдеров), меньше трафика, LOD ближе.
    */
   setDegrade(k) {
     if (this.degrade === k) return;
     this.degrade = k;
     const q = this.q, b = this.base;
-    // 1: без bloom, тени через кадр
     this.bloomOn = k < 1;
-    q.shadowUpdateEvery = b.shadowUpdateEvery && (k >= 4 ? 4 : k >= 3 ? 3 : k >= 1 ? Math.max(b.shadowUpdateEvery, 2) : b.shadowUpdateEvery);
-    // 2: деревья и трафик не отбрасывают тени, меньше припаркованных машин вокруг
+    this.dayNight.skyUniforms.cloudAmt.value = k >= 1 ? 0 : b.cloudAmt;
+    q.shadowUpdateEvery = b.shadowUpdateEvery && (k >= 2 ? 3 : k >= 1 ? Math.max(b.shadowUpdateEvery, 2) : b.shadowUpdateEvery);
     const cast = k < 2;
     for (const im of [this.trees.trunks, this.trees.crowns]) im.castShadow = cast && im.userData.cast;
     for (const m of this.instancer.meshes) m.lod0.castShadow = cast && m.lod0.userData.cast;
     this.parkedR = k >= 2 ? 110 : 160;
-    // 3: меньше трафика, LOD ближе, без облаков (ветка в шейдере неба не считается)
-    this.traffic.density = k >= 3 ? 0.65 : 1;
-    if (this.crowd) this.crowd.density = k >= 3 ? 0.5 : 1;
-    q.carLodDistance = b.carLodDistance * (k >= 3 ? 0.65 : 1);
-    q.treeLodDistance = b.treeLodDistance * (k >= 3 ? 0.6 : 1);
-    this.dayNight.skyUniforms.cloudAmt.value = k >= 3 ? 0 : b.cloudAmt;
-    // 4: карта теней вдвое меньше
-    const size = k >= 4 ? Math.min(b.shadowMapSize, 1024) : b.shadowMapSize;
-    const sh = this.dayNight.sun.shadow;
+    if (this.crowd) this.crowd.density = k >= 2 ? 0.5 : 1;
+    const size = k >= 2 ? Math.min(b.shadowMapSize, 1024) : b.shadowMapSize;
+    const sun = this.dayNight.sun, sh = sun.shadow;
     if (q.shadows && sh.mapSize.x !== size) {
       sh.mapSize.set(size, size);
       sh.map?.dispose();
       sh.map = null;
       q.shadowMapSize = size;
     }
+    // 3: тени целиком — и проход в карту теней, и выборка в каждом пикселе
+    if (b.shadows) sun.castShadow = k < 3;
+    this.traffic.density = k >= 3 ? 0.65 : 1;
+    q.carLodDistance = b.carLodDistance * (k >= 3 ? 0.65 : 1);
+    q.treeLodDistance = b.treeLodDistance * (k >= 3 ? 0.6 : 1);
     this.renderer.shadowMap.needsUpdate = true;
   }
 
@@ -430,7 +428,7 @@ export class Game {
     this.trees.update(dt, this.camera.position);
     this.cones.update(dt);
     this.smoke.update(dt, this.camera, this.renderer, 1 - night * 0.7);
-    if ((this.frame & 63) === 0) this._updateEnv(false);
+    if ((this.frame & 255) === 0 && this.degrade < 3) this._updateEnv(false);
     this.postfx?.setNight(night);
 
     const every = this.q.shadowUpdateEvery;
