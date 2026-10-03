@@ -403,25 +403,6 @@ def build_details(S, surf, lod):
 
     if not hi:
         return P
-    # ---------------- салон (привязан к оранжерее: передние кресла за лобовым, диван перед задним стеклом)
-    c0z = S['zW0']
-    dashZ = c0z - 0.28
-    cw = W - 2 * S['tumble'] - 0.16
-    by = interp(S['belt'], dashZ)
-    roof = max(y for _, y in S['top'])
-    P.box(cw, 0.22, 0.38, 'interior', frame((0, by - 0.1, dashZ), (0, 0, 1)), bevel=0.04)
-    P.box(cw * 0.95, 0.03, 0.2, 'black', frame((0, by + 0.02, dashZ - 0.05), (0, 0, 1)), bevel=0.01)
-    P.torus(0.19, 0.022, 'black', frame((0.36, by + 0.01, dashZ - 0.32), (0, 0.35, 1)))
-    P.cyl(0.03, 0.3, 'black', frame((0.36, by - 0.05, dashZ - 0.17), (0, 0.35, 1)), seg=8)
-    seatZ = dashZ - 0.9
-    backTop = min(roof - 0.2, by + 0.3)
-    for s in (1, -1):
-        P.box(0.5, 0.14, 0.5, 'interior', frame((s * 0.36, by - 0.4, seatZ), (0, 0, 1)), bevel=0.04)
-        P.box(0.5, backTop - (by - 0.36), 0.13, 'interior', frame((s * 0.36, (backTop + by - 0.36) / 2, seatZ - 0.27), (0, 0.12, 1)), bevel=0.05)
-        P.box(0.27, 0.15, 0.1, 'interior', frame((s * 0.36, backTop + 0.06, seatZ - 0.3), (0, 0, 1)), bevel=0.04)
-    rz = max(S['zB0'] + 0.55, seatZ - 0.95)
-    if rz < seatZ - 0.55:
-        P.box(cw * 0.92, 0.14, 0.48, 'interior', frame((0, by - 0.4, rz + 0.1), (0, 0, 1)), bevel=0.04)
-        P.box(cw * 0.92, backTop - 0.05 - (by - 0.36), 0.13, 'interior', frame((0, (backTop - 0.05 + by - 0.36) / 2, rz - 0.18), (0, 0.12, 1)), bevel=0.05)
-    P.cyl(0.012, 0.3, 'chrome', frame((0, by - 0.27, dashZ - 0.55), (0, 1, 0.3), up=(0, 0, 1)), seg=6)
+    # салон (торпедо, приборы, руль, кресла, обшивка, водитель) строится в игре по модели —
+    # src/vehicles/Interior.js, габариты: tools/blender/export_interior.py → interiorAnchors.json
     return P

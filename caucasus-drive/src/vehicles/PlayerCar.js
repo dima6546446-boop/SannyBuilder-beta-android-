@@ -72,7 +72,9 @@ export class PlayerCar {
     }
     if (this.mats) Object.values(this.mats).forEach((m) => m.dispose());
     this.mats = createCarMaterials({ color: tv.color, envMap: null, T: this.T, quality: this.q, tint: tv.tint });
-    this.model = buildPlayerModel(def, this.mats, tv.wheels);
+    this.model = buildPlayerModel(def, this.mats, tv.wheels, { driver: true });
+    this.interior = this.model.interior;
+    this.interior.setDriverVisible(this.driverVisible !== false);
     this.root.add(this.model.root);
     this.body = this.model.body;
     this.wheels = this.model.wheels;
@@ -94,6 +96,9 @@ export class PlayerCar {
     this.half = { front: d.front + 0.05, rear: d.rear - 0.05, w: d.W / 2 + 0.02 };
     this.setTaxiSign(!!this.taxiSign);
   }
+
+  /** Водитель в салоне (прячется, когда игрок вышел пешком). */
+  setDriverVisible(v) { this.driverVisible = v; this.interior?.setDriverVisible(v); }
 
   setColor(hex) { this.mats.paint.color.setHex(hex); }
 
@@ -192,6 +197,12 @@ export class PlayerCar {
       if (driven && p.wheelSpin > 0.1 && p.load > 0.5) w.spin.rotation.x += 0.6 * Math.sign(p.vLong || 1);
       if (w.front) w.pivot.rotation.y = -p.steer;
     }
+
+    // --- салон: руль, стрелки приборов, руки водителя
+    this.interior?.update(dt, {
+      steer: p.steer / (p.spec.maxSteer || 0.6), kmh: Math.abs(p.speed) * 3.6, rpm: p.rpm,
+      fuel: p.fuel / p.spec.tank, temp: Math.min(1, 0.25 + this.time / 240) * 0.5, lights: this.lightsOn, time: world.clock ?? 12, daylight: 1 - (world.night ?? 0),
+    });
 
     // --- свет
     const night = world.night;

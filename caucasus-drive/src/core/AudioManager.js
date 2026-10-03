@@ -288,6 +288,24 @@ export class AudioManager {
     this._burst(900, 0.6, 0.03, 0.7, 'bandpass', 0.05);
   }
 
+  /** Укус: глухой хруст (чипсы/семечки — звонче). */
+  bite(crunchy = false) {
+    for (let i = 0; i < (crunchy ? 4 : 2); i++) this._burst(crunchy ? 3200 : 1200, crunchy ? 3 : 1.2, crunchy ? 0.07 : 0.09, 0.05, 'bandpass', i * 0.07 + Math.random() * 0.03);
+  }
+
+  /** Глоток: низкий «бульк». */
+  gulp() {
+    if (!this.enabled) return;
+    const ctx = this.ctx;
+    for (let i = 0; i < 2; i++) {
+      const t = ctx.currentTime + i * 0.28;
+      const o = ctx.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(220, t); o.frequency.exponentialRampToValueAtTime(90, t + 0.12);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.18, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+      o.connect(g).connect(this.master); o.start(t); o.stop(t + 0.16);
+    }
+  }
+
   exhale() { this._burst(700, 0.5, 0.05, 0.6, 'bandpass'); }
 
   /** Свист «в два пальца»: резкий подъём, пауза, второй подъём с завитком. */

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { buildInterior } from './Interior.js';
 import { prep, merge } from '../utils/geometry.js';
 import { ModelLibrary, meshesFromLod } from './ModelLibrary.js';
 
@@ -511,7 +512,7 @@ export function createCarMaterials({ color, envMap, T, quality, tint = 0.6 }) {
     : Std({ color, metalness: 0.4, roughness: 0.3, envMapIntensity: 1 });
   const tg = quality.transparentGlass;
   const mk = (hex, e = 0x000000) => Std({ color: hex, emissive: e, emissiveIntensity: 0, roughness: 0.25, metalness: 0.1 });
-  return {
+  const mats = {
     paint,
     chrome: Std({ color: 0xe6e6e6, metalness: 1, roughness: 0.14, envMapIntensity: 1.3 }),
     glass: Std({
@@ -540,10 +541,14 @@ export function createCarMaterials({ color, envMap, T, quality, tint = 0.6 }) {
     policeStripe: new THREE.MeshLambertMaterial({ color: 0x1b3c9e }),
     taxiSign: mk(0xffd000, 0xffc000),
   };
+  // кузов виден и изнутри (вид из салона): крыша, стойки, двери не «просвечивают»
+  for (const k of ['paint', 'black', 'chrome', 'trim', 'under', 'grille', 'grilleDark', 'rubber', 'plate']) if (mats[k]) mats[k].side = THREE.DoubleSide;
+  return mats;
+
 }
 
 /** Модель игрока: кузов слит по материалам, колёса — отдельные группы. */
-export function buildPlayerModel(def, mats, wheelStyle = 'default') {
+export function buildPlayerModel(def, mats, wheelStyle = 'default', { driver = false } = {}) {
   const root = new THREE.Group();
   root.name = `Player_${def.id}`;
   const body = new THREE.Group();
@@ -567,7 +572,10 @@ export function buildPlayerModel(def, mats, wheelStyle = 'default') {
   }
   const wheels = buildWheels(def, mats, wheelStyle);
   for (const w of wheels) root.add(w.pivot);
-  return { root, body, wheels };
+  // салон своей модели (торпедо, приборы, руль, кресла) + водитель для машины игрока
+  const interior = buildInterior(def, { driver });
+  body.add(interior.group);
+  return { root, body, wheels, interior };
 }
 
 export function buildWheels(def, mats, style) {

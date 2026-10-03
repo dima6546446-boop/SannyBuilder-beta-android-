@@ -143,6 +143,7 @@ export class Input {
     tap('btn-sit', 'sit');
     tap('btn-smoke', 'smoke');
     tap('btn-whistle', 'whistle');
+    tap('btn-shop', 'shop');
 
     // джойстик пешехода
     const stick = $('stick'), st = this._stick;
@@ -198,7 +199,7 @@ export class Input {
       this._keys.add(e.code);
       if (e.code === 'KeyG') this.emit('door');
       if (this.onFoot) {
-        const foot = { Space: 'jump', KeyB: 'sit', KeyK: 'smoke', KeyR: 'whistle', KeyC: 'camera', Escape: 'pause', KeyP: 'pause' };
+        const foot = { Space: 'jump', KeyB: 'sit', KeyK: 'smoke', KeyR: 'whistle', KeyC: 'camera', Escape: 'pause', KeyP: 'pause', KeyF: 'shop', Enter: 'shop' };
         if (foot[e.code]) this.emit(foot[e.code]);
         return;
       }

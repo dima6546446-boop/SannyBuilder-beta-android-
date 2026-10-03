@@ -83,10 +83,37 @@ export class Menus {
       const a = t.dataset.act;
       if (a === 'levels') this.show('levels');
       if (a === 'garage') this.show('garage');
-      if (a === 'free') this.app.startFree();
+      if (a === 'free') this.show('freeSetup');
       if (a === 'exam') this.app.startExam();
     }));
     this.app.garage.setFraming(0);
+  }
+
+  // ---------------------------------------------------------------- свободная езда: выбор штрафов
+  _freeSetup() {
+    const on = this.save.data.settings.fines !== false;
+    const el = this._screen(`
+      <div class="topbar"><div class="back" data-go="main">‹</div><div class="h1">Свободная езда</div><div></div></div>
+      <div class="choose">
+        <div class="choice ${on ? 'sel' : ''}" data-fines="1">
+          <div class="ci">🚓</div>
+          <div class="ct">С ШТРАФАМИ</div>
+          <div class="cs">Камеры «Стрелка», посты ДПС и красный свет — за кривую езду снимают рубли</div>
+        </div>
+        <div class="choice ${!on ? 'sel' : ''}" data-fines="0">
+          <div class="ci">😎</div>
+          <div class="ct">БЕЗ ШТРАФОВ</div>
+          <div class="cs">Катайся как хочешь: камеры и ДПС не трогают, деньги никто не снимет</div>
+        </div>
+      </div>
+      <div class="help" style="text-align:center;margin:10px auto 0">Такси, АЗС, «шашки» и прогулки пешком работают в обоих вариантах.</div>`, 'dim');
+    el.querySelectorAll('[data-fines]').forEach((b) => b.addEventListener('click', () => {
+      this.app.audio.click();
+      const fines = b.dataset.fines === '1';
+      this.save.data.settings.fines = fines;
+      this.save.commit();
+      this.app.startFree(fines);
+    }));
   }
 
   // ---------------------------------------------------------------- уровни

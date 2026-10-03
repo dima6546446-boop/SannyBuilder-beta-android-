@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { buildCharacter, LIMB } from './CharacterModel.js';
+import { buildCharacter, solveArmIK } from './CharacterModel.js';
+import { ITEMS, buildItemMesh } from '../world/Shops.js';
 import { CollisionWorld } from '../core/CollisionWorld.js';
 import { damp, dampAngle, clamp, wrapAngle } from '../utils/math.js';
 
@@ -85,6 +86,7 @@ export class Walker {
 
   hide() {
     this.stopSmoking(true);
+    this._dropFood();
     this.root.visible = false;
   }
 
@@ -169,7 +171,7 @@ export class Walker {
   whistleNow() {
     if (this.whistle.t > 0 || this.state === 'down') return;
     this.whistle.t = 1.5;
-    this.whistle.hand = this.smoke.on ? 'L' : 'R';
+    this.whistle.hand = this.smoke.on ? (this.food ? null : 'L') : 'R';
     this.whistle.sounded = false;
   }
 
@@ -250,6 +252,7 @@ export class Walker {
     this._animate(dt);
     this._smoke(dt);
     this._whistle(dt);
+    this._eat(dt);
   }
 
   // ---------------------------------------------------------------- коллизии
@@ -276,6 +279,12 @@ export class Walker {
       if (hit && c.speed > 2.5 && this.state !== 'down' && this.t > this.immuneUntil) this._knockDown(c);
     }
     for (const d of g.dps) this._obb(d.x, d.z, d.heading, 0.85, -2.15, 2.15, push);
+    // прохожие
+    for (const n of g.crowd?.npcs || []) {
+      if (!n.active) continue;
+      const dx = this.pos.x - n.x, dz = this.pos.z - n.z, d = Math.hypot(dx, dz);
+      if (d < R + 0.26 && d > 1e-4) push(dx / d, dz / d, (R + 0.26 - d) * 0.5, null);
+    }
   }
 
   /** Пересечение с повёрнутым прямоугольником машины; выталкивание через push. */
@@ -389,6 +398,11 @@ export class Walker {
       rate = 8;
     }
 
+    // еда/напиток в левой руке — рука согнута, предмет перед грудью
+    if (this.food && this.state !== 'down') {
+      T.forearmL[0] = Math.min(T.forearmL[0], -1.35);
+      if (this.state === 'walk') T.upperArmL[0] *= 0.3;
+    }
     // курим стоя/в ходьбе: правая рука согнута с сигаретой у пояса
     if (this.smoke.on && this.state !== 'down') {
       T.forearmR[0] = Math.min(T.forearmR[0], -1.25);
@@ -410,7 +424,8 @@ export class Walker {
     const whistleHand = W.t > 0.15 && W.t < 1.35 ? W.hand : null;
     const sitHands = this.state === 'sit';
     const wR = toMouthR || whistleHand === 'R' ? 1 : sitHands ? 0.85 : 0;
-    const wL = whistleHand === 'L' ? 1 : sitHands ? 0.85 : 0;
+    const biteL = this.food && this.food.stage === 'bite' && this.food.t > 0.1 && this.food.t < 0.85;
+    const wL = whistleHand === 'L' || biteL ? 1 : sitHands && !this.food ? 0.85 : 0;
     this.ikR = damp(this.ikR, wR, 9, dt);
     this.ikL = damp(this.ikL, wL, 9, dt);
     if (this.ikR > 0.01) {
@@ -421,6 +436,7 @@ export class Walker {
     }
     if (this.ikL > 0.01) {
       if (whistleHand === 'L') this._mouthTarget(_v2, 0.05, 0.075);
+      else if (biteL) this._mouthTarget(_v2, 0.07, ITEMS[this.food.kind].drink ? 0.15 : 0.12);
       else this._kneeTarget(_v2, 'R', 'L');
       this._armIK('L', _v2, this.ikL);
     }
@@ -443,32 +459,7 @@ export class Walker {
     return out;
   }
 
-  /** Двухзвенная IK: плечо → локоть → запястье в точку target (мир), локоть вниз и наружу. */
-  _armIK(side, target, w) {
-    const B = this.bones, up = B['upperArm' + side], fo = B['forearm' + side];
-    const chest = B.chest;
-    _m.copy(chest.matrixWorld).invert();
-    const T = _v.copy(target).applyMatrix4(_m);         // цель в системе груди
-    const S = up.position;
-    const d = T.sub(S);
-    const L1 = LIMB.upperArm, L2 = LIMB.forearm;
-    const dist = clamp(d.length(), 0.08, L1 + L2 - 0.002);
-    const dir = d.normalize();
-    const a = (L1 * L1 - L2 * L2 + dist * dist) / (2 * dist);
-    const h = Math.sqrt(Math.max(0, L1 * L1 - a * a));
-    const sx = side === 'L' ? 1 : -1;
-    const pole = _v2.set(sx * 0.7, -1, -0.15);
-    pole.addScaledVector(dir, -pole.dot(dir)).normalize();
-    const elbow = _v3.copy(dir).multiplyScalar(a).addScaledVector(pole, h);   // относительно плеча
-    const hand = dir.multiplyScalar(dist);                                   // относительно плеча
-    const u = elbow.clone().normalize();
-    _q.setFromUnitVectors(DOWN, u);
-    up.quaternion.slerp(_q, w);
-    // предплечье в системе плеча
-    const f = hand.sub(elbow).normalize().applyQuaternion(_q2.copy(up.quaternion).invert());
-    _q.setFromUnitVectors(DOWN, f);
-    fo.quaternion.slerp(_q, w);
-  }
+  _armIK(side, target, w) { solveArmIK(this.bones, side, target, w); }
 
   // ---------------------------------------------------------------- курение
   _smoke(dt) {
@@ -514,6 +505,47 @@ export class Walker {
     }
   }
 
+  // ---------------------------------------------------------------- еда из магазина
+  /** Взять в левую руку и съесть/выпить (несколько укусов/глотков). Чисто визуально. */
+  eat(kind) {
+    this._dropFood();
+    this._items ||= {};
+    const mesh = this._items[kind] ||= buildItemMesh(kind);
+    mesh.scale.set(1, 1, 1);
+    mesh.position.set(0.01, -0.095, 0.04);
+    mesh.rotation.set(Math.PI, 0, 0);
+    this.bones.handL.add(mesh);
+    this.food = { kind, mesh, stage: 'hold', t: 0, bites: 0 };
+  }
+
+  _dropFood() {
+    if (!this.food) return;
+    this.bones.handL.remove(this.food.mesh);
+    this.food = null;
+  }
+
+  _eat(dt) {
+    const F = this.food;
+    if (!F) return;
+    F.t += dt;
+    const it = ITEMS[F.kind];
+    if (F.stage === 'hold' && F.t > (F.bites ? 2.2 : 0.9) && this.whistle.t <= 0) { F.stage = 'bite'; F.t = 0; F.sounded = false; }
+    if (F.stage === 'bite') {
+      if (!F.sounded && F.t > 0.45) {
+        F.sounded = true;
+        if (it.drink) this.g.audio.gulp?.(); else this.g.audio.bite?.(F.kind === 'chips' || F.kind === 'seeds');
+        if (!it.drink) F.mesh.scale.y *= 0.8;
+      }
+      if (F.t > 1.0) {
+        F.bites++; F.stage = 'hold'; F.t = 0;
+        if (F.bites >= it.bites) {
+          this._dropFood();
+          this.g.hud.toast(`«${this.g.shops?.yum() || 'Вкусно!'}»`, 'good', 1.8);
+        }
+      }
+    }
+  }
+
   // ---------------------------------------------------------------- свист
   _whistle(dt) {
     const W = this.whistle;
@@ -522,6 +554,7 @@ export class Walker {
     if (!W.sounded && W.t < 1.2) {
       W.sounded = true;
       this.g.audio.whistle?.();
+      this.g.crowd?.onWhistle(this.pos.x, this.pos.z);
       // машины рядом отвечают гудком
       const g = this.g;
       for (const c of g.traffic.cars) {

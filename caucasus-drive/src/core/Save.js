@@ -10,7 +10,7 @@ const DEFAULT = () => ({
   tuning: {},          // id → {color, wheels, height, tint, engine, tires}
   stars: {},           // levelIndex → 1..3
   license: false,
-  settings: { controls: 'wheel', gearbox: 'auto', quality: null, volume: 0.8, cameraMode: 0, assist: true },
+  settings: { controls: 'wheel', gearbox: 'auto', quality: null, volume: 0.8, cameraMode: 0, assist: true, fines: true },
   stats: { km: 0, fines: 0, taxi: 0, bestCombo: 0, crashes: 0 },
 });
 

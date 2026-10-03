@@ -29,11 +29,15 @@ class App {
   }
 
   async boot() {
+    const intro = document.getElementById('intro');
+    if (params.has('autostart')) intro.remove();
+    const introBar = intro?.querySelector('.intro-bar i');
     this.menus = new Menus(this);
     this.menus._loading('ВЫГОНЯЕМ МАШИНЫ ИЗ ГАРАЖА…');
     await ModelLibrary.load(allRenderModels().map((m) => m.key), (p) => {
       const el = document.querySelector('.loading small');
       if (el) el.textContent = `ЗАГРУЗКА МОДЕЛЕЙ ${Math.round(p * 100)}%`;
+      if (introBar) introBar.style.width = `${Math.round(p * 70)}%`;
     });
     this.menus._loading('СТРОИМ АВТОЗАВОДСКИЙ РАЙОН…');
     await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 30)));
@@ -58,11 +62,17 @@ class App {
     window.__onNativeResume = () => { if (this.state === 'play' && !this.paused) this.audio.resume(); };
 
     this.game.renderer.setAnimationLoop((t) => this.frame(t));
-    if (params.has('free')) this.startFree();
+    if (params.has('free')) this.startFree(params.has('nofines') ? false : undefined);
     else if (params.has('level')) this.startParking(+params.get('level'));
     else if (params.has('exam')) this.startExam();
     else this.menus.show('main');
     if (params.has('t')) this.game.dayNight.setTime(parseFloat(params.get('t')));
+    // заставка держится, пока название не проявится полностью, затем плавно растворяется
+    if (intro?.isConnected) {
+      if (introBar) introBar.style.width = '100%';
+      const wait = Math.max(0, 3900 - performance.now()); // от открытия страницы: название + подзаголовок успевают проявиться
+      setTimeout(() => { intro.classList.add('out'); setTimeout(() => intro.remove(), 1100); }, wait);
+    }
   }
 
   frame(now) {
@@ -81,7 +91,7 @@ class App {
   }
 
   onMenu(name) {
-    if (['main', 'garage', 'levels', 'help'].includes(name) || (name === 'settings' && !this.paused)) {
+    if (['main', 'garage', 'levels', 'help', 'freeSetup'].includes(name) || (name === 'settings' && !this.paused)) {
       this.state = 'menu';
       $('hud').classList.add('hidden');
       $('controls').classList.add('hidden');
@@ -108,7 +118,7 @@ class App {
   }
 
   startParking(i) { this.lastStart = () => this.startParking(i); this.game.setTimePreset(i % 5 === 4 ? 1 : i % 7 === 6 ? 3 : 0); this._enterPlay(new ParkingMode(this.game, i)); }
-  startFree() { this.lastStart = () => this.startFree(); this._enterPlay(new FreeRideMode(this.game)); }
+  startFree(fines = this.save.data.settings.fines !== false) { this.lastStart = () => this.startFree(fines); this._enterPlay(new FreeRideMode(this.game, { fines })); }
   startExam() { this.lastStart = () => this.startExam(); this.game.setTimePreset(0); this._enterPlay(new ExamMode(this.game)); }
   restart() { this.lastStart?.(); }
 

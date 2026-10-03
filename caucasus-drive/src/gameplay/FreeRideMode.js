@@ -19,8 +19,9 @@ const BYE = ['Спасибо, шеф! Сдачи не надо.', 'Довёз к
  * со штрафами, «шашки» (обгоны впритирку) и дрифт с комбо-множителем.
  */
 export class FreeRideMode {
-  constructor(game) {
+  constructor(game, { fines = true } = {}) {
     this.g = game;
+    this.fines = fines; // false — камеры, ДПС и нарушения ничего не снимают
     this.name = 'free';
     this.allowWalk = true; // можно выйти из машины и гулять
     this.rnd = mulberry32(Date.now() & 0xffff);
@@ -47,11 +48,13 @@ export class FreeRideMode {
     document.getElementById('btn-taxi').classList.remove('hidden');
     g.rules.reset();
     g.rules.onViolation = (v, extra) => this._violation(v, extra);
-    g.hud.toast('Свободная езда. Нажми «ТАКСИ», чтобы брать заказы', 'good', 3.5);
+    g.crowd.start();
+    g.hud.toast(`Свободная езда${this.fines ? '' : ' без штрафов'}. Нажми «ТАКСИ», чтобы брать заказы`, 'good', 3.5);
   }
 
   exit() {
     const g = this.g;
+    g.crowd.stop();
     g.rules.onViolation = null;
     this._endTaxi(true);
     this._payCombo();
@@ -68,6 +71,7 @@ export class FreeRideMode {
 
   _fine(amount, text, source) {
     const g = this.g;
+    if (!this.fines) return;
     g.save.addMoney(-amount);
     g.save.data.stats.fines += amount;
     g.save.commit();
@@ -310,6 +314,14 @@ export class FreeRideMode {
   }
 
   onContact() {}
+
+  /** Сбит прохожий (сам встанет): штраф, если штрафы включены; комбо сгорает. */
+  onPedHit() {
+    const g = this.g;
+    if (this.combo.pts > 0) { this.combo = { pts: 0, mult: 1, events: 0, timer: 0, kind: '' }; g.hud.combo(null); }
+    if (this.fines) this._fine(5000, 'ДПС: наезд на пешехода', 'dps');
+    else g.hud.toast('Пешеход! Аккуратнее, он еле увернулся', 'bad', 2.5);
+  }
 
   update(dt) {
     this._cameras(dt);

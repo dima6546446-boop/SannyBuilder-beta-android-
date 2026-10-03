@@ -55,9 +55,9 @@ function paint(geo, hex) {
   return geo;
 }
 
-const capsule = (r, len, hex, rs = 8) => paint(new THREE.CapsuleGeometry(r, len, 3, rs), hex);
+const capsule = (r, len, hex, rs = 7) => paint(new THREE.CapsuleGeometry(r, len, 2, rs), hex);
 const box = (w, h, d, hex) => paint(new THREE.BoxGeometry(w, h, d), hex);
-const sphere = (r, hex, ws = 10, hs = 8) => paint(new THREE.SphereGeometry(r, ws, hs), hex);
+const sphere = (r, hex, ws = 8, hs = 6) => paint(new THREE.SphereGeometry(r, ws, hs), hex);
 
 /** Торс-«бочка» по профилю (плечи шире талии), сплюснутый спереди-назад. */
 function torso(bottomR, topR, h, depth, hex) {
@@ -67,7 +67,7 @@ function torso(bottomR, topR, h, depth, hex) {
     const r = bottomR + (topR - bottomR) * Math.pow(t, 1.4) - Math.max(0, t - 0.86) * 0.9;
     pts.push(new THREE.Vector2(Math.max(0.02, r), t * h));
   }
-  const g = new THREE.LatheGeometry(pts, 12);
+  const g = new THREE.LatheGeometry(pts, 10);
   g.scale(1, 1, depth);
   return paint(g, hex);
 }
@@ -114,7 +114,7 @@ export function buildCharacter(outfit = OUTFITS.player, { shadows = true } = {})
   add('chest', torso(0.065, 0.06, 0.07, 1, o.suit), 0, 0.18, 0);                     // воротник-стойка
   // --- шея и голова ---
   add('neck', capsule(0.048, 0.06, o.skin), 0, 0.02, 0);
-  const head = sphere(0.108, o.skin, 14, 12); head.scale(1, 1.18, 1.08);
+  const head = sphere(0.108, o.skin, 12, 10); head.scale(1, 1.18, 1.08);
   add('head', head, 0, 0.11, 0.01);
   add('head', box(0.032, 0.055, 0.04, o.skin), 0, 0.105, 0.128, -0.15);              // нос
   for (const ex of [0.04, -0.04]) {
@@ -125,7 +125,7 @@ export function buildCharacter(outfit = OUTFITS.player, { shadows = true } = {})
   add('head', box(0.046, 0.009, 0.012, 0x8a4a44), 0, 0.06, 0.12);                   // рот
   add('head', sphere(0.025, o.skin, 6, 5), 0.108, 0.115, 0);                        // уши
   add('head', sphere(0.025, o.skin, 6, 5), -0.108, 0.115, 0);
-  const hair = sphere(0.112, o.hair, 14, 8); hair.scale(1, 1.05, 1.08);
+  const hair = sphere(0.112, o.hair, 12, 7); hair.scale(1, 1.05, 1.08);
   add('head', hair, 0, 0.13, -0.012);
   if (o.cap !== null && o.cap !== undefined) {
     const cap = paint(new THREE.SphereGeometry(0.118, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), o.cap); cap.scale(1, 0.85, 1.08);
@@ -191,4 +191,35 @@ export function buildCharacter(outfit = OUTFITS.player, { shadows = true } = {})
   const rest = {};
   for (const b of list) rest[b.name] = b.position.clone();
   return { root, body, mesh, bones, rest, cigarette: cig, cigTip: tip, mouth, ember };
+}
+
+const _ikV = new THREE.Vector3(), _ikV2 = new THREE.Vector3(), _ikV3 = new THREE.Vector3(), _ikE = new THREE.Vector3();
+const _ikM = new THREE.Matrix4(), _ikQ = new THREE.Quaternion(), _ikQ2 = new THREE.Quaternion();
+const _DOWN = new THREE.Vector3(0, -1, 0);
+
+/**
+ * Двухзвенная IK руки: плечо → локоть → запястье в точку target (мировые координаты),
+ * локоть вниз и наружу. w — вес смешивания с текущей позой (0..1).
+ * Перед вызовом матрицы костей должны быть актуальны (root.updateMatrixWorld()).
+ */
+export function solveArmIK(bones, side, target, w, pole = null) {
+  const up = bones['upperArm' + side], fo = bones['forearm' + side];
+  _ikM.copy(bones.chest.matrixWorld).invert();
+  const d = _ikV.copy(target).applyMatrix4(_ikM).sub(up.position);
+  const L1 = LIMB.upperArm, L2 = LIMB.forearm;
+  const dist = Math.min(Math.max(d.length(), 0.08), L1 + L2 - 0.002);
+  const dir = d.normalize();
+  const a = (L1 * L1 - L2 * L2 + dist * dist) / (2 * dist);
+  const h = Math.sqrt(Math.max(0, L1 * L1 - a * a));
+  const sx = side === 'L' ? 1 : -1;
+  const pv = pole ? _ikV2.set(pole[0] * sx, pole[1], pole[2]) : _ikV2.set(sx * 0.7, -1, -0.15);
+  pv.addScaledVector(dir, -pv.dot(dir)).normalize();
+  const elbow = _ikV3.copy(dir).multiplyScalar(a).addScaledVector(pv, h);
+  const hand = dir.multiplyScalar(dist);
+  _ikE.copy(elbow).normalize();
+  _ikQ.setFromUnitVectors(_DOWN, _ikE);
+  up.quaternion.slerp(_ikQ, w);
+  const f = hand.sub(elbow).normalize().applyQuaternion(_ikQ2.copy(up.quaternion).invert());
+  _ikQ.setFromUnitVectors(_DOWN, f);
+  fo.quaternion.slerp(_ikQ, w);
 }

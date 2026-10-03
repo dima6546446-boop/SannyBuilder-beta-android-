@@ -19,6 +19,8 @@ import { Smoke } from './gfx/Smoke.js';
 import { PostFX } from './gfx/PostFX.js';
 import { EnvManager } from './gfx/EnvManager.js';
 import { Walker } from './character/Walker.js';
+import { Crowd } from './character/Crowd.js';
+import { Shops } from './world/Shops.js';
 import { TargetZone, Beacon, Cones, Pedestrian } from './gfx/Markers.js';
 import { Rules } from './gameplay/Rules.js';
 import { CAR_BY_ID } from './config/cars.js';
@@ -41,7 +43,7 @@ const TIME_PRESETS = [[12, 'День'], [19.3, 'Вечер'], [23, 'Ночь'], 
  *  ├─ Trees (Instanced, 2 LOD)
  *  ├─ Car_<model>_LOD0/LOD1 (Instanced: трафик + припаркованные + препятствия), BlobShadows, Beams
  *  ├─ PlayerCar: Body (paint/chrome/glass/…), 4 колеса, SpotLight фар
- *  ├─ Walker: персонаж пешком (SkinnedMesh, 1 draw call), сигарета
+ *  ├─ Walker: персонаж пешком (SkinnedMesh, 1 draw call), сигарета; Crowd: прохожие на тротуарах
  *  ├─ GlowPoints (все лампы города одним draw call), Smoke, SkidMarks
  *  └─ Маркеры: TargetZone, Beacon, Cones, Pedestrian
  */
@@ -122,6 +124,8 @@ export class Game {
     this.input = new Input();
     this.hud = new HUD(this.city);
     this.walker = new Walker(this);
+    this.crowd = new Crowd(this);
+    this.shops = new Shops(this);
     this.onFoot = false;
     this.postfx = q.bloom ? new PostFX(renderer, scene, this.camera) : null;
     this.base = {
@@ -192,6 +196,7 @@ export class Game {
       document.getElementById('btn-smoke').classList.toggle('on', this.walker.smoke.on);
     });
     i.on('whistle', () => this.onFoot && this.walker.whistleNow());
+    i.on('shop', () => { if (this.onFoot && this.shops.near) this.shops.open(this.shops.near); });
     i.on('lights', () => {
       const m = this.player.cycleLights();
       this.hud.toast(`Фары: ${m === 'auto' ? 'авто' : m === 'on' ? 'вкл' : 'выкл'}`);
@@ -250,6 +255,8 @@ export class Game {
     const [lx, lz] = pick;
     const x = p.x + lx * c + lz * s, z = p.z - lx * s + lz * c;
     this.walker.spawn(x, z, Math.atan2(x - p.x, z - p.z));
+    this.player.setDriverVisible(false);
+    this.player.interior?.setFirstPerson(false);
     this.onFoot = true;
     this.input.setOnFoot(true);
     this.cameraRig.beginFoot(p.heading);
@@ -264,6 +271,10 @@ export class Game {
   enterCar(silent) {
     if (!this.onFoot) return;
     this.walker.hide();
+    this.shops.close();
+    document.getElementById('btn-shop').classList.add('hidden');
+    this.shops.near = null;
+    this.player.setDriverVisible(true);
     this.traffic.ped.active = false;
     this.onFoot = false;
     this.input.setOnFoot(false);
@@ -321,6 +332,7 @@ export class Game {
     this.parkedR = k >= 2 ? 110 : 160;
     // 3: меньше трафика, LOD ближе, без облаков (ветка в шейдере неба не считается)
     this.traffic.density = k >= 3 ? 0.65 : 1;
+    if (this.crowd) this.crowd.density = k >= 3 ? 0.5 : 1;
     q.carLodDistance = b.carLodDistance * (k >= 3 ? 0.65 : 1);
     q.treeLodDistance = b.treeLodDistance * (k >= 3 ? 0.6 : 1);
     this.dayNight.skyUniforms.cloudAmt.value = k >= 3 ? 0 : b.cloudAmt;
@@ -395,11 +407,14 @@ export class Game {
       colliders: [this.collision, ...extra],
       traffic: this.traffic.cars,
       night,
+      clock: this.dayNight.time,
     });
     if (foot) this.walker.update(dt, { moveX: this.input.moveX, moveY: this.input.moveY, walk: this.input.walk, camYaw: this.cameraRig.footYaw });
     this.traffic.update(dt, this.player.physics, this.camera, this.focus);
     this.rules.update(dt, this.player, this.player.surface.type);
     this.mode?.update(dt);
+    this.crowd.update(dt);
+    this.shops.update(night);
     if (foot) this.cameraRig.updateFoot(dt, this.walker, this.input.look);
     else this.cameraRig.update(dt, this.player, this.input.orbit);
     this.input.look.dx = this.input.look.dy = 0;

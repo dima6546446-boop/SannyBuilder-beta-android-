@@ -58,6 +58,7 @@ export class City {
     this.cameras = [];
     this.dpsPosts = [];
     this.busStops = [];
+    this.shopFronts = []; // входы в магазины с едой: { x, z, nx, nz, kind } (см. world/Shops.js)
     this.azs = null;
     this.group = new THREE.Group();
     this.group.name = 'World';
@@ -301,6 +302,15 @@ export class City {
       const fx = nx ? (nx > 0 ? b.maxX : b.minX) + nx * 0.06 : (b.minX + b.maxX) / 2 + (rnd() - 0.5) * 12;
       const fz = nz ? (nz > 0 ? b.maxZ : b.minZ) + nz * 0.06 : (b.minZ + b.maxZ) / 2 + (rnd() - 0.5) * 12;
       panel(this.shopSigns, fx, CURB + 3.4, fz, nx, nz, 7, 0.9, shopUV(i));
+      // дверь и витрины под вывеской
+      const door = new THREE.Color(0x4a3426), glass = new THREE.Color(0x6f8796), frame = new THREE.Color(0xd8d8d8);
+      const bx = (u0, u1, y0, y1, c, t = 0.08) => (nx
+        ? this.colored.box(fx - t / 2, CURB + y0, fz + u0, fx + t / 2, CURB + y1, fz + u1, c)
+        : this.colored.box(fx + u0, CURB + y0, fz - t / 2, fx + u1, CURB + y1, fz + t / 2, c));
+      bx(-0.8, 0.8, 0, 2.45, frame, 0.06);
+      bx(-0.65, 0.65, 0, 2.3, door);
+      bx(-3.2, -1.1, 0.8, 2.5, glass); bx(1.1, 3.2, 0.8, 2.5, glass);
+      if ([0, 2, 6, 7].includes(i)) this.shopFronts.push({ x: fx + nx * 1.1, z: fz + nz * 1.1, nx, nz, kind: ['grocery', '', 'bakery', '', '', '', 'cafe', 'grocery'][i] });
     };
 
     if (type === 'panel') {
@@ -375,6 +385,8 @@ export class City {
     // магазин АЗС
     add(lx0 + 16, cz, 14, 9, 1, { height: 4, flat: true, color: 0xf0f0f0 });
     panel(this.shopSigns, lx0 + 23.06, CURB + 3.4, cz, 1, 0, 8, 0.9, shopUV(6));
+    this.colored.box(lx0 + 23.02, CURB, cz - 0.7, lx0 + 23.12, CURB + 2.3, cz + 0.7, new THREE.Color(0x6f8796));
+    this.shopFronts.push({ x: lx0 + 24.2, z: cz, nx: 1, nz: 0, kind: 'cafe' });
     // стела
     this.propParts.push(prep(new THREE.BoxGeometry(0.4, 6, 0.4).translate(lx1 - 3, CURB + 3, lz0 + 6)));
     this.propParts.push(prep(new THREE.BoxGeometry(0.2, 2.2, 2.2).translate(lx1 - 3, CURB + 6.6, lz0 + 6)));

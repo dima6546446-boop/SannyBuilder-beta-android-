@@ -1,6 +1,6 @@
 {
   "name": "caucasus-drive",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "private": true,
   "description": "CAUCASUS DRIVE — мобильный 3D-симулятор парковки и вождения автомобилей АвтоВАЗ (Three.js + Android WebView)",
   "type": "module",

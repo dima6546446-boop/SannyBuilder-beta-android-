@@ -6,7 +6,7 @@ const MODES = [
   { name: 'Сзади (далеко)', type: 'chase', dist: 9.5, height: 3.4, look: 1.2 },
   { name: 'Сверху', type: 'top', dist: 5, height: 13, look: 0 },
   { name: 'Капот', type: 'attached', pos: [0, 1.22, 0.75], look: [0, 1.0, 12] },
-  { name: 'Из салона', type: 'attached', pos: [0.36, 1.2, -0.22], look: [0.36, 1.08, 12] },
+  { name: 'Из салона', type: 'attached', seat: true, pos: [0.36, 1.2, -0.22], look: [0.36, 1.08, 12] },
 ];
 
 /**
@@ -109,16 +109,21 @@ export class CameraRig {
       const ahead = m.type === 'top' ? 1.5 : 2.5;
       this._look.set(base.x + hx * ahead, base.y + m.look, base.z + hz * ahead);
     } else {
-      this._pos.fromArray(m.pos);
-      car.root.localToWorld(this._pos);
-      cam.position.copy(this._pos);
-      this._look.fromArray(m.look);
+      // «из салона» — из глаз водителя своей модели (у каждой машины свой салон)
+      const it = m.seat && car.interior;
+      const frame = it ? car.body : car.root;
+      if (it) this._pos.copy(it.eye); else this._pos.fromArray(m.pos);
+      const lp = it ? it.look : { x: m.look[0], y: m.look[1], z: m.look[2] };
+      this._look.set(lp.x, lp.y, lp.z);
       if (orbit) {
         const r = 12, a = orbit;
-        this._look.set(m.look[0] + Math.sin(a) * r, m.look[1], m.pos[2] + Math.cos(a) * r);
+        this._look.set(this._pos.x + Math.sin(a) * r, lp.y, this._pos.z + Math.cos(a) * r);
       }
-      car.root.localToWorld(this._look);
+      frame.localToWorld(this._pos);
+      frame.localToWorld(this._look);
+      cam.position.copy(this._pos);
     }
+    car.interior?.setFirstPerson(!!m.seat);
     this._init = true;
 
     if (this.shake > 0.001) {
