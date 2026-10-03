@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { VehiclePhysics, makeSpec } from './VehiclePhysics.js';
 import { buildPlayerModel, createCarMaterials, buildWheels, roofY } from './CarFactory.js';
+import { attachPlates, attachNeon } from './Extras.js';
 import { SkidMarks } from './SkidMarks.js';
 import { clamp, damp } from '../utils/math.js';
 
@@ -74,6 +75,10 @@ export class PlayerCar {
     this.mats = createCarMaterials({ color: tv.color, envMap: null, T: this.T, quality: this.q, tint: tv.tint });
     this.model = buildPlayerModel(def, this.mats, tv.wheels, { driver: true });
     this.interior = this.model.interior;
+    this.model.root.updateMatrixWorld(true);
+    attachPlates(this.model.body, tv.plate);
+    this.neon = attachNeon(this.model.root, def, tv.neon);
+    this.exhaust = { on: !!tv.exhaust, queue: 0, t: 0, flame: 0, prevThr: 0, x: -0.42, y: 0.3, z: def.dims.rear - 0.02 };
     this.interior.setDriverVisible(this.driverVisible !== false);
     this.root.add(this.model.root);
     this.body = this.model.body;
@@ -201,8 +206,18 @@ export class PlayerCar {
     // --- салон: руль, стрелки приборов, руки водителя
     this.interior?.update(dt, {
       steer: p.steer / (p.spec.maxSteer || 0.6), kmh: Math.abs(p.speed) * 3.6, rpm: p.rpm,
-      fuel: p.fuel / p.spec.tank, temp: Math.min(1, 0.25 + this.time / 240) * 0.5, lights: this.lightsOn, time: world.clock ?? 12, daylight: 1 - (world.night ?? 0),
+      fuel: p.fuel / p.spec.tank, temp: Math.min(1, 0.25 + this.time / 240) * 0.5, lights: this.lightsOn, time: world.clock ?? 12, daylight: 1 - (world.night ?? 0), wipers: (world.rain ?? 0) > 0.15,
     });
+
+    // --- прямоток: при резком сбросе газа на высоких оборотах «стреляет» 2–5 раз
+    const ex = this.exhaust;
+    if (ex?.on) {
+      if (ex.prevThr > 0.6 && input.throttle < 0.15 && p.rpm > 3200 && ex.queue <= 0) { ex.queue = 2 + ((Math.random() * 4) | 0); ex.t = 0.05; }
+      ex.prevThr = input.throttle;
+      if (ex.queue > 0 && (ex.t -= dt) <= 0) { ex.queue--; ex.t = 0.08 + Math.random() * 0.1; ex.flame = 0.07; this.onPop?.(); }
+      if (ex.flame > 0) ex.flame -= dt;
+    }
+    if (this.neon) this.neon.userData.glowMat.opacity = 0.25 + world.night * 0.75;
 
     // --- свет
     const night = world.night;

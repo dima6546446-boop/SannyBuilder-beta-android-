@@ -203,6 +203,7 @@ export class Walker {
       this.vz = damp(this.vz, tvz, acc, dt);
     } else { this.vx = damp(this.vx, 0, 8, dt); this.vz = damp(this.vz, 0, 8, dt); }
     this.speed = Math.hypot(this.vx, this.vz);
+    if (this.state === 'walk' && this.speed > 0.3) g.daily?.progress('walk', this.speed * dt);
 
     if (this.state !== 'sit' || this.seat?.kind === 'squat') {
       this.pos.x += this.vx * dt;

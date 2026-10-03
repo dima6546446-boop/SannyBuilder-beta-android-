@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildPlayerModel, createCarMaterials, buildWheels } from '../vehicles/CarFactory.js';
+import { attachPlates, attachNeon } from '../vehicles/Extras.js';
 
 /**
  * 3D-гараж для меню: кирпичные стены ГСК, лампы дневного света, стеллаж с шинами,
@@ -133,6 +134,16 @@ export class GarageScene {
     this.model.body.position.y = tv.height;
     this.model.root.position.z = -(def.dims.front + def.dims.rear) / 2;
     this.turntable.add(this.model.root);
+    this.setExtras(tv);
+  }
+
+  /** Номера и неон (меняются в тюнинге без пересборки модели). */
+  setExtras(tv) {
+    if (!this.model) return;
+    for (const n of ['Plates', 'Neon']) { const o = this.model.root.getObjectByName(n); o?.parent.remove(o); }
+    attachPlates(this.model.body, tv.plate);
+    const neon = attachNeon(this.model.root, this.def, tv.neon);
+    if (neon) neon.userData.glowMat.opacity = 0.9;
   }
 
   setColor(hex) { this.mats?.paint.color.setHex(hex); }

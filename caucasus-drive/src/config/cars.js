@@ -209,6 +209,39 @@ export const TUNING = {
     { id: 0, name: 'Кама-205', value: 1.0, price: 0 },
     { id: 1, name: 'Спортивные', value: 1.12, price: 10000 },
   ],
+  // неон под днищем (value — цвет)
+  neon: [
+    { id: 0, name: 'Нет', value: null, price: 0 },
+    { id: 1, name: 'Синий', value: 0x2a7bff, price: 6000 },
+    { id: 2, name: 'Красный', value: 0xff2a3a, price: 6000 },
+    { id: 3, name: 'Зелёный', value: 0x2aff6a, price: 6000 },
+    { id: 4, name: 'Фиолетовый', value: 0xb02aff, price: 7000 },
+    { id: 5, name: 'Бирюзовый', value: 0x2affe6, price: 7000 },
+    { id: 6, name: 'Белый', value: 0xf2f6ff, price: 8000 },
+  ],
+  // номера: регион и «блатные» комбинации
+  plate: [
+    { id: 0, name: 'Заводской · Е213КХ 26', value: ['Е213КХ', '26'], price: 0 },
+    { id: 1, name: 'Дагестан · М512ОК 05', value: ['М512ОК', '05'], price: 1500 },
+    { id: 2, name: 'Ингушетия · В340НА 06', value: ['В340НА', '06'], price: 1500 },
+    { id: 3, name: 'КБР · Т118РС 07', value: ['Т118РС', '07'], price: 1500 },
+    { id: 4, name: 'КЧР · Н622АУ 09', value: ['Н622АУ', '09'], price: 1500 },
+    { id: 5, name: 'Осетия · К404ОТ 15', value: ['К404ОТ', '15'], price: 1500 },
+    { id: 6, name: 'Чечня · Е555ХМ 95', value: ['Е555ХМ', '95'], price: 2500 },
+    { id: 7, name: 'Блатной · А777АА 05', value: ['А777АА', '05'], price: 25000 },
+    { id: 8, name: 'Блатной · Х005ХХ 06', value: ['Х005ХХ', '06'], price: 30000 },
+    { id: 9, name: 'Блатной · О001ОО 95', value: ['О001ОО', '95'], price: 45000 },
+  ],
+  horn: [
+    { id: 0, name: 'Заводской', value: 0, price: 0 },
+    { id: 1, name: '«Лезгинка» (мелодия)', value: 1, price: 5000 },
+    { id: 2, name: '«Итальянка» (6 нот)', value: 2, price: 7000 },
+    { id: 3, name: '«Газель-дудка»', value: 3, price: 3000 },
+  ],
+  exhaust: [
+    { id: 0, name: 'Заводской', value: 0, price: 0 },
+    { id: 1, name: 'Прямоток (стреляет)', value: 1, price: 9000 },
+  ],
   paintPrice: 2500,
 };
 

@@ -247,24 +247,27 @@ function drawCluster(cl) {
 }
 
 /** Экран магнитолы/мультимедиа. */
-function drawScreen(kind) {
-  const c = document.createElement('canvas'); c.width = 256; c.height = kind === 'tablet' ? 160 : 64;
+function drawScreen(kind, freq = '101.7', name = 'КАВКАЗ FM', canvas = null) {
+  const c = canvas || document.createElement('canvas'); c.width = 256; c.height = kind === 'tablet' ? 160 : 64;
   const g = c.getContext('2d');
+  const off = freq === '';
   if (kind === 'ural') {
     g.fillStyle = '#0f1a0f'; g.fillRect(0, 0, 256, 64);
-    g.fillStyle = '#7dff8a'; g.font = 'bold 30px monospace'; g.textAlign = 'center'; g.fillText('101.7 FM', 128, 44);
+    g.fillStyle = off ? '#1f3a22' : '#7dff8a'; g.font = 'bold 30px monospace'; g.textAlign = 'center'; g.fillText(off ? '--.- FM' : `${freq} FM`, 128, 44);
   } else if (kind === 'head') {
     g.fillStyle = '#081018'; g.fillRect(0, 0, 256, 64);
-    g.fillStyle = '#ffae5a'; g.font = 'bold 26px Arial'; g.textAlign = 'center'; g.fillText('CAUCASUS FM', 128, 42);
+    g.fillStyle = off ? '#3a2a1a' : '#ffae5a'; g.font = 'bold 24px Arial'; g.textAlign = 'center'; g.fillText(off ? 'OFF' : name, 128, 32);
+    g.font = '16px Arial'; g.fillText(off ? '' : `${freq} FM`, 128, 54);
   } else {
     const grd = g.createLinearGradient(0, 0, 256, c.height); grd.addColorStop(0, '#10243c'); grd.addColorStop(1, '#05080e');
     g.fillStyle = grd; g.fillRect(0, 0, 256, c.height);
-    g.fillStyle = '#fff'; g.font = 'bold 22px Arial'; g.textAlign = 'left'; g.fillText('CAUCASUS FM', 16, 34);
-    g.fillStyle = '#9fd0ff'; g.font = '16px Arial'; g.fillText('Лезгинка — ремикс', 16, 58);
+    g.fillStyle = '#fff'; g.font = 'bold 22px Arial'; g.textAlign = 'left'; g.fillText(off ? 'Радио выкл' : name, 16, 34);
+    g.fillStyle = '#9fd0ff'; g.font = '16px Arial'; g.fillText(off ? 't.me/caucasusdrive' : `${freq} FM · в эфире`, 16, 58);
     if (kind === 'tablet') {
       for (let i = 0; i < 4; i++) { g.fillStyle = ['#2a6', '#36c', '#c63', '#888'][i]; g.fillRect(16 + i * 60, 90, 50, 50); }
     }
   }
+  if (canvas) return null;
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
   return t;
 }
@@ -359,7 +362,9 @@ export function buildInterior(def, { driver = true } = {}) {
     const sz = kind === 'tablet' ? zDash + 0.06 : zDash - 0.012;
     P.box(sw + 0.03, sh + 0.04, 0.03, 0x0d0d0d, 0, sy, sz + 0.012);
     if (kind === 'ural') for (const kx of [-0.075, 0.075]) P.cyl(0.012, 0.02, 0x8a8a8a, kx, sy, sz - 0.01, Math.PI / 2);
-    const scr = new THREE.Mesh(new THREE.PlaneGeometry(kind === 'ural' ? sw * 0.5 : sw, sh), new THREE.MeshBasicMaterial({ map: drawScreen(kind), toneMapped: false }));
+    const scrTex = drawScreen(kind, '', '');
+    const scr = new THREE.Mesh(new THREE.PlaneGeometry(kind === 'ural' ? sw * 0.5 : sw, sh), new THREE.MeshBasicMaterial({ map: scrTex, toneMapped: false }));
+    scr.userData = { kind, tex: scrTex };
     scr.position.set(0, sy, sz - 0.004);
     scr.rotation.y = Math.PI;
     scr.rotation.x = kind === 'tablet' ? 0.25 : 0;
@@ -470,6 +475,30 @@ export function buildInterior(def, { driver = true } = {}) {
   shell.name = 'InteriorShell';
   group.add(shell);
 
+  // --- дворники: лежат в плоскости лобового стекла, машут в дождь
+  const wipers = [];
+  {
+    const yW0 = roofAt(A.zW0) + 0.015, yW1 = roofAt(A.zW1);
+    const up = new THREE.Vector3(0, yW1 - yW0, A.zW1 - A.zW0).normalize();   // вверх по стеклу
+    const nrm = new THREE.Vector3(0, -up.z, up.y);                             // наружу
+    const basis = new THREE.Matrix4().makeBasis(new THREE.Vector3(1, 0, 0), up, nrm);
+    const wm = new THREE.MeshLambertMaterial({ color: 0x111111 });
+    const L = Math.min(0.5, hwB * 0.62);
+    for (const px of [0.5, -0.12]) {
+      const base = new THREE.Group();
+      base.position.set(px, yW0, A.zW0 + 0.02).addScaledVector(nrm, 0.02);
+      base.quaternion.setFromRotationMatrix(basis);
+      const spin = new THREE.Group();
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(L, 0.016, 0.012).translate(-L / 2, 0, 0.006), wm);
+      const blade = new THREE.Mesh(new THREE.BoxGeometry(0.02, L * 0.95, 0.02).translate(-L, 0.0, 0.012), wm);
+      spin.add(arm, blade);
+      base.add(spin);
+      group.add(base);
+      wipers.push(spin);
+    }
+  }
+  let wipePhase = 0;
+
   // --- щиток приборов: текстура + стрелки
   const clusterRoot = new THREE.Group();
   clusterRoot.position.set(DX, cy, cz);
@@ -561,6 +590,13 @@ export function buildInterior(def, { driver = true } = {}) {
     group, eye, wheelPos, style: st, driver: drv,
     look: new THREE.Vector3(DX, eye.y - 0.95, eye.z + 10),
     setDriverVisible(v) { if (drv) drv.root.visible = v; },
+    /** Магнитола показывает текущую станцию ('' — выключена). */
+    setRadio(name, freq) {
+      if (!screenMesh) return;
+      const { kind, tex } = screenMesh.userData;
+      drawScreen(kind, freq, name, tex.image);
+      tex.needsUpdate = true;
+    },
     /** В виде «из салона» камера стоит в голове водителя — голову прячем. */
     setFirstPerson(v) { if (drv) { drv.bones.neck.scale.setScalar(v ? 0.001 : 1); } },
     /**
@@ -577,6 +613,13 @@ export function buildInterior(def, { driver = true } = {}) {
       if (needles.rpm) for (const n of needles.rpm) n.pivot.rotation.z = valueToAngle(s.rpm / 1000 / n.max);
       set('fuel', s.fuel);
       set('temp', s.temp);
+      // дворники: 0 — лежат справа внизу, 1.9 рад — у левой стойки
+      if (s.wipers || wipePhase % (Math.PI * 2) > 0.05) {
+        wipePhase += dt * 3.2;
+        if (!s.wipers && wipePhase % (Math.PI * 2) < 0.2) wipePhase = 0;
+      }
+      const sweep = (1 - Math.cos(wipePhase)) / 2 * 1.9;
+      for (const w of wipers) w.rotation.z = -sweep;
       faceMat.emissiveIntensity = s.lights ? 1.1 : 0.35;
       fill.value = 0.08 + (s.daylight ?? 1) * 0.32 + (s.lights ? 0.04 : 0);
       if (clockHands) {

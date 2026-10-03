@@ -75,6 +75,7 @@ export class ParkingMode {
     const first = !g.save.data.stars[this.index];
     const reward = Math.round(this.L.reward * (stars / 3) * (first ? 2 : 1));
     g.save.setStars(this.index, stars);
+    g.daily.progress('park', 1);
     g.save.addMoney(reward);
     g.audio.success();
     g.input.enabled = false;

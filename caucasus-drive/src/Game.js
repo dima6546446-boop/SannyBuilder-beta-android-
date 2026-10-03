@@ -21,6 +21,9 @@ import { EnvManager } from './gfx/EnvManager.js';
 import { Walker } from './character/Walker.js';
 import { Crowd } from './character/Crowd.js';
 import { Shops } from './world/Shops.js';
+import { Radio, STATIONS } from './core/Radio.js';
+import { Rain } from './gfx/Rain.js';
+import { Daily } from './core/Daily.js';
 import { TargetZone, Beacon, Cones, Pedestrian } from './gfx/Markers.js';
 import { Rules } from './gameplay/Rules.js';
 import { CAR_BY_ID } from './config/cars.js';
@@ -126,6 +129,15 @@ export class Game {
     this.walker = new Walker(this);
     this.crowd = new Crowd(this);
     this.shops = new Shops(this);
+    this.radio = new Radio(audio);
+    this.daily = new Daily(this.save, (t, d) => {
+      this.hud.toast(`✅ Задание дня: ${d.text} — забери ${d.reward.toLocaleString('ru-RU')} ₽ в меню «Задания»`, 'money', 4);
+      this.audio.success();
+    });
+    this.rain = new Rain(scene, q.name === 'low' ? 500 : q.name === 'medium' ? 900 : 1400);
+    this.weather = { level: 0, target: 0, timer: 0, auto: false };
+    this.fogBase = { near: this.dayNight.fog.near, far: this.dayNight.fog.far };
+    this._grey = new THREE.Color();
     this.onFoot = false;
     this.postfx = q.bloom ? new PostFX(renderer, scene, this.camera) : null;
     this.base = {
@@ -139,6 +151,10 @@ export class Game {
 
     this.refreshCar();
     this.player.onBlink = (on) => this.audio.tick(on);
+    this.player.onPop = () => {
+      const p = this.player.physics, d = Math.hypot(this.camera.position.x - p.x, this.camera.position.z - p.z);
+      this.audio.pop(Math.max(0.25, 1 - d / 40));
+    };
     this.player.onCrash = (s, tag) => {
       this.audio.crash(s);
       this.cameraRig.addShake(s);
@@ -169,6 +185,8 @@ export class Game {
     this.player.setCar(def, tv);
     this.lamps = lampPoints(def);
     this.audio.setEngineProfile({ cylinders: id === 'oka' ? 2 : 4, rasp: tv.engine > 1.3 ? 1.3 : 1 });
+    this.audio.hornType = tv.horn;
+    if (this.radio) { if (this.radio.index !== (this.save.data.settings.radio || 0)) this.radio.set(this.save.data.settings.radio || 0); this._showRadio(); }
     if (keep) this.player.place(keep.x, keep.z, keep.h);
     this.applySettings();
   }
@@ -196,6 +214,14 @@ export class Game {
       document.getElementById('btn-smoke').classList.toggle('on', this.walker.smoke.on);
     });
     i.on('whistle', () => this.onFoot && this.walker.whistleNow());
+    i.on('radio', () => {
+      this.audio.init();
+      const st = this.radio.cycle();
+      this.save.data.settings.radio = this.radio.index;
+      this.save.commit();
+      this.hud.toast(`📻 ${st.name}`, 'good', 1.6);
+      this._showRadio();
+    });
     i.on('shop', () => { if (this.onFoot && this.shops.near) this.shops.open(this.shops.near); });
     i.on('lights', () => {
       const m = this.player.cycleLights();
@@ -223,6 +249,46 @@ export class Game {
     this.dayNight.setTime(TIME_PRESETS[this.timePreset][0]);
     this._updateEnv(true);
     return TIME_PRESETS[this.timePreset][1];
+  }
+
+  // ---------------------------------------------------------------- погода
+  /** Дождь: 0 или 1 (плавный переход). auto — сам меняется раз в пару минут (свободная езда). */
+  setWeather(rain, auto = false) {
+    const w = this.weather;
+    w.target = rain; w.auto = auto; w.timer = 100 + Math.random() * 140;
+  }
+
+  _weather(dt) {
+    const w = this.weather, dn = this.dayNight;
+    if (w.auto && (w.timer -= dt) <= 0) {
+      w.target = w.target > 0.5 ? 0 : (Math.random() < 0.55 ? 1 : 0);
+      w.timer = 100 + Math.random() * 160;
+      if (w.target > 0.5) this.hud.toast('🌧 Начинается дождь — дорога скользкая', 'bad', 2.5);
+    }
+    w.level += Math.max(-dt / 8, Math.min(dt / 8, w.target - w.level));
+    const r = w.level;
+    this.city.mat.asphalt.color.setScalar(1 - 0.38 * r);
+    if (r < 0.005) { dn.fog.near = this.fogBase.near; dn.fog.far = this.fogBase.far; return; }
+    // пасмурно: свет тусклее, небо и туман серые, туман ближе
+    dn.sun.intensity *= 1 - 0.7 * r;
+    dn.hemi.intensity *= 1 - 0.2 * r;
+    const day = 1 - dn.night;
+    this._grey.setRGB(0.42, 0.45, 0.5).multiplyScalar(0.25 + 0.75 * day);
+    dn.fog.color.lerp(this._grey, 0.75 * r);
+    const u = dn.skyUniforms;
+    u.topColor.value.lerp(this._grey, 0.8 * r);
+    u.horizonColor.value.lerp(this._grey, 0.7 * r);
+    u.cloudColor.value.lerp(this._grey, 0.6 * r);
+    u.sunDisk.value *= 1 - r;
+    dn.fog.near = this.fogBase.near * (1 - 0.6 * r);
+    dn.fog.far = this.fogBase.far * (1 - 0.35 * r);
+  }
+
+  _showRadio() {
+    const st = this.radio.station;
+    document.getElementById('btn-radio').classList.toggle('on', this.radio.index > 0);
+    const [name, freq] = this.radio.index ? [st.name.replace(/ [\d.]+$/, '').toUpperCase(), st.name.match(/[\d.]+$/)?.[0] || ''] : ['', ''];
+    this.player.interior?.setRadio(name, freq);
   }
 
   // ---------------------------------------------------------------- пешком
@@ -289,6 +355,8 @@ export class Game {
 
   setMode(mode, arg) {
     this.enterCar(true);
+    this.setWeather(0);
+    this.weather.level = 0;
     if (this.mode) this.mode.exit();
     this.mode = mode;
     this.input.enabled = true;
@@ -401,11 +469,12 @@ export class Game {
     const extra = this.mode?.extraColliders || [];
     const foot = this.onFoot;
     this.player.update(dt, foot ? PARKED : this.input, {
-      surface: (x, z, out) => this.city.surface(x, z, out),
+      surface: (x, z, out) => { this.city.surface(x, z, out); out.mu *= 1 - 0.16 * this.weather.level; return out; },
       colliders: [this.collision, ...extra],
       traffic: this.traffic.cars,
       night,
       clock: this.dayNight.time,
+      rain: this.weather.level,
     });
     if (foot) this.walker.update(dt, { moveX: this.input.moveX, moveY: this.input.moveY, walk: this.input.walk, camYaw: this.cameraRig.footYaw });
     this.traffic.update(dt, this.player.physics, this.camera, this.focus);
@@ -424,10 +493,13 @@ export class Game {
 
     this.lights.update(dt);
     this.dayNight.update(dt, this.q.shadows ? null : this.focus, this.camera.position);
+    this._weather(dt);
     this.city.update(dt, this.camera, night);
     this.trees.update(dt, this.camera.position);
     this.cones.update(dt);
     this.smoke.update(dt, this.camera, this.renderer, 1 - night * 0.7);
+    this.rain.update(dt, this.camera, this.weather.level, 1 - night * 0.8, !foot && this.cameraRig.isInterior);
+    this.audio.setRain(this.weather.level, !foot);
     if ((this.frame & 255) === 0 && this.degrade < 3) this._updateEnv(false);
     this.postfx?.setNight(night);
 
@@ -462,6 +534,11 @@ export class Game {
     const p = this.player.physics;
     const mix = foot ? Math.max(0, 1 - Math.hypot(this.walker.pos.x - p.x, this.walker.pos.z - p.z) / 30) * 0.6 : 1;
     this.audio.update(p.rpm, p.load, p.skid, p.speed, mix);
+    if (this.mode && p.speed > 0.5) {
+      this.daily.progress('km', p.speed * dt / 1000);
+      this.daily.progress('speed', Math.round(p.speed * 3.6));
+    }
+    this.radio.update(foot ? mix * 1.4 : 1, foot);
     this.audio.setHorn(this.input.horn);
     this.perf.update(dt);
     this.hud.update(dt, {
@@ -480,6 +557,14 @@ export class Game {
     if (p.reversing) for (const q of L.tail) put([q[0] * 0.6, q[1], q[2]], 1, 1, 1, 0.5);
     const ind = pl.indicator;
     if (ind && pl.blinkOn) for (const sd of ind === 'H' ? ['L', 'R'] : [ind]) for (const q of L.ind[sd]) put(q, 1, 0.55, 0.05, 0.7);
+    // огонь из прямотока
+    const ex = pl.exhaust;
+    if (ex?.flame > 0) put([ex.x, ex.y - y + pl.y, ex.z - 0.12], 1, 0.55 + Math.random() * 0.2, 0.15, 0.45 + Math.random() * 0.3);
+    // неон: светящиеся точки по бокам (ночью — заметное свечение)
+    if (pl.neon && this.dayNight.night > 0.2) {
+      const c = pl.neon.userData.color, d = pl.def.dims;
+      for (const sx of [1, -1]) for (let k = 0; k < 3; k++) put([sx * (d.W / 2 - 0.1), 0.12 - y + pl.y, d.rear + 0.6 + k * (d.front - d.rear - 1.2) / 2], c.r, c.g, c.b, 0.9);
+    }
   }
 
   /** Bloom нужен только когда темно (фары, фонари): днём он лишь «мылит» небо. */

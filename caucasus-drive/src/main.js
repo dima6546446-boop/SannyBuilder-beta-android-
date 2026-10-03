@@ -83,15 +83,17 @@ class App {
       this.game.tick(dt);
       this.game.render(dt);
     } else if (this.state === 'menu') {
+      this.game.radio.update(0);
       this.garage.active = true;
       this.garage.render(dt);
     } else {
       this.game.render(0); // пауза/результат — последний кадр мира под меню
+      this.game.radio.update(0.35, true);
     }
   }
 
   onMenu(name) {
-    if (['main', 'garage', 'levels', 'help', 'freeSetup'].includes(name) || (name === 'settings' && !this.paused)) {
+    if (['main', 'garage', 'levels', 'help', 'freeSetup', 'daily'].includes(name) || (name === 'settings' && !this.paused)) {
       this.state = 'menu';
       $('hud').classList.add('hidden');
       $('controls').classList.add('hidden');

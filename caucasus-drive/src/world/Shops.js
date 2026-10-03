@@ -207,6 +207,7 @@ export class Shops {
     g.audio.coin();
     this.close();
     g.walker.eat(k);
+    g.daily.progress('food', 1);
     g.hud.toast(`${it.icon} ${it.name} · −${it.price} ₽ · «${THANKS[(Math.random() * THANKS.length) | 0]}»`, 'money', 2.5);
   }
 

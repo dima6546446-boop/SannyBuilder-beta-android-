@@ -49,6 +49,9 @@ export class FreeRideMode {
     g.rules.reset();
     g.rules.onViolation = (v, extra) => this._violation(v, extra);
     g.crowd.start();
+    const rainParam = new URLSearchParams(location.search).has('rain');
+    g.setWeather(rainParam || Math.random() < 0.3 ? 1 : 0, !rainParam);
+    if (rainParam) g.weather.level = 1;
     g.hud.toast(`Свободная езда${this.fines ? '' : ' без штрафов'}. Нажми «ТАКСИ», чтобы брать заказы`, 'good', 3.5);
   }
 
@@ -142,6 +145,7 @@ export class FreeRideMode {
     if (afford < 0.5) { g.hud.toast('Не хватает денег на бензин', 'bad'); return; }
     g.save.addMoney(-Math.ceil(afford * FUEL_PRICE));
     p.fuel += afford;
+    g.daily.progress('fuel', 1);
     g.audio.coin();
     g.hud.toast(`Заправлено ${afford.toFixed(1)} л АИ-92`, 'money');
   }
@@ -230,6 +234,7 @@ export class FreeRideMode {
         fare = Math.round(fare * (T.rating / 5));
         g.save.addMoney(fare);
         g.save.data.stats.taxi++;
+        g.daily.progress('taxi', 1);
         g.save.commit();
         g.audio.coin();
         g.hud.toast(`«${BYE[(this.rnd() * BYE.length) | 0]}» +${fare.toLocaleString('ru-RU')} ₽`, 'money', 3.5);
@@ -293,6 +298,7 @@ export class FreeRideMode {
     const money = Math.round(c.pts / 4);
     const g = this.g;
     g.save.addMoney(money);
+    g.daily.progress('drift', Math.round(c.pts));
     if (c.pts > g.save.data.stats.bestCombo) { g.save.data.stats.bestCombo = Math.round(c.pts); g.save.commit(); }
     g.hud.toast(`${c.kind} ×${c.mult}: ${Math.round(c.pts)} очков → +${money.toLocaleString('ru-RU')} ₽`, 'money');
     g.audio.coin();

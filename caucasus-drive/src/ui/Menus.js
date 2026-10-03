@@ -71,6 +71,7 @@ export class Menus {
       <div class="topbar">
         <div class="logo"><b>CAUCASUS</b> DRIVE<small>ГАРАЖ · ШАШКИ · ЭКЗАМЕН ГИБДД</small></div>
         <div style="display:flex;gap:8px;align-items:center">
+          <div class="pill daily ${this.app.game?.daily?.readyCount ? 'ready' : ''}" id="daily-pill">📋 Задания ${this.app.game?.daily ? `${this.app.game.daily.doneCount}/3` : ''}</div>
           <div class="pill">★ ${stars}/${LEVELS.length * 3}</div>
           <div class="pill">${s.license ? '🪪 Права есть' : '🚫 Без прав'}</div>
           <div class="pill gold">${rub(s.money)}</div>
@@ -87,6 +88,7 @@ export class Menus {
         <div class="links"><div class="linkbtn tg" id="tg-link">✈ Наш Telegram</div><div class="linkbtn" data-go="help">Как играть</div><div class="linkbtn" data-go="settings">Настройки</div></div>
       </div>`);
     el.querySelector('#tg-link').addEventListener('click', () => openLink(TELEGRAM_URL));
+    el.querySelector('#daily-pill').addEventListener('click', () => { this.app.audio.click(); this.show('daily'); });
     el.querySelectorAll('[data-act]').forEach((t) => t.addEventListener('click', () => {
       this.app.audio.click();
       const a = t.dataset.act;
@@ -96,6 +98,30 @@ export class Menus {
       if (a === 'exam') this.app.startExam();
     }));
     this.app.garage.setFraming(0);
+  }
+
+  // ---------------------------------------------------------------- задания дня
+  _daily() {
+    const D = this.app.game.daily;
+    D.refresh();
+    const rows = D.tasks.map((t, i) => {
+      const { text, reward } = D.describe(t);
+      const pct = Math.round((t.progress / t.goal) * 100);
+      const shown = t.kind === 'km' ? `${t.progress.toFixed(1)} / ${t.goal}` : `${Math.floor(t.progress)} / ${t.goal}`;
+      const btn = t.claimed ? '<span class="dz-ok">Получено ✓</span>'
+        : t.done ? `<div class="bigbtn green dz-claim" data-claim="${i}">Забрать ${rub(reward)}</div>`
+          : `<span class="dz-rw">${rub(reward)}</span>`;
+      return `<div class="dz ${t.done ? 'done' : ''}"><div class="dz-t">${text}</div>
+        <div class="dz-bar"><i style="width:${pct}%"></i></div><div class="dz-row"><span class="dz-p">${shown}</span>${btn}</div></div>`;
+    }).join('');
+    const el = this._screen(`
+      <div class="topbar"><div class="back" data-go="main">‹</div><div class="h1">Задания дня</div><div class="pill gold">${rub(this.save.money)}</div></div>
+      <div class="dz-list">${rows}</div>
+      <div class="help" style="text-align:center;margin:10px auto 0">Новые задания каждый день. Прогресс считается в любом режиме.</div>`, 'dim');
+    el.querySelectorAll('[data-claim]').forEach((b) => b.addEventListener('click', () => {
+      const r = D.claim(+b.dataset.claim);
+      if (r) { this.app.audio.coin(); this.show('daily'); }
+    }));
   }
 
   // ---------------------------------------------------------------- свободная езда: выбор штрафов
@@ -192,7 +218,7 @@ export class Menus {
   }
 
   _tuningHtml(def, tv) {
-    const tabs = [['color', 'Цвет'], ['wheels', 'Диски'], ['height', 'Подвеска'], ['tint', 'Тонировка'], ['engine', 'Мотор'], ['tires', 'Шины']];
+    const tabs = [['color', 'Цвет'], ['wheels', 'Диски'], ['height', 'Подвеска'], ['tint', 'Тонировка'], ['neon', 'Неон'], ['plate', 'Номера'], ['engine', 'Мотор'], ['exhaust', 'Выхлоп'], ['horn', 'Сигнал'], ['tires', 'Шины']];
     const head = `<div class="tabs">${tabs.map(([k, n]) => `<div class="tab ${this.tab === k ? 'sel' : ''}" data-tab="${k}">${n}</div>`).join('')}</div>`;
     if (this.tab === 'color') {
       const sw = PAINT_PALETTE.map((c) => `<div class="sw ${c === tv.color ? 'sel' : ''}" data-color="${c}" style="background:${hex(c)}"></div>`).join('');
@@ -246,7 +272,10 @@ export class Menus {
       if (tab === 'wheels') g.setWheels(tv.wheels);
       if (tab === 'height') g.setHeight(tv.height);
       if (tab === 'tint') g.setTint(tv.tint);
+      if (tab === 'neon' || tab === 'plate') g.setExtras(tv);
       this.app.audio.coin();
+      if (tab === 'horn') { this.app.audio.init(); this.app.audio.hornType = tv.horn; this.app.audio.hornSample(tv.horn); }
+      if (tab === 'exhaust' && tv.exhaust) { this.app.audio.init(); this.app.audio.pops(4); }
       this.app.refreshCar();
       this.show('garage');
     }));

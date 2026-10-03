@@ -135,6 +135,7 @@ export class Crowd {
     }
     if (!best) return;
     best.lookT = 2.5; best.lookX = x; best.lookZ = z;
+    this.g.daily.progress('whistle', 1);
     setTimeout(() => this.g.hud.toast(`«${WHISTLE[(Math.random() * WHISTLE.length) | 0]}»`, 'good', 2.5), 700);
   }
 

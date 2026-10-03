@@ -223,6 +223,22 @@ svg { fill: currentColor; }
 }
 @keyframes pulse2 { to { box-shadow: 0 4px 26px rgba(255,160,40,.9); } }
 
+/* задания дня */
+.pill.daily { cursor: pointer; }
+.pill.daily.ready { background: linear-gradient(135deg, #3ccf6e, #1d9a47); animation: pulse2 1s infinite alternate; }
+.dz-list { margin: auto; width: min(560px, 92vw); display: flex; flex-direction: column; gap: 10px; }
+.dz { background: var(--panel2); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; }
+.dz.done { border-color: var(--ok); }
+.dz-t { font-weight: 800; font-size: 15px; }
+.dz-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.1); margin: 7px 0; overflow: hidden; }
+.dz-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+.dz.done .dz-bar i { background: linear-gradient(90deg, var(--ok), #9ef08a); }
+.dz-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.dz-p { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.dz-rw { color: var(--gold); font-weight: 900; }
+.dz-ok { color: var(--ok); font-weight: 800; }
+.dz-claim { padding: 7px 14px; font-size: 14px; }
+
 /* выбор режима свободной езды */
 .choose { margin: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 300px)); gap: 16px; justify-content: center; }
 .choice {
@@ -242,7 +258,8 @@ svg { fill: currentColor; }
 body.onfoot #controls > #foot { display: block; }
 body.onfoot #wheel, body.onfoot #arrows, body.onfoot #right-cluster, body.onfoot #btn-action,
 body.onfoot #dash, body.onfoot #indicators, body.onfoot #btn-lights, body.onfoot #btn-door,
-body.onfoot #sensors, body.onfoot #speed-limit { display: none !important; }
+body.onfoot #sensors, body.onfoot #speed-limit, body.onfoot #btn-radio { display: none !important; }
+#btn-radio.on { color: #7dff8a; border-color: #7dff8a; }
 #stick {
   position: absolute; left: calc(22px + env(safe-area-inset-left)); bottom: 22px;
   width: min(38vh, 170px); height: min(38vh, 170px); border-radius: 50%; touch-action: none;

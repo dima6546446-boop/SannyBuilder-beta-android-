@@ -68,10 +68,18 @@ export class AudioManager {
     const hf = ctx.createBiquadFilter(); hf.type = 'lowpass'; hf.frequency.value = 2200;
     this.hornGain = ctx.createGain(); this.hornGain.gain.value = 0;
     hf.connect(this.hornGain).connect(this.master);
-    for (const f of [405, 510]) {
+    this.hornOsc = [405, 510].map((f) => {
       const o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = f;
       o.connect(hf); o.start();
-    }
+      return o;
+    });
+
+    // --- дождь (по крыше/асфальту): шум через полосовой фильтр
+    const rn = this._noiseLoop();
+    this.rainFilter = ctx.createBiquadFilter(); this.rainFilter.type = 'bandpass'; this.rainFilter.frequency.value = 2600; this.rainFilter.Q.value = 0.4;
+    this.rainGain = ctx.createGain(); this.rainGain.gain.value = 0;
+    rn.connect(this.rainFilter).connect(this.rainGain).connect(this.master);
+    this._applyHornType();
 
     this.eOsc1.start(); this.eOsc2.start(); this.eOsc3.start();
     this.enabled = true;
@@ -114,9 +122,84 @@ export class AudioManager {
     this.windGain.gain.setTargetAtTime(Math.min(speed / 45, 1) * 0.12, t, 0.2);
   }
 
+  // ---------------------------------------------------------------- сигналы (тюнинг)
+  _applyHornType() {
+    if (!this.hornOsc) return;
+    const t = this.hornType || 0;
+    const [a, b] = t === 3 ? [233, 294] : [405, 510];      // «Газель-дудка» — низкий двухтон
+    this.hornOsc[0].frequency.value = a; this.hornOsc[1].frequency.value = b;
+    this.hornOsc.forEach((o) => { o.type = t === 3 ? 'sawtooth' : 'square'; });
+  }
+
+  /** Мелодии музыкальных сигналов (собственные мотивы в духе жанра). */
+  _hornMelody(type) {
+    const A4 = 440, B4 = 494, C5 = 523, D5 = 587, E5 = 659, F5 = 698, Gs5 = 831, A5 = 880, G4 = 392, G5 = 784;
+    if (type === 1) return [[E5, 0.1], [E5, 0.1], [F5, 0.1], [E5, 0.1], [D5, 0.1], [C5, 0.1], [B4, 0.1], [C5, 0.2],
+      [E5, 0.1], [Gs5, 0.1], [A5, 0.1], [Gs5, 0.1], [F5, 0.1], [E5, 0.1], [D5, 0.1], [E5, 0.1], [A4, 0.3]];
+    return [[G4, 0.12], [C5, 0.12], [E5, 0.12], [G5, 0.24], [E5, 0.12], [G5, 0.4]];
+  }
+
+  hornSample(type) {
+    if (!this.enabled) return;
+    this._applyHornType();
+    if (type === 1 || type === 2) { this._playHornTune(type); return; }
+    this.hornGain.gain.setTargetAtTime(0.22, this.ctx.currentTime, 0.01);
+    this.hornGain.gain.setTargetAtTime(0, this.ctx.currentTime + 0.45, 0.02);
+  }
+
+  _playHornTune(type) {
+    const ctx = this.ctx;
+    let t = ctx.currentTime + 0.01;
+    const out = ctx.createGain(); out.gain.value = 0.17;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 2600;
+    out.connect(lp).connect(this.master);
+    for (const [f, d] of this._hornMelody(type)) {
+      for (const k of [1, 1.26]) {
+        const o = ctx.createOscillator(); o.type = 'square'; o.frequency.value = f * (type === 2 ? k : 1);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.5, t + 0.012);
+        g.gain.setValueAtTime(0.5, t + d * 0.85); g.gain.linearRampToValueAtTime(0, t + d * 0.98);
+        o.connect(g).connect(out); o.start(t); o.stop(t + d);
+        if (type !== 2) break;
+      }
+      t += d;
+    }
+    this._tuneEnd = t;
+  }
+
   setHorn(on) {
     if (!this.enabled) return;
+    const type = this.hornType || 0;
+    if (type === 1 || type === 2) {
+      // мелодия играет целиком по нажатию; удержание — повтор после окончания
+      if (on && (!this._tuneEnd || this.ctx.currentTime > this._tuneEnd)) this._playHornTune(type);
+      this.hornGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.01);
+      return;
+    }
+    if (this._lastHornType !== type) { this._lastHornType = type; this._applyHornType(); }
     this.hornGain.gain.setTargetAtTime(on ? 0.22 : 0, this.ctx.currentTime, 0.01);
+  }
+
+  /** Выстрел прямотока: хлопок + низкий «бах». */
+  pop(vol = 1) {
+    if (!this.enabled) return;
+    this._burst(900, 0.7, 0.55 * vol, 0.09, 'lowpass');
+    this._burst(2400, 1.5, 0.18 * vol, 0.05, 'bandpass');
+    const ctx = this.ctx, t = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(95, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.08);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.5 * vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    o.connect(g).connect(this.master); o.start(t); o.stop(t + 0.12);
+  }
+
+  pops(n) { for (let i = 0; i < n; i++) setTimeout(() => this.pop(0.8), i * 120 + Math.random() * 50); }
+
+  /** Дождь: 0..1; внутри машины глуше (стук по крыше). */
+  setRain(level, inside) {
+    if (!this.enabled) return;
+    const t = this.ctx.currentTime;
+    this.rainGain.gain.setTargetAtTime(level * (inside ? 0.16 : 0.12), t, 0.5);
+    this.rainFilter.frequency.setTargetAtTime(inside ? 900 : 2600, t, 0.3);
   }
 
   /** Удар: шумовой всплеск + низкочастотный «бум». strength ∈ [0..1]. */

@@ -59,6 +59,10 @@ export class Save {
       tint: t.tint ?? 0,
       engine: t.engine ?? 0,
       tires: t.tires ?? 0,
+      neon: t.neon ?? 0,
+      plate: t.plate ?? 0,
+      horn: t.horn ?? 0,
+      exhaust: t.exhaust ?? 0,
     };
   }
 
@@ -77,6 +81,10 @@ export class Save {
       tint: TUNING.tint.find((x) => x.id === t.tint)?.value ?? 0.6,
       engine: TUNING.engine.find((x) => x.id === t.engine)?.value ?? 1,
       tires: TUNING.tires.find((x) => x.id === t.tires)?.value ?? 1,
+      neon: TUNING.neon.find((x) => x.id === t.neon)?.value ?? null,
+      plate: (([text, region]) => ({ text, region }))(TUNING.plate.find((x) => x.id === t.plate)?.value ?? TUNING.plate[0].value),
+      horn: TUNING.horn.find((x) => x.id === t.horn)?.value ?? 0,
+      exhaust: TUNING.exhaust.find((x) => x.id === t.exhaust)?.value ?? 0,
     };
   }
 
