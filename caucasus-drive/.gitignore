@@ -10,3 +10,4 @@ android/local.properties
 android/.kotlin/
 tools/blender/__pycache__/
 out/
+tools/test/node_modules
