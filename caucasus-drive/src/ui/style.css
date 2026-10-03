@@ -59,6 +59,9 @@ svg { fill: currentColor; }
 }
 
 #hud-tr { position: absolute; right: calc(10px + env(safe-area-inset-right)); top: 10px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+/* знак ограничения стоит в одном ряду с деньгами — раньше он висел отдельно и на низких
+   экранах (360 px) оказывался под кнопками гудка/такси */
+.tr-row { display: flex; align-items: center; gap: 8px; }
 #money-box { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 4px 12px; font-weight: 800; font-size: 18px; color: var(--gold); font-variant-numeric: tabular-nums; }
 #clock-row { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
 #fps { color: #7c7; }
@@ -92,21 +95,24 @@ svg { fill: currentColor; }
 @keyframes tin { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
 
 #speed-limit {
-  position: absolute; right: calc(16px + env(safe-area-inset-right)); top: 118px; width: 46px; height: 46px; border-radius: 50%;
-  background: #fff; border: 6px solid #d81e1e; color: #111; font-weight: 900; font-size: 17px;
+  width: 38px; height: 38px; border-radius: 50%;
+  background: #fff; border: 5px solid #d81e1e; color: #111; font-weight: 900; font-size: 14px;
   display: flex; align-items: center; justify-content: center;
 }
 #speed-limit.over { animation: pulse .5s infinite alternate; }
 @keyframes pulse { to { transform: scale(1.15); } }
 
-#sensors { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%); display: flex; gap: 90px; }
+#sensors { position: absolute; bottom: 100px; left: var(--mid); transform: translateX(-50%); display: flex; gap: 90px; }
 .sensor { display: flex; gap: 3px; align-items: flex-end; }
 .sensor i { width: 12px; background: rgba(255,255,255,.15); border-radius: 2px; }
 .sensor i:nth-child(1) { height: 8px; } .sensor i:nth-child(2) { height: 13px; } .sensor i:nth-child(3) { height: 18px; } .sensor i:nth-child(4) { height: 23px; }
 .sensor i.g { background: #4ce07a; } .sensor i.y { background: #ffd23a; } .sensor i.r { background: #ff3b3b; }
 
+/* приборка — по центру между рулём и правым блоком педалей (не по центру экрана),
+   чтобы на узких телефонах не залезать под рычаг R-N-D */
+:root { --wheel: min(40vh, 200px); --cluster: 262px; --mid: calc((var(--wheel) + 14px + 100vw - var(--cluster)) / 2); }
 #dash {
-  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+  position: absolute; bottom: 10px; left: var(--mid); transform: translateX(-50%);
   display: grid; grid-template-columns: 22px auto auto 22px; align-items: center; gap: 6px;
   background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 6px 10px 10px;
   font-variant-numeric: tabular-nums;
@@ -144,6 +150,10 @@ svg { fill: currentColor; }
   position: absolute; right: calc(12px + env(safe-area-inset-right)); bottom: 12px;
   display: grid; grid-template-columns: auto auto auto; grid-template-rows: auto auto; gap: 10px; align-items: end;
 }
+/* гудок и такси — в свободной ячейке над тормозом (раньше колонка кнопок поднималась
+   до верха экрана и закрывала кнопку паузы/настроек) */
+#mini { grid-column: 2; grid-row: 1; display: flex; gap: 6px; justify-content: center; }
+#mini .cbtn { width: 40px; height: 54px; border-radius: 12px; }
 #hb { grid-column: 1; grid-row: 1; }
 #lever, #shifter { grid-column: 1; grid-row: 2; }
 #brake { grid-column: 2; grid-row: 2; }
@@ -179,13 +189,45 @@ svg { fill: currentColor; }
 #gas.on .tread { background: repeating-linear-gradient(0deg, #3f6b43 0 6px, #22402a 6px 11px); }
 #brake.on .tread { background: repeating-linear-gradient(0deg, #7a3b35 0 6px, #40221f 6px 11px); }
 
-#actions { position: absolute; right: calc(12px + env(safe-area-inset-right)); bottom: 196px; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+#btn-action, #btn-enter { position: absolute; left: var(--mid); bottom: 96px; transform: translateX(-50%); white-space: nowrap; }
 .actbtn {
   padding: 12px 18px; border-radius: 14px; background: linear-gradient(135deg, var(--accent), #e0461a);
   font-weight: 900; font-size: 15px; letter-spacing: .5px; box-shadow: 0 4px 16px rgba(255,90,20,.5);
   animation: pulse2 1s infinite alternate;
 }
 @keyframes pulse2 { to { box-shadow: 0 4px 26px rgba(255,160,40,.9); } }
+
+/* ============================ ПЕШКОМ ============================ */
+#controls > #foot { position: absolute; inset: 0; pointer-events: none; display: none; }
+#foot > * { pointer-events: auto; }
+body.onfoot #controls > #foot { display: block; }
+body.onfoot #wheel, body.onfoot #arrows, body.onfoot #right-cluster, body.onfoot #btn-action,
+body.onfoot #dash, body.onfoot #indicators, body.onfoot #btn-lights, body.onfoot #btn-door,
+body.onfoot #sensors, body.onfoot #speed-limit { display: none !important; }
+#stick {
+  position: absolute; left: calc(22px + env(safe-area-inset-left)); bottom: 22px;
+  width: min(38vh, 170px); height: min(38vh, 170px); border-radius: 50%; touch-action: none;
+  background: radial-gradient(circle, rgba(255,255,255,.05) 0 55%, rgba(255,255,255,.12) 56% 100%);
+  border: 2px solid rgba(255,255,255,.25); display: flex; align-items: center; justify-content: center;
+}
+#stick-knob {
+  width: 42%; height: 42%; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #ffffffd0, #9aa3adb0);
+  box-shadow: 0 4px 10px rgba(0,0,0,.5); pointer-events: none; will-change: transform;
+}
+#foot-btns {
+  position: absolute; right: calc(16px + env(safe-area-inset-right)); bottom: 16px;
+  display: grid; grid-template-columns: auto auto; gap: 10px; align-items: end; justify-items: center;
+}
+.fbtn {
+  width: 62px; height: 62px; border-radius: 50%; background: var(--panel); border: 2px solid var(--line);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  font-size: 9px; font-weight: 800; color: #dfe5ea; touch-action: none;
+}
+.fbtn svg { width: 24px; height: 24px; }
+.fbtn.big { width: 86px; height: 86px; background: linear-gradient(135deg, rgba(255,106,26,.85), rgba(224,70,26,.85)); border-color: var(--accent); }
+.fbtn.big svg { width: 34px; height: 34px; }
+.fbtn.on { border-color: var(--accent2); color: var(--accent2); box-shadow: 0 0 12px rgba(255,178,63,.5); }
+.fbtn:active { transform: scale(.94); }
 
 /* ============================ МЕНЮ ============================ */
 #ui { position: fixed; inset: 0; pointer-events: none; }
@@ -294,6 +336,8 @@ svg { fill: currentColor; }
   .logo { font-size: 24px; }
   .level-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); }
   #gas { height: 136px; } #brake { height: 80px; }
+  .fbtn { width: 56px; height: 56px; } .fbtn.big { width: 76px; height: 76px; }
+  #btn-action, #btn-enter { bottom: 88px; }
 }
 @media (max-width: 760px) {
   .main-grid { grid-template-columns: repeat(2, 1fr); }

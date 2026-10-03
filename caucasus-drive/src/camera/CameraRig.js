@@ -34,6 +34,53 @@ export class CameraRig {
   snap() { this._init = false; }
   addShake(v) { this.shake = Math.min(1, this.shake + v); }
 
+  // ---------------------------------------------------------------- пешком
+  /** Камера от третьего лица: свайп крутит её вокруг персонажа (рыскание и наклон). */
+  beginFoot(yaw) {
+    this.footYaw = yaw;
+    this.footPitch = 0.22;
+    this.footDist = this.footDist || 3.3;
+    this._footInit = false;
+  }
+
+  nextFoot() {
+    this.footDist = this.footDist > 4 ? 3.3 : 5.2;
+    return this.footDist > 4 ? 'Пешком: дальняя' : 'Пешком: обычная';
+  }
+
+  updateFoot(dt, w, look) {
+    const cam = this.camera;
+    this.footYaw -= look.dx * 0.0065;
+    this.footPitch = clamp(this.footPitch + look.dy * 0.004, -0.35, 1.1);
+    const head = w.headPos;
+    const ty = this._footInit ? damp(this._footTY, head.y - 0.05, 8, dt) : head.y - 0.05;
+    this._footTY = ty;
+    const tx = w.pos.x, tz = w.pos.z;
+    const cp = Math.cos(this.footPitch), sp = Math.sin(this.footPitch);
+    const fx = Math.sin(this.footYaw) * cp, fz = Math.cos(this.footYaw) * cp;
+    let dist = this.footDist;
+    // павильон остановки для пешехода «прозрачен» (сидим внутри на лавке) — учитываем только его стенку
+    const t = Math.min(this.col.segmentHit(tx, tz, tx - fx * dist, tz - fz * dist, 'busstop'),
+      w.pedCol.segmentHit(tx, tz, tx - fx * dist, tz - fz * dist));
+    if (t < 1) dist = Math.max(0.8, dist * t - 0.3);
+    this._pos.set(tx - fx * dist, ty + sp * dist + 0.25, tz - fz * dist);
+    this._pos.y = Math.max(this._pos.y, w.groundY + 0.25);
+    if (!this._footInit) cam.position.copy(this._pos);
+    cam.position.x = damp(cam.position.x, this._pos.x, 18, dt);
+    cam.position.y = damp(cam.position.y, this._pos.y, 18, dt);
+    cam.position.z = damp(cam.position.z, this._pos.z, 18, dt);
+    this._footInit = true;
+    if (this.shake > 0.001) {
+      const s = this.shake * 0.2;
+      cam.position.x += (Math.random() - 0.5) * s;
+      cam.position.y += (Math.random() - 0.5) * s;
+      this.shake *= Math.exp(-dt * 6);
+    }
+    this._look.set(tx, ty + 0.1, tz);
+    cam.lookAt(this._look);
+    if (Math.abs(cam.fov - 62) > 0.05) { cam.fov = damp(cam.fov, 62, 4, dt); cam.updateProjectionMatrix(); }
+  }
+
   update(dt, car, orbit = 0) {
     const cam = this.camera;
     const m = MODES[this.mode];

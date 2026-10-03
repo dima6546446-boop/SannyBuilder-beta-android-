@@ -22,6 +22,7 @@ export class FreeRideMode {
   constructor(game) {
     this.g = game;
     this.name = 'free';
+    this.allowWalk = true; // можно выйти из машины и гулять
     this.rnd = mulberry32(Date.now() & 0xffff);
   }
 
@@ -33,6 +34,7 @@ export class FreeRideMode {
     g.player.place(x, z, h);
     g.cameraRig.snap();
     g.traffic.clear();
+    Object.assign(g.traffic.center, { x, z });
     g.traffic.prefill(g.camera);
     this.taxi = { on: false, stage: 'off', timer: 0 };
     this.combo = { pts: 0, mult: 1, events: 0, timer: 0, kind: '' };

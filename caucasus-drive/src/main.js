@@ -136,6 +136,7 @@ class App {
   }
 
   toMenu(screen = 'main') {
+    this.game.enterCar(true);
     this.game.mode?.exit();
     this.game.mode = null;
     this.game.traffic.clear();

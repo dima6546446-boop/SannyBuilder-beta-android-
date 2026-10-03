@@ -100,13 +100,13 @@ export class CollisionWorld {
   }
 
   /** Первое пересечение отрезка с прямоугольниками (для камеры). Возвращает t∈[0,1]. */
-  segmentHit(x0, z0, x1, z1) {
+  segmentHit(x0, z0, x1, z1, skipTag = null) {
     const list = this.query(Math.min(x0, x1), Math.min(z0, z1), Math.max(x0, x1), Math.max(z0, z1));
     let best = 1;
     const dx = x1 - x0, dz = z1 - z0;
     for (let i = 0; i < list.length; i++) {
       const o = list[i];
-      if (o.type !== 0) continue;
+      if (o.type !== 0 || o.tag === skipTag) continue;
       const t = segAabb(x0, z0, dx, dz, o.minX, o.minZ, o.maxX, o.maxZ);
       if (t < best) best = t;
     }

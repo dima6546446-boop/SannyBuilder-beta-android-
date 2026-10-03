@@ -18,10 +18,14 @@ import { GlowPoints } from './gfx/GlowPoints.js';
 import { Smoke } from './gfx/Smoke.js';
 import { PostFX } from './gfx/PostFX.js';
 import { EnvManager } from './gfx/EnvManager.js';
+import { Walker } from './character/Walker.js';
 import { TargetZone, Beacon, Cones, Pedestrian } from './gfx/Markers.js';
 import { Rules } from './gameplay/Rules.js';
 import { CAR_BY_ID } from './config/cars.js';
 import { mulberry32 } from './utils/math.js';
+
+/** Ввод для машины, пока игрок гуляет: стоит на ручнике. */
+const PARKED = { steer: 0, throttle: 0, brake: 1, handbrake: true, horn: false };
 
 const TIME_PRESETS = [[12, 'День'], [19.3, 'Вечер'], [23, 'Ночь'], [6.2, 'Рассвет']];
 
@@ -37,6 +41,7 @@ const TIME_PRESETS = [[12, 'День'], [19.3, 'Вечер'], [23, 'Ночь'], 
  *  ├─ Trees (Instanced, 2 LOD)
  *  ├─ Car_<model>_LOD0/LOD1 (Instanced: трафик + припаркованные + препятствия), BlobShadows, Beams
  *  ├─ PlayerCar: Body (paint/chrome/glass/…), 4 колеса, SpotLight фар
+ *  ├─ Walker: персонаж пешком (SkinnedMesh, 1 draw call), сигарета
  *  ├─ GlowPoints (все лампы города одним draw call), Smoke, SkidMarks
  *  └─ Маркеры: TargetZone, Beacon, Cones, Pedestrian
  */
@@ -116,6 +121,8 @@ export class Game {
     this.cameraRig = new CameraRig(this.camera, this.collision);
     this.input = new Input();
     this.hud = new HUD(this.city);
+    this.walker = new Walker(this);
+    this.onFoot = false;
     this.postfx = q.bloom ? new PostFX(renderer, scene, this.camera) : null;
     this.base = {
       shadowUpdateEvery: q.shadowUpdateEvery, shadowMapSize: q.shadowMapSize,
@@ -175,7 +182,16 @@ export class Game {
 
   _bindInput() {
     const i = this.input, p = () => this.player.physics;
-    i.on('camera', () => this.hud.toast(`Камера: ${this.cameraRig.next()}`));
+    i.on('camera', () => this.hud.toast(`Камера: ${this.onFoot ? this.cameraRig.nextFoot() : this.cameraRig.next()}`));
+    i.on('door', () => this.toggleFoot());
+    i.on('jump', () => this.onFoot && this.walker.jump());
+    i.on('sit', () => this.onFoot && this.walker.toggleSit());
+    i.on('smoke', () => {
+      if (!this.onFoot) return;
+      this.walker.toggleSmoking();
+      document.getElementById('btn-smoke').classList.toggle('on', this.walker.smoke.on);
+    });
+    i.on('whistle', () => this.onFoot && this.walker.whistleNow());
     i.on('lights', () => {
       const m = this.player.cycleLights();
       this.hud.toast(`Фары: ${m === 'auto' ? 'авто' : m === 'on' ? 'вкл' : 'выкл'}`);
@@ -204,7 +220,64 @@ export class Game {
     return TIME_PRESETS[this.timePreset][1];
   }
 
+  // ---------------------------------------------------------------- пешком
+  get canWalk() { return !!this.mode?.allowWalk; }
+
+  toggleFoot() {
+    if (this.onFoot) {
+      const p = this.player.physics, w = this.walker.pos;
+      if (Math.hypot(w.x - p.x, w.z - p.z) < 3.4 && this.walker.state !== 'down') this.enterCar();
+      else this.hud.toast('Подойди к своей машине', 'bad');
+      return;
+    }
+    if (!this.canWalk) return;
+    if (this.player.physics.speed > 1.2) { this.hud.toast('Сначала остановись', 'bad'); return; }
+    this.exitCar();
+  }
+
+  /** Выйти через водительскую дверь (слева по ходу); если там стена/машина — справа или сзади. */
+  exitCar() {
+    const p = this.player.physics, h = this.player.half;
+    const s = Math.sin(p.heading), c = Math.cos(p.heading);
+    const spots = [[h.w + 0.45, 0.1], [-(h.w + 0.45), 0.1], [0, h.rear - 0.6], [0, h.front + 0.6]];
+    let pick = spots[0];
+    for (const [lx, lz] of spots) {
+      const x = p.x + lx * c + lz * s, z = p.z - lx * s + lz * c;
+      let blocked = false;
+      this.collision.collideCircle(x, z, 0.3, (nx, nz, d, o) => { if (o.tag !== 'busstop') blocked = true; });
+      if (!blocked) { pick = [lx, lz]; break; }
+    }
+    const [lx, lz] = pick;
+    const x = p.x + lx * c + lz * s, z = p.z - lx * s + lz * c;
+    this.walker.spawn(x, z, Math.atan2(x - p.x, z - p.z));
+    this.onFoot = true;
+    this.input.setOnFoot(true);
+    this.cameraRig.beginFoot(p.heading);
+    this.player.indicator = null;
+    this.audio.door();
+    if (!this._footHint) {
+      this._footHint = true;
+      this.hud.toast('Джойстик — ходить (сильнее — бег), свайп — камера', 'good', 3.5);
+    }
+  }
+
+  enterCar(silent) {
+    if (!this.onFoot) return;
+    this.walker.hide();
+    this.traffic.ped.active = false;
+    this.onFoot = false;
+    this.input.setOnFoot(false);
+    document.getElementById('btn-smoke').classList.remove('on');
+    document.getElementById('btn-enter').classList.add('hidden');
+    this.cameraRig.snap();
+    if (!silent) this.audio.door();
+  }
+
+  /** Точка, вокруг которой живёт мир (трафик, тени, небо): машина или игрок пешком. */
+  get focus() { return this.onFoot ? this.walker.pos : this.player.position; }
+
   setMode(mode, arg) {
+    this.enterCar(true);
     if (this.mode) this.mode.exit();
     this.mode = mode;
     this.input.enabled = true;
@@ -212,6 +285,7 @@ export class Game {
     this.hud.clearToasts();
     this.hud.combo(null);
     mode.enter(arg);
+    document.getElementById('btn-door').classList.toggle('hidden', !mode.allowWalk);
     this.cameraRig.snap();
     this.renderer.shadowMap.needsUpdate = true;
     this.perf.settle();
@@ -315,20 +389,28 @@ export class Game {
     this.input.update(dt);
     const night = this.dayNight.night;
     const extra = this.mode?.extraColliders || [];
-    this.player.update(dt, this.input, {
+    const foot = this.onFoot;
+    this.player.update(dt, foot ? PARKED : this.input, {
       surface: (x, z, out) => this.city.surface(x, z, out),
       colliders: [this.collision, ...extra],
       traffic: this.traffic.cars,
       night,
     });
-    this.traffic.update(dt, this.player.physics, this.camera);
+    if (foot) this.walker.update(dt, { moveX: this.input.moveX, moveY: this.input.moveY, walk: this.input.walk, camYaw: this.cameraRig.footYaw });
+    this.traffic.update(dt, this.player.physics, this.camera, this.focus);
     this.rules.update(dt, this.player, this.player.surface.type);
     this.mode?.update(dt);
-    this.cameraRig.update(dt, this.player, this.input.orbit);
+    if (foot) this.cameraRig.updateFoot(dt, this.walker, this.input.look);
+    else this.cameraRig.update(dt, this.player, this.input.orbit);
+    this.input.look.dx = this.input.look.dy = 0;
+    if (foot) {
+      const p = this.player.physics, w = this.walker.pos;
+      document.getElementById('btn-enter').classList.toggle('hidden', Math.hypot(w.x - p.x, w.z - p.z) > 3.4 || this.walker.state === 'sit');
+    }
     this.input.showGear(this.player.physics);
 
     this.lights.update(dt);
-    this.dayNight.update(dt, this.q.shadows ? null : this.player.position, this.camera.position);
+    this.dayNight.update(dt, this.q.shadows ? null : this.focus, this.camera.position);
     this.city.update(dt, this.camera, night);
     this.trees.update(dt, this.camera.position);
     this.cones.update(dt);
@@ -338,10 +420,10 @@ export class Game {
 
     const every = this.q.shadowUpdateEvery;
     if (every > 0 && this.frame % every === 0) {
-      this.dayNight.placeShadowCamera(this.player.position);
+      this.dayNight.placeShadowCamera(this.focus);
       this.renderer.shadowMap.needsUpdate = true;
     }
-    if (this.hud._sensorsOn) this._sensors(dt);
+    if (this.hud._sensorsOn && !foot) this._sensors(dt);
 
     // --- машины (трафик + дворы + ДПС + препятствия уровня) и свечение ламп
     const blink = (performance.now() % 700) < 350;
@@ -361,14 +443,17 @@ export class Game {
     this.mode?.renderExtra?.(this.instancer, this.glow, blink);
     this.instancer.end();
     this._playerGlow();
+    this.walker.renderGlow(this.glow);
     this.glow.end(this.camera, this.renderer, this.dayNight.fog);
 
     const p = this.player.physics;
-    this.audio.update(p.rpm, p.load, p.skid, p.speed);
+    const mix = foot ? Math.max(0, 1 - Math.hypot(this.walker.pos.x - p.x, this.walker.pos.z - p.z) / 30) * 0.6 : 1;
+    this.audio.update(p.rpm, p.load, p.skid, p.speed, mix);
     this.audio.setHorn(this.input.horn);
     this.perf.update(dt);
     this.hud.update(dt, {
       player: this.player, clock: this.dayNight.label, fps: this.perf.fps, traffic: this.traffic,
+      focus: foot ? { x: this.walker.pos.x, z: this.walker.pos.z, heading: this.cameraRig.footYaw } : null,
       camera: this.camera, money: this.save.money,
     });
   }

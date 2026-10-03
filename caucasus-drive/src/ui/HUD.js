@@ -108,8 +108,8 @@ export class HUD {
     paint(this.el.sr, rear);
   }
 
-  update(dt, { player, clock, fps, traffic, camera, money }) {
-    const p = player.physics;
+  update(dt, { player, clock, fps, traffic, camera, money, focus }) {
+    const p = player.physics, f = focus || p;
     // поворотники — каждый кадр (мигание)
     const ind = player.indicator, on = player.blinkOn;
     const L = (ind === 'L' || ind === 'H') && on, R = (ind === 'R' || ind === 'H') && on;
@@ -120,10 +120,10 @@ export class HUD {
 
     if (this._navTarget && camera) {
       const t = this._navTarget;
-      const dx = t.x - p.x, dz = t.z - p.z;
+      const dx = t.x - f.x, dz = t.z - f.z;
       const d = Math.hypot(dx, dz);
       // угол цели относительно направления камеры
-      const cy = Math.atan2(camera.position.x - p.x, camera.position.z - p.z) + Math.PI;
+      const cy = Math.atan2(camera.position.x - f.x, camera.position.z - f.z) + Math.PI;
       const a = Math.atan2(dx, dz) - cy;
       this.el.nav.classList.add('show');
       this.el.navArrow.style.transform = `rotate(${-a}rad)`;
@@ -151,9 +151,10 @@ export class HUD {
     g.fillStyle = '#34482c'; g.fillRect(0, 0, S, S);
     g.translate(S / 2, S / 2);
     const zoom = 1.9;
-    g.rotate(Math.PI + p.heading);
+    g.rotate(Math.PI + f.heading);
     g.scale(zoom, zoom);
-    g.translate(-this.tx(p.x), -this.tz(p.z));
+    g.translate(-this.tx(f.x), -this.tz(f.z));
+    if (focus) { g.fillStyle = '#ff9d2a'; g.fillRect(this.tx(p.x) - 2, this.tz(p.z) - 2, 4, 4); } // своя машина
     g.drawImage(this._mapBase, 0, 0);
     g.fillStyle = '#ffd24a';
     for (const car of traffic.cars) g.fillRect(this.tx(car.x) - 1.2, this.tz(car.z) - 1.2, 2.4, 2.4);

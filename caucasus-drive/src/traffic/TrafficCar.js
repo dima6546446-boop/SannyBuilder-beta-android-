@@ -195,6 +195,16 @@ export class TrafficCar {
       }
       const p = ctx.player;
       if (scan(p.x, p.z, Math.sin(p.heading), Math.cos(p.heading), p.speed)) { leader = null; leaderIsPlayer = true; }
+      // пешеход-игрок на проезжей части: стоим перед ним, через пару секунд сигналим
+      const ped = ctx.ped;
+      if (ped && ped.active) {
+        const dx = ped.x - this.x, dz = ped.z - this.z;
+        const along = dx * fx + dz * fz, side = dx * rx + dz * rz;
+        if (along > 0.5 && along < 30 && Math.abs(side) < 1.6) {
+          const gp = along - HALF_LEN - 1.2;
+          if (gp < gap) { gap = Math.max(gp, 0.01); leadV = 0; leader = null; leaderIsPlayer = true; }
+        }
+      }
     }
 
     // 3. светофор: стоп-линия как неподвижный «лидер»
@@ -231,7 +241,7 @@ export class TrafficCar {
     this.braking = acc < -0.8 || (this.speed < 0.3 && gap < 5);
 
     // 5. объезд препятствий и перестроения
-    const leaderStopped = (leader && leader.speed < 0.5 && !leader.waitingLight) || (leaderIsPlayer && ctx.player.speed < 0.5);
+    const leaderStopped = (leader && leader.speed < 0.5 && !leader.waitingLight) || (leaderIsPlayer && (ctx.player.speed < 0.5 || ctx.ped?.active));
     if ((leader || leaderIsPlayer) && this.speed < 0.5 && gap < 10 && leaderStopped) this.blocked += dt;
     else this.blocked = Math.max(0, this.blocked - dt);
 

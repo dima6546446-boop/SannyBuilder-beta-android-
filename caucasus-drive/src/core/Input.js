@@ -17,6 +17,11 @@ export class Input {
     this.orbitActive = false;
     this.mode = 'wheel';
     this.enabled = true;
+    // пешком
+    this.onFoot = false;
+    this.moveX = 0; this.moveY = 0; this.walk = false;
+    this.look = { dx: 0, dy: 0 };   // накопленный свайп для камеры (px), обнуляет потребитель
+    this._stick = { id: null, x: 0, y: 0 };
 
     this._wheelAngle = 0;
     this._wheelPointer = null;
@@ -37,6 +42,16 @@ export class Input {
     document.getElementById('wheel').classList.toggle('hidden', mode !== 'wheel');
     document.getElementById('arrows').classList.toggle('hidden', mode !== 'arrows');
     if (mode === 'tilt') this._enableTilt();
+  }
+
+  /** Переключить раскладку: машина ↔ пешком (CSS скрывает лишнее по классу body.onfoot). */
+  setOnFoot(v) {
+    this.onFoot = v;
+    document.body.classList.toggle('onfoot', v);
+    this._stick.id = null; this._stick.x = this._stick.y = 0;
+    this._knob && (this._knob.style.transform = '');
+    this._gas = this._brk = this._hb = this._hornTouch = false;
+    this.look.dx = this.look.dy = 0;
   }
 
   setGearbox(manual) {
@@ -122,6 +137,32 @@ export class Input {
     tap('hazard', 'hazard');
     tap('btn-action', 'action');
     tap('btn-taxi', 'taxi');
+    tap('btn-door', 'door');
+    tap('btn-enter', 'door');
+    tap('btn-jump', 'jump');
+    tap('btn-sit', 'sit');
+    tap('btn-smoke', 'smoke');
+    tap('btn-whistle', 'whistle');
+
+    // джойстик пешехода
+    const stick = $('stick'), st = this._stick;
+    this._knob = $('stick-knob');
+    const moveStick = (e) => {
+      const r = stick.getBoundingClientRect(), rad = r.width / 2;
+      let dx = (e.clientX - (r.left + rad)) / rad, dy = (e.clientY - (r.top + rad)) / rad;
+      const m = Math.hypot(dx, dy);
+      if (m > 1) { dx /= m; dy /= m; }
+      st.x = dx; st.y = -dy;
+      this._knob.style.transform = `translate(${dx * rad * 0.62}px, ${dy * rad * 0.62}px)`;
+    };
+    stick.addEventListener('pointerdown', (e) => {
+      if (st.id !== null) return;
+      st.id = e.pointerId; stick.setPointerCapture(e.pointerId); moveStick(e); e.preventDefault(); e.stopPropagation();
+    });
+    stick.addEventListener('pointermove', (e) => { if (e.pointerId === st.id) moveStick(e); });
+    const endStick = (e) => { if (e.pointerId !== st.id) return; st.id = null; st.x = st.y = 0; this._knob.style.transform = ''; };
+    stick.addEventListener('pointerup', endStick);
+    stick.addEventListener('pointercancel', endStick);
     document.querySelectorAll('.lslot').forEach((el) => el.addEventListener('pointerdown', (e) => {
       e.preventDefault();
       this.emit('selector', el.dataset.sel);
@@ -129,12 +170,14 @@ export class Input {
 
     // облёт камеры свайпом по свободной части экрана
     const canvas = $('game');
-    let orbitId = null, lastX = 0;
-    canvas.addEventListener('pointerdown', (e) => { if (orbitId === null) { orbitId = e.pointerId; lastX = e.clientX; this.orbitActive = true; } });
+    let orbitId = null, lastX = 0, lastY = 0;
+    canvas.addEventListener('pointerdown', (e) => { if (orbitId === null) { orbitId = e.pointerId; lastX = e.clientX; lastY = e.clientY; this.orbitActive = true; } });
     canvas.addEventListener('pointermove', (e) => {
       if (e.pointerId !== orbitId) return;
       this.orbit = wrapAngle(this.orbit - (e.clientX - lastX) * 0.008);
-      lastX = e.clientX;
+      this.look.dx += e.clientX - lastX;
+      this.look.dy += e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
     });
     const endOrbit = (e) => { if (e.pointerId === orbitId) { orbitId = null; this.orbitActive = false; } };
     canvas.addEventListener('pointerup', endOrbit);
@@ -153,6 +196,12 @@ export class Input {
     window.addEventListener('keydown', (e) => {
       if (e.repeat) return;
       this._keys.add(e.code);
+      if (e.code === 'KeyG') this.emit('door');
+      if (this.onFoot) {
+        const foot = { Space: 'jump', KeyB: 'sit', KeyK: 'smoke', KeyR: 'whistle', KeyC: 'camera', Escape: 'pause', KeyP: 'pause' };
+        if (foot[e.code]) this.emit(foot[e.code]);
+        return;
+      }
       if (map[e.code]) this.emit(map[e.code]);
       if (e.code === 'KeyZ') this.emit('indicator', 'L');
       if (e.code === 'KeyX') this.emit('indicator', 'R');
@@ -166,6 +215,17 @@ export class Input {
 
   update(dt) {
     const k = this._keys;
+    if (this.onFoot) {
+      let x = (k.has('KeyD') || k.has('ArrowRight') ? 1 : 0) - (k.has('KeyA') || k.has('ArrowLeft') ? 1 : 0);
+      let y = (k.has('KeyW') || k.has('ArrowUp') ? 1 : 0) - (k.has('KeyS') || k.has('ArrowDown') ? 1 : 0);
+      if (x || y) { const m = Math.hypot(x, y); x /= m; y /= m; this.walk = k.has('ShiftLeft') || k.has('ShiftRight'); }
+      else { x = this._stick.x; y = this._stick.y; this.walk = false; }
+      this.moveX = this.enabled ? x : 0;
+      this.moveY = this.enabled ? y : 0;
+      this.steer = 0; this.throttle = 0; this.brake = 0; this.handbrake = false; this.horn = false;
+      if (!this.orbitActive) this.orbit *= Math.exp(-dt * 1.5);
+      return;
+    }
     const kLeft = k.has('ArrowLeft') || k.has('KeyA') || this._arrow.L;
     const kRight = k.has('ArrowRight') || k.has('KeyD') || this._arrow.R;
     const kGas = k.has('ArrowUp') || k.has('KeyW');

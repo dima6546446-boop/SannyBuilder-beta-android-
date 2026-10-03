@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { buildCharacter, OUTFITS } from '../character/CharacterModel.js';
 
 const ZONE_VERT = /* glsl */`
 varying vec2 vUv;
@@ -183,33 +184,53 @@ function mergeTwo(a, b) {
 }
 
 /** Простой пассажир-пешеход (для такси). */
+/**
+ * Пассажир такси на тротуаре: тот же скелетный персонаж, что и игрок пешком (4 варианта
+ * одежды, строятся при первом показе), машет рукой подъезжающей машине.
+ */
 export class Pedestrian {
   constructor(scene) {
-    this.group = new THREE.Group();
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 1.1, 8).translate(0, 0.95, 0), new THREE.MeshLambertMaterial({ color: 0x2d4a7a }));
-    const legs = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.16, 0.8, 8).translate(0, 0.4, 0), new THREE.MeshLambertMaterial({ color: 0x222222 }));
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 8).translate(0, 1.68, 0), new THREE.MeshLambertMaterial({ color: 0xe0b090 }));
-    const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.19, 0.12, 10).translate(0, 1.82, 0), new THREE.MeshLambertMaterial({ color: 0x6a4a2a }));
-    this.body = body;
-    this.group.add(body, legs, head, hat);
-    this.group.traverse((o) => { o.castShadow = true; });
-    this.group.visible = false;
-    scene.add(this.group);
+    this.scene = scene;
+    this.variants = new Map();
+    this.cur = null;
     this.t = 0;
   }
 
-  show(x, y, z, color) {
-    this.group.position.set(x, y, z);
-    if (color) this.body.material.color.setHex(color);
-    this.group.visible = true;
+  _variant(color) {
+    const key = OUTFIT_BY_COLOR[color] || 'blue';
+    if (!this.variants.has(key)) {
+      const c = buildCharacter(OUTFITS[key]);
+      c.root.visible = false;
+      this.scene.add(c.root);
+      this.variants.set(key, c);
+    }
+    return this.variants.get(key);
   }
 
-  hide() { this.group.visible = false; }
+  show(x, y, z, color) {
+    this.hide();
+    this.cur = this._variant(color);
+    this.cur.root.position.set(x, y, z);
+    this.cur.root.visible = true;
+  }
+
+  hide() { if (this.cur) this.cur.root.visible = false; this.cur = null; }
 
   update(dt, lookX, lookZ) {
-    if (!this.group.visible) return;
+    const c = this.cur;
+    if (!c) return;
     this.t += dt;
-    this.group.rotation.y = Math.atan2(lookX - this.group.position.x, lookZ - this.group.position.z);
-    this.group.position.y += Math.sin(this.t * 6) * 0.002; // «машет рукой»
+    const r = c.root;
+    r.rotation.y = Math.atan2(lookX - r.position.x, lookZ - r.position.z);
+    // «голосует»: правая рука поднята и машет, левая в кармане
+    const B = c.bones, w = Math.sin(this.t * 7);
+    B.upperArmR.rotation.set(-0.3, 0, -2.5);
+    B.forearmR.rotation.set(0, 0, w * 0.45);
+    B.upperArmL.rotation.set(0.1, 0, 0.12);
+    B.forearmL.rotation.set(-0.6, 0, 0);
+    B.head.rotation.y = Math.sin(this.t * 0.8) * 0.2;
+    B.chest.rotation.x = Math.sin(this.t * 1.7) * 0.015;
   }
 }
+
+const OUTFIT_BY_COLOR = { 0x2d4a7a: 'blue', 0x7a2d2d: 'red', 0x2d7a4a: 'green', 0x6a5a2a: 'coat' };

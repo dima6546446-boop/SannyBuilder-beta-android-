@@ -28,7 +28,9 @@ export class TrafficManager {
     this.pool = new Pool((i) => new TrafficCar(i), this.max);
     this.cars = this.pool.active;
     this.player = { x: 0, z: 0, heading: 0, speed: 0 };
-    this.ctx = { graph, lights, cars: this.cars, player: this.player, rnd: this.rnd, onHonk };
+    this.ped = { active: false, x: 0, z: 0 };
+    this.center = { x: 0, z: 0 }; // вокруг кого спавнить трафик (машина или игрок пешком)
+    this.ctx = { graph, lights, cars: this.cars, player: this.player, ped: this.ped, rnd: this.rnd, onHonk };
     this._spawnTimer = 0;
     this._frustum = new THREE.Frustum();
     this._pm = new THREE.Matrix4();
@@ -63,7 +65,7 @@ export class TrafficManager {
   _trySpawn(camera) {
     const car = this.pool.acquire();
     if (!car) return;
-    const p = this.player;
+    const p = this.center;
     camera.updateMatrixWorld();
     this._pm.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     this._frustum.setFromProjectionMatrix(this._pm);
@@ -89,10 +91,12 @@ export class TrafficManager {
     this.pool.release(car);
   }
 
-  update(dt, playerPhysics, camera) {
+  update(dt, playerPhysics, camera, center = playerPhysics) {
     const p = this.player;
     p.x = playerPhysics.x; p.z = playerPhysics.z;
     p.heading = playerPhysics.heading; p.speed = playerPhysics.speed;
+    const cn = this.center;
+    cn.x = center.x; cn.z = center.z;
     if (!this.enabled) return;
 
     this._spawnTimer -= dt;
@@ -103,7 +107,7 @@ export class TrafficManager {
     for (let i = this.cars.length - 1; i >= 0; i--) {
       const c = this.cars[i];
       c.update(dt);
-      if (Math.hypot(c.x - p.x, c.z - p.z) > DESPAWN) { c.active = false; this.pool.release(c); }
+      if (Math.hypot(c.x - cn.x, c.z - cn.z) > DESPAWN) { c.active = false; this.pool.release(c); }
     }
   }
 

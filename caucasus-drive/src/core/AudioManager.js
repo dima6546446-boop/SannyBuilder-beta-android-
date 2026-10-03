@@ -97,7 +97,10 @@ export class AudioManager {
     if (this.master) this.master.gain.setTargetAtTime(0.8 * v, this.ctx.currentTime, 0.05);
   }
 
-  update(rpm, load, skid, speed) {
+  /**
+   * @param mix — громкость мотора 0..1 (игрок вышел из машины и отошёл — мотор тише)
+   */
+  update(rpm, load, skid, speed, mix = 1) {
     if (!this.enabled) return;
     const t = this.ctx.currentTime;
     const f = (rpm / 60) * ((this.cyl ?? 4) / 2); // частота вспышек 4-тактного мотора
@@ -105,8 +108,8 @@ export class AudioManager {
     this.eOsc2.frequency.setTargetAtTime(f * 0.5, t, 0.03);
     this.eOsc3.frequency.setTargetAtTime(f * 1.5, t, 0.03);
     this.eFilter.frequency.setTargetAtTime(220 + rpm * 0.22 + load * 900, t, 0.05);
-    this.eGain.gain.setTargetAtTime((0.1 + load * 0.16 + (rpm / 6500) * 0.08) * (this.rasp ?? 1), t, 0.06);
-    this.rumbleGain.gain.setTargetAtTime(0.15 + load * 0.25, t, 0.1);
+    this.eGain.gain.setTargetAtTime((0.1 + load * 0.16 + (rpm / 6500) * 0.08) * (this.rasp ?? 1) * mix, t, 0.06);
+    this.rumbleGain.gain.setTargetAtTime((0.15 + load * 0.25) * mix, t, 0.1);
     this.skidGain.gain.setTargetAtTime(Math.min(skid, 1) * 0.28, t, 0.05);
     this.windGain.gain.setTargetAtTime(Math.min(speed / 45, 1) * 0.12, t, 0.2);
   }
@@ -237,6 +240,84 @@ export class AudioManager {
       src.connect(hp).connect(g).connect(this.master);
       src.start(t + dt, Math.random() * 0.5, 0.06);
     }
+  }
+
+  // ---------------------------------------------------------------- пешеход
+  /** Короткий шумовой всплеск через полосовой фильтр. */
+  _burst(freq, q, vol, dur, type = 'bandpass', at = 0) {
+    if (!this.enabled) return;
+    const ctx = this.ctx, t = ctx.currentTime + at;
+    const src = ctx.createBufferSource(); src.buffer = this.noise;
+    const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; f.Q.value = q;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + Math.min(0.01, dur * 0.2));
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    src.connect(f).connect(g).connect(this.master);
+    src.start(t, Math.random() * 0.5, dur + 0.02);
+  }
+
+  /** Шаг по асфальту; strength 0.5 — шаг, 1+ — бег/приземление. */
+  footstep(strength = 0.6) {
+    this._burst(500 + Math.random() * 300, 1.2, 0.09 * strength, 0.07);
+    this._burst(2600, 2, 0.025 * strength, 0.04, 'bandpass', 0.008);
+  }
+
+  /** Хлопок двери «Жигулей»: глухой удар + дребезг. */
+  door() {
+    if (!this.enabled) return;
+    this._burst(180, 0.8, 0.5, 0.18, 'lowpass');
+    this._burst(1400, 4, 0.08, 0.12, 'bandpass', 0.02);
+    const ctx = this.ctx, t = ctx.currentTime;
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(50, t + 0.15);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.35, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+    o.connect(g).connect(this.master); o.start(t); o.stop(t + 0.2);
+  }
+
+  /** Зажигалка: чирк колёсика + шипение пламени. */
+  lighter() {
+    this._burst(4200, 3, 0.12, 0.05);
+    this._burst(3600, 2, 0.08, 0.04, 'bandpass', 0.06);
+    this._burst(1800, 0.5, 0.03, 0.6, 'highpass', 0.1);
+  }
+
+  /** Затяжка: тихое потрескивание табака. */
+  inhale() {
+    for (let i = 0; i < 6; i++) this._burst(5000 + Math.random() * 2000, 6, 0.02, 0.02, 'bandpass', 0.05 + i * 0.12 + Math.random() * 0.05);
+    this._burst(900, 0.6, 0.03, 0.7, 'bandpass', 0.05);
+  }
+
+  exhale() { this._burst(700, 0.5, 0.05, 0.6, 'bandpass'); }
+
+  /** Свист «в два пальца»: резкий подъём, пауза, второй подъём с завитком. */
+  whistle() {
+    if (!this.enabled) return;
+    const ctx = this.ctx, t0 = ctx.currentTime + 0.02;
+    const seg = (t, f0, f1, f2, dur, vol) => {
+      const o = ctx.createOscillator(); o.type = 'sine';
+      o.frequency.setValueAtTime(f0, t);
+      o.frequency.exponentialRampToValueAtTime(f1, t + dur * 0.55);
+      o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+      const vib = ctx.createOscillator(); vib.frequency.value = 7;
+      const vg = ctx.createGain(); vg.gain.value = 18;
+      vib.connect(vg).connect(o.frequency);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(vol, t + 0.04);
+      g.gain.setValueAtTime(vol, t + dur - 0.06);
+      g.gain.linearRampToValueAtTime(0, t + dur);
+      // воздух вокруг тона
+      const n = ctx.createBufferSource(); n.buffer = this.noise;
+      const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 8;
+      bp.frequency.setValueAtTime(f0, t); bp.frequency.exponentialRampToValueAtTime(f1, t + dur * 0.55); bp.frequency.exponentialRampToValueAtTime(f2, t + dur);
+      const ng = ctx.createGain(); ng.gain.value = 0.35;
+      n.connect(bp).connect(ng).connect(g);
+      o.connect(g).connect(this.master);
+      o.start(t); o.stop(t + dur + 0.02); vib.start(t); vib.stop(t + dur + 0.02); n.start(t, Math.random() * 0.4, dur + 0.05);
+    };
+    seg(t0, 1300, 2700, 2500, 0.32, 0.16);
+    seg(t0 + 0.42, 1500, 2900, 1700, 0.55, 0.16);
   }
 
   suspend() { this.ctx?.suspend(); }
