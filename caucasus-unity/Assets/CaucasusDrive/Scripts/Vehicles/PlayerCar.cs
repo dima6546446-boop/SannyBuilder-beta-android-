@@ -1,0 +1,258 @@
+using UnityEngine;
+
+namespace CaucasusDrive
+{
+    /// <summary>Передаёт столкновения кузова игроку (удар о стену, конус, машину трафика).</summary>
+    public class CarCollisionRelay : MonoBehaviour
+    {
+        public System.Action<Collision> onHit;
+        void OnCollisionEnter(Collision c) { onHit?.Invoke(c); }
+    }
+
+    /// <summary>
+    /// Машина игрока. Физика — VehiclePhysics (порт веб-версии), столкновения — PhysX:
+    /// каждый физический кадр состояние читается из Rigidbody (позиция/скорость после контактов),
+    /// шаг модели шин считает новую скорость и рыскание, и они записываются обратно в Rigidbody.
+    /// Координаты модели зеркальны по X (как в веб-версии): x → −x, курс → −курс.
+    /// </summary>
+    public class PlayerCar
+    {
+        public GameObject go;
+        public Rigidbody rb;
+        public CarVisual vis;
+        public VehiclePhysics phys;
+        public CarDef def;
+        public CarTune tune;
+        public Surface surface;
+        public float y;
+        public bool lightsOn;
+        public int lightsMode;        // 0 — авто, 1 — вкл, 2 — выкл
+        public char indicator = ' ';  // 'L', 'R', 'H'
+        public bool blinkOn;
+        float blinkT, cool;
+        public System.Action<float, string, Collider> onCrash; // сила 0..1, тип препятствия
+        public System.Action onBlink;
+        SkidMarks skids;
+        ParticleSystem smoke;
+        readonly Transform parent;
+        string lod;
+
+        public float Speed => phys.speed;
+        public float Heading => -phys.heading;                        // курс в Unity
+        public Vector3 Position => go.transform.position;
+
+        public PlayerCar(Transform parent)
+        {
+            this.parent = parent;
+            go = new GameObject("PlayerCar");
+            go.transform.SetParent(parent, false);
+            rb = go.AddComponent<Rigidbody>();
+            rb.useGravity = false;
+            rb.constraints = RigidbodyConstraints.FreezePositionY | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+#if UNITY_6000_0_OR_NEWER
+            rb.linearDamping = 0f; rb.angularDamping = 0f;
+#else
+            rb.drag = 0f; rb.angularDrag = 0f;
+#endif
+            go.AddComponent<CarCollisionRelay>().onHit = OnHit;
+            skids = new SkidMarks(parent);
+            smoke = MakeSmoke(parent);
+        }
+
+        static ParticleSystem MakeSmoke(Transform parent)
+        {
+            var g = new GameObject("TireSmoke");
+            g.transform.SetParent(parent, false);
+            var ps = g.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = ps.main;
+            main.loop = true; main.playOnAwake = false; main.maxParticles = 220;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(1.6f, 2.6f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.2f, 0.8f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.9f, 1.6f);
+            main.startColor = new Color(0.92f, 0.92f, 0.92f, 0.5f);
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.gravityModifier = -0.03f;
+            var em = ps.emission; em.rateOverTime = 0f;
+            var sh = ps.shape; sh.enabled = false;
+            var sz = ps.sizeOverLifetime; sz.enabled = true; sz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2.6f));
+            var col = ps.colorOverLifetime; col.enabled = true;
+            var grad = new Gradient();
+            grad.SetKeys(new[] { new GradientColorKey(Color.white, 0), new GradientColorKey(Color.white, 1) },
+                new[] { new GradientAlphaKey(0.6f, 0), new GradientAlphaKey(0f, 1) });
+            col.color = grad;
+            var r = g.GetComponent<ParticleSystemRenderer>();
+            r.sharedMaterial = Mats.Particles().Tex(Mats.Smoke);
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            ps.Play();
+            return ps;
+        }
+
+        /// <summary>Поставить машину и тюнинг. lodName: LOD_ultra (высокое качество) или LOD_hi.</summary>
+        public void SetCar(CarDef d, CarTune t, int color, string lodName, bool assist, bool manual)
+        {
+            def = d; tune = t; lod = lodName;
+            var keepPos = go.transform.position; var keepRot = go.transform.rotation;
+            if (vis != null) vis.Destroy();
+            vis = CarVisual.Build(d, t, color, lodName, true, go.transform);
+            var spec = PhysSpec.Make(d, Tuning.Engine[Mathf.Clamp(t.engine, 0, 3)].value, Tuning.Tires[Mathf.Clamp(t.tires, 0, 1)].value, Tuning.Height[Mathf.Clamp(t.height, 0, 3)].value);
+            spec.stabilityAssist = assist ? 0.35f : 0f;
+            spec.driftAssist = assist ? 1f : 0f;
+            if (phys == null) phys = new VehiclePhysics(spec); else phys.SetSpec(spec);
+            phys.SetManual(manual);
+            rb.mass = spec.mass;
+            // коллайдер кузова: коробка по габаритам, физ. материал без трения (скользим вдоль стен)
+            foreach (var c in go.GetComponents<Collider>()) Object.Destroy(c);
+            var box = go.AddComponent<BoxCollider>();
+            box.center = new Vector3(0, 0.72f, (d.dims.front + d.dims.rear) / 2f);
+            box.size = new Vector3(d.dims.W - 0.04f, 1.2f, d.dims.front - d.dims.rear - 0.04f);
+#if UNITY_6000_0_OR_NEWER
+            box.sharedMaterial = new PhysicsMaterial("Car") { dynamicFriction = 0.05f, staticFriction = 0.05f, bounciness = 0.12f, frictionCombine = PhysicsMaterialCombine.Minimum, bounceCombine = PhysicsMaterialCombine.Average };
+#else
+            box.sharedMaterial = new PhysicMaterial("Car") { dynamicFriction = 0.05f, staticFriction = 0.05f, bounciness = 0.12f, frictionCombine = PhysicMaterialCombine.Minimum, bounceCombine = PhysicMaterialCombine.Average };
+#endif
+            go.transform.SetPositionAndRotation(keepPos, keepRot);
+        }
+
+        public void Place(float x, float z, float h)
+        {
+            rb.position = new Vector3(x, 0, z);
+            rb.rotation = M.Yaw(h);
+            go.transform.SetPositionAndRotation(rb.position, rb.rotation);
+            SetVel(Vector3.zero, Vector3.zero);
+            phys.Reset(-x, z, -h);
+            phys.fuel = Mathf.Max(phys.fuel, phys.spec.tank * 0.5f);
+            skids.Clear();
+            y = 0f;
+        }
+
+        void SetVel(Vector3 v, Vector3 w)
+        {
+#if UNITY_6000_0_OR_NEWER
+            rb.linearVelocity = v;
+#else
+            rb.velocity = v;
+#endif
+            rb.angularVelocity = w;
+        }
+
+        Vector3 GetVel()
+        {
+#if UNITY_6000_0_OR_NEWER
+            return rb.linearVelocity;
+#else
+            return rb.velocity;
+#endif
+        }
+
+        /// <summary>Физический кадр (FixedUpdate).</summary>
+        public void FixedStep(float dt, CarInput input, float muScale)
+        {
+            var p = rb.position; var v = GetVel();
+            float yaw = rb.rotation.eulerAngles.y * Mathf.Deg2Rad;
+            phys.x = -p.x; phys.z = p.z; phys.heading = -yaw;
+            phys.vx = -v.x; phys.vz = v.z; phys.yawRate = -rb.angularVelocity.y;
+            surface = App.I.city.SurfaceAt(p.x, p.z);
+            phys.Update(dt, input, surface.mu * muScale);
+            SetVel(new Vector3(-phys.vx, 0, phys.vz), new Vector3(0, -phys.yawRate, 0));
+            if (cool > 0) cool -= dt;
+        }
+
+        void OnHit(Collision c)
+        {
+            var obs = c.collider.GetComponentInParent<Obstacle>();
+            string kind = obs ? obs.kind : "building";
+            float imp = c.relativeVelocity.magnitude;
+            if (kind == "car")
+            {
+                foreach (var t in App.I.traffic.cars) if (t.go == obs.gameObject) t.Bump(imp);
+            }
+            // любое касание — режим решает сам (парковка: провал, город: удар при силе > 0.08)
+            if (cool <= 0f)
+            {
+                cool = 0.3f;
+                onCrash?.Invoke(Mathf.Min(1f, imp / 14f), kind, c.collider);
+            }
+        }
+
+        /// <summary>Визуал (каждый кадр): крен, колёса, фары, поворотники, следы и дым.</summary>
+        public void VisualUpdate(float dt, CarInput input, float night)
+        {
+            var p = phys;
+            y = M.Damp(y, surface.y, 18f, dt);
+            vis.root.transform.localPosition = new Vector3(0, y, 0);
+            // «клевок» при торможении (+X в Unity — нос вниз) и крен наружу поворота (+Z — правый борт вверх)
+            vis.body.localRotation = Quaternion.Euler(M.Clamp(-p.axLong * 0.009f, -0.05f, 0.05f) * Mathf.Rad2Deg, 0, M.Clamp(p.ayLat * 0.011f, -0.07f, 0.07f) * Mathf.Rad2Deg);
+            float R = def.dims.wheelR;
+            float spin = p.vLong / R * dt * Mathf.Rad2Deg;
+            foreach (var w in vis.wheels)
+            {
+                float s = (w.front || !input.handbrake) ? spin : 0f;
+                bool driven = p.spec.drive == Drive.AWD || (p.spec.drive == Drive.FWD) == w.front;
+                if (driven && p.wheelSpin > 0.1f && p.load > 0.5f) s += 35f * Mathf.Sign(p.vLong == 0 ? 1 : p.vLong);
+                w.spin.Rotate(s, 0, 0, Space.Self); // +X — верх колеса вперёд
+                if (w.front) w.pivot.localRotation = Quaternion.Euler(0, p.steer * Mathf.Rad2Deg, 0); // steer > 0 — вправо
+            }
+
+            if (indicator != ' ')
+            {
+                blinkT += dt;
+                bool on = (blinkT % 0.7f) < 0.35f;
+                if (on != blinkOn) { blinkOn = on; onBlink?.Invoke(); }
+                if (indicator != 'H')
+                {
+                    if (Mathf.Abs(p.steer) > 0.25f) wasTurning = true;
+                    else if (wasTurning && Mathf.Abs(p.steer) < 0.05f && p.speed > 3f) { wasTurning = false; indicator = ' '; }
+                }
+            }
+            else { blinkOn = false; wasTurning = false; }
+
+            lightsOn = lightsMode == 1 || (lightsMode == 0 && night > 0.3f);
+            vis.SetLamps(lightsOn, p.braking, p.reversing,
+                blinkOn && (indicator == 'L' || indicator == 'H'), blinkOn && (indicator == 'R' || indicator == 'H'));
+
+            // следы и дым задних колёс
+            float sk = p.Skid;
+            bool skid = sk > 0.35f || (input.handbrake && p.speed > 3f);
+            float driftK = p.sliding * Mathf.Min(1f, Mathf.Abs(p.driftAngle) / 0.6f) * Mathf.Min(1f, p.speed / 14f);
+            float markK = Mathf.Max(driftK, Mathf.Min(1f, (sk - 0.35f) * 1.5f));
+            float smokeK = Mathf.Max(driftK, (sk - 0.45f) * 1.2f);
+            var t = go.transform;
+            var d = def.dims;
+            for (int i = 0; i < 2; i++)
+            {
+                int side = i == 0 ? 1 : -1;
+                var wp = t.TransformPoint(new Vector3(side * d.track / 2f, 0, d.axleR));
+                wp.y = y;
+                skids.Add(i, wp, t.right, skid && surface.type != 2, markK);
+                bool grass = surface.type == 2 && p.speed > 4f;
+                if ((smokeK > 0f && surface.type != 2 && Random.value < 0.2f + smokeK * 0.75f) || (grass && Random.value < 0.3f))
+                {
+                    var ep = new ParticleSystem.EmitParams
+                    {
+                        position = wp + Vector3.up * 0.3f,
+                        velocity = GetVel() * 0.25f + new Vector3(Random.Range(-0.6f, 0.6f), 0.4f, Random.Range(-0.6f, 0.6f)),
+                        startColor = grass ? new Color(0.55f, 0.45f, 0.3f, 0.45f) : new Color(0.93f, 0.93f, 0.93f, 0.25f + 0.4f * Mathf.Min(1f, smokeK)),
+                    };
+                    smoke.Emit(ep, 1);
+                }
+            }
+            skids.Flush();
+        }
+
+        bool wasTurning;
+
+        /// <summary>Углы кузова в мировых координатах (для проверки «встал в зону»).</summary>
+        public Vector3[] Corners()
+        {
+            var d = def.dims; var t = go.transform; float w = d.W / 2f;
+            return new[] { t.TransformPoint(new Vector3(w, 0, d.front)), t.TransformPoint(new Vector3(-w, 0, d.front)), t.TransformPoint(new Vector3(-w, 0, d.rear)), t.TransformPoint(new Vector3(w, 0, d.rear)) };
+        }
+
+        public void CycleLights() { lightsMode = (lightsMode + 1) % 3; }
+        public void ToggleIndicator(char side) { indicator = indicator == side ? ' ' : side; blinkT = 0; }
+        public void ToggleHazard() { indicator = indicator == 'H' ? ' ' : 'H'; blinkT = 0; }
+    }
+}

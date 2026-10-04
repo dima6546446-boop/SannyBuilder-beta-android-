@@ -1,0 +1,220 @@
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
+
+namespace CaucasusDrive
+{
+    /// <summary>Конструктор интерфейса из кода (uGUI): закруглённые панели, текст, кнопки. Без префабов.</summary>
+    public static class UIKit
+    {
+        public static readonly Color Bg = new Color(0.06f, 0.07f, 0.09f, 0.82f);
+        public static readonly Color Bg2 = new Color(0.12f, 0.13f, 0.16f, 0.92f);
+        public static readonly Color Accent = M.Hex(0xff6a1a);
+        public static readonly Color Gold = M.Hex(0xffc94a);
+        public static readonly Color Green = M.Hex(0x2fbf5a);
+        public static readonly Color Muted = new Color(1f, 1f, 1f, 0.6f);
+
+        static Font font;
+        public static Font Font
+        {
+            get
+            {
+                if (font) return font;
+                font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+                if (!font) font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                return font;
+            }
+        }
+
+        static Sprite rounded, circle;
+        /// <summary>Закруглённый прямоугольник 64×64 с 9-slice-рамкой 24 px.</summary>
+        public static Sprite Rounded
+        {
+            get
+            {
+                if (rounded) return rounded;
+                int s = 64; float r = 22f;
+                var t = new Texture2D(s, s, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Bilinear };
+                var px = new Color32[s * s];
+                for (int y = 0; y < s; y++)
+                    for (int x = 0; x < s; x++)
+                    {
+                        float dx = Mathf.Max(0, Mathf.Max(r - x - 0.5f, x + 0.5f - (s - r))), dy = Mathf.Max(0, Mathf.Max(r - y - 0.5f, y + 0.5f - (s - r)));
+                        float d = Mathf.Sqrt(dx * dx + dy * dy);
+                        byte a = (byte)(Mathf.Clamp01(r - d + 0.5f) * 255);
+                        px[y * s + x] = new Color32(255, 255, 255, a);
+                    }
+                t.SetPixels32(px); t.Apply();
+                rounded = Sprite.Create(t, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(24, 24, 24, 24));
+                return rounded;
+            }
+        }
+
+        public static Sprite Circle
+        {
+            get
+            {
+                if (circle) return circle;
+                int s = 128;
+                var t = new Texture2D(s, s, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+                var px = new Color32[s * s];
+                for (int y = 0; y < s; y++)
+                    for (int x = 0; x < s; x++)
+                    {
+                        float d = Mathf.Sqrt((x - 63.5f) * (x - 63.5f) + (y - 63.5f) * (y - 63.5f));
+                        px[y * s + x] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(63.5f - d) * 255));
+                    }
+                t.SetPixels32(px); t.Apply();
+                circle = Sprite.Create(t, new Rect(0, 0, s, s), new Vector2(0.5f, 0.5f));
+                return circle;
+            }
+        }
+
+        public static Canvas MakeCanvas(string name, int order)
+        {
+            var go = new GameObject(name);
+            var c = go.AddComponent<Canvas>();
+            c.renderMode = RenderMode.ScreenSpaceOverlay;
+            c.sortingOrder = order;
+            c.pixelPerfect = false;
+            var sc = go.AddComponent<CanvasScaler>();
+            sc.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            sc.referenceResolution = new Vector2(1280, 720);
+            sc.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            sc.matchWidthOrHeight = 1f;
+            go.AddComponent<GraphicRaycaster>();
+            #if UNITY_2023_1_OR_NEWER
+            if (Object.FindFirstObjectByType<EventSystem>() == null)
+#else
+            if (Object.FindObjectOfType<EventSystem>() == null)
+#endif
+            {
+                var es = new GameObject("EventSystem");
+                es.AddComponent<EventSystem>();
+                In.AddUIModule(es);
+            }
+            return c;
+        }
+
+        public static RectTransform Rect(Transform parent, string name, Vector2 aMin, Vector2 aMax, Vector2 pos, Vector2 size, Vector2? pivot = null)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(parent, false);
+            rt.anchorMin = aMin; rt.anchorMax = aMax;
+            rt.pivot = pivot ?? new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = pos; rt.sizeDelta = size;
+            return rt;
+        }
+
+        /// <summary>Растянуть на весь родитель с отступами.</summary>
+        public static RectTransform Fill(Transform parent, string name, float l = 0, float r = 0, float t = 0, float b = 0)
+        {
+            var rt = Rect(parent, name, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            rt.offsetMin = new Vector2(l, b); rt.offsetMax = new Vector2(-r, -t);
+            return rt;
+        }
+
+        public static Image Img(RectTransform rt, Color c, bool round = true)
+        {
+            var img = rt.gameObject.AddComponent<Image>();
+            img.color = c;
+            if (round)
+            {
+                img.sprite = Rounded; img.type = Image.Type.Sliced;
+#if !CD_STUB
+                img.pixelsPerUnitMultiplier = 2f; // радиус скругления 12 px
+#endif
+            }
+            return img;
+        }
+
+        public static Image Panel(Transform parent, string name, Vector2 aMin, Vector2 aMax, Vector2 pos, Vector2 size, Color c)
+        {
+            return Img(Rect(parent, name, aMin, aMax, pos, size), c);
+        }
+
+        public static Text Label(Transform parent, string text, int size, Color c, TextAnchor align = TextAnchor.MiddleCenter, bool bold = true)
+        {
+            var rt = Fill(parent, "Text");
+            var t = rt.gameObject.AddComponent<Text>();
+            t.font = Font; t.text = text; t.fontSize = size; t.color = c; t.alignment = align;
+            t.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal;
+            t.horizontalOverflow = HorizontalWrapMode.Wrap; t.verticalOverflow = VerticalWrapMode.Overflow;
+            t.raycastTarget = false;
+            return t;
+        }
+
+        public static Text LabelAt(Transform parent, string text, int size, Color c, Vector2 aMin, Vector2 aMax, Vector2 pos, Vector2 sz, TextAnchor align = TextAnchor.MiddleCenter, bool bold = true)
+        {
+            var rt = Rect(parent, "Label", aMin, aMax, pos, sz);
+            var t = rt.gameObject.AddComponent<Text>();
+            t.font = Font; t.text = text; t.fontSize = size; t.color = c; t.alignment = align;
+            t.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal;
+            t.horizontalOverflow = HorizontalWrapMode.Wrap; t.verticalOverflow = VerticalWrapMode.Overflow;
+            t.raycastTarget = false;
+            return t;
+        }
+
+        public static Button Button(Transform parent, string text, Vector2 aMin, Vector2 aMax, Vector2 pos, Vector2 size, Color bg, System.Action onClick, int fontSize = 26)
+        {
+            var rt = Rect(parent, "Btn_" + text, aMin, aMax, pos, size);
+            var img = Img(rt, bg);
+            var b = rt.gameObject.AddComponent<Button>();
+            b.targetGraphic = img;
+            var cb = b.colors; cb.pressedColor = new Color(0.75f, 0.75f, 0.75f); cb.highlightedColor = Color.white; cb.fadeDuration = 0.05f; b.colors = cb;
+            b.onClick.AddListener(() => { App.I?.audio?.Click(); onClick?.Invoke(); });
+            Label(rt, text, fontSize, Color.white);
+            return b;
+        }
+
+        public static void Clear(Transform t) { for (int i = t.childCount - 1; i >= 0; i--) Object.Destroy(t.GetChild(i).gameObject); }
+    }
+
+    /// <summary>Кнопка с удержанием (педали, ручник, гудок): каждый палец отслеживается отдельно — мультитач.</summary>
+    public class HoldButton : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+    {
+        public bool held;
+        public System.Action onDown;
+        int pointers;
+        public void OnPointerDown(PointerEventData e) { pointers++; held = true; onDown?.Invoke(); }
+        public void OnPointerUp(PointerEventData e) { pointers = Mathf.Max(0, pointers - 1); held = pointers > 0; }
+        void OnDisable() { pointers = 0; held = false; }
+    }
+
+    /// <summary>Руль: поворот пальцем вокруг центра (±135° → −1…+1), отпустил — возвращается в центр.</summary>
+    public class SteeringWheel : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler
+    {
+        public float value;
+        public RectTransform visual;
+        float angle, startAngle, startValue;
+        bool held;
+        int pointer = -100;
+
+        float AngleOf(PointerEventData e)
+        {
+            Vector2 local;
+            RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)transform, e.position, e.pressEventCamera, out local);
+            return Mathf.Atan2(local.x, local.y) * Mathf.Rad2Deg;
+        }
+
+        public void OnPointerDown(PointerEventData e) { if (held) return; held = true; pointer = e.pointerId; startAngle = AngleOf(e); startValue = angle; }
+        public void OnDrag(PointerEventData e)
+        {
+            if (!held || e.pointerId != pointer) return;
+            float d = Mathf.DeltaAngle(startAngle, AngleOf(e));
+            angle = Mathf.Clamp(startValue + d, -135f, 135f);
+            startAngle = AngleOf(e); startValue = angle;
+        }
+        public void OnPointerUp(PointerEventData e) { if (e.pointerId == pointer) { held = false; pointer = -100; } }
+
+        void Update()
+        {
+            if (!held) angle = Mathf.MoveTowards(angle, 0f, 540f * Time.unscaledDeltaTime);
+            value = angle / 135f;
+            if (visual) visual.localRotation = Quaternion.Euler(0, 0, -angle);
+        }
+
+        void OnDisable() { held = false; angle = 0; value = 0; }
+    }
+}
