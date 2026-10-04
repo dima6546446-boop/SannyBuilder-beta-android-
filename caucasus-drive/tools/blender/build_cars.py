@@ -17,7 +17,7 @@ NAMES = {'hi': 'LOD_hi', 'lod0': 'LOD0', 'lod1': 'LOD1'}
 
 def shape_for(cid):
     d = DIMS[cid]
-    base = SHAPES.get(cid) or SHAPES.get(d['id']) or SHAPES['vaz2107']
+    base = SHAPES.get(cid) or SHAPES.get(d.get('base', d['id'])) or SHAPES['vaz2107']
     dm = d['dims']
     S = dict(base)
     S.update(W=dm['W'], front=dm['front'], rear=dm['rear'], axleF=dm['axleF'], axleR=dm['axleR'],

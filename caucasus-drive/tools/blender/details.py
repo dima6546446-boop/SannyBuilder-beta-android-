@@ -8,6 +8,8 @@ import bmesh
 import math
 from mathutils import Vector, Matrix
 from carbuilder import G, get_mat, interp
+from decals import Decals
+import faces
 
 
 class Parts:
@@ -136,6 +138,9 @@ def build_details(S, surf, lod):
     hw = W / 2
     head, tail, gr, bp = d['head'], d['tail'], d['grille'], d['bumper']
     classic = bp['style'] == 'chrome'
+    kind = d.get('base') or d['id']
+    Dc = Decals(P, surf, S, lod)
+    custom_front = kind in faces.FRONT
 
     def on_front(x, y, fallback=None):
         p, n = surf.front(x, y)
@@ -156,8 +161,16 @@ def build_details(S, surf, lod):
         return p, n
 
     # ---------------- передняя оптика
-    for s in (1, -1):
+    if custom_front:
+        faces.FRONT[kind](Dc, P, d)
+    for s in ((1, -1) if not custom_front else ()):
         if head['style'] in ('round4', 'round2'):
+            if head.get('panel'):  # ВАЗ-2106: пара фар в общей хромовой рамке на чёрной панели
+                xs = head['xs']
+                pm, nm = on_front(s * (xs[0] + xs[-1]) / 2, head['y'])
+                bw, bh = xs[-1] - xs[0] + 2 * head['r'] + 0.07, 2 * head['r'] + 0.06
+                P.box(bw, bh, 0.04, 'chrome', frame(pm, nm, offset=-0.004), bevel=0.02)
+                P.box(bw - 0.03, bh - 0.03, 0.04, 'grille', frame(pm, nm, offset=0.006), bevel=0.012)
             for x in head['xs']:
                 p, n = on_front(s * x, head['y'])
                 r = head['r']
@@ -204,7 +217,7 @@ def build_details(S, surf, lod):
     # ---------------- решётка
     gy = gr['y']
     p, n = on_front(0.0, gy)
-    st = gr['style']
+    st = gr['style'] if not custom_front else 'custom'
     Mg = frame(p, n)
     if st == 'chrome-bars':  # 2107
         P.box(gr['w'] + 0.03, gr['h'] + 0.03, 0.05, 'chrome', Mg, bevel=0.01)
@@ -218,8 +231,12 @@ def build_details(S, surf, lod):
         P.box(gr['w'], gr['h'], 0.04, 'chrome', Mg, bevel=0.01)
         P.box(gr['w'] - 0.04, gr['h'] - 0.04, 0.02, 'grille', frame(p, n, offset=0.012))
         if lod != 'lod1':
-            for k in range(-2, 3):
-                P.box(gr['w'] - 0.06, 0.008, 0.012, 'chrome', frame(p, n, offset=0.025) @ Matrix.Translation((0, k * gr['h'] / 6, 0)))
+            nb = 4 if hi else 2
+            for k in range(-nb, nb + 1):
+                P.box(gr['w'] - 0.06, 0.007, 0.012, 'chrome', frame(p, n, offset=0.025) @ Matrix.Translation((0, k * gr['h'] / (2 * nb + 2), 0)))
+            if hi:
+                for k in (-1, 1):  # вертикальные стойки решётки у внутренних фар
+                    P.box(0.012, gr['h'] - 0.04, 0.016, 'chrome', frame(p, n, offset=0.028) @ Matrix.Translation((k * 0.32, 0, 0)))
     elif st == 'black-chrome':  # 2106
         P.box(gr['w'], gr['h'], 0.035, 'grille', Mg, bevel=0.006)
         for k in (-1, 1):
@@ -266,7 +283,7 @@ def build_details(S, surf, lod):
             P.box(W + 0.03, bp['h'], depth, 'chrome', M, bevel=0.025)
             for s in (1, -1):  # загибы на крылья
                 Me = frame((s * (hw - 0.02), y, base - sgn * 0.08), (s, 0, 0))
-                P.box(0.22, bp['h'] * 0.95, 0.09, 'chrome', Me, bevel=0.02)
+                P.box(0.22, bp['h'] * 0.95, 0.09, 'black' if kind == 'vaz2107' else 'chrome', Me, bevel=0.02)
             if bp.get('strip'):
                 P.box(W + 0.04, 0.035, depth + 0.012, 'rubber', M, bevel=0.01)
             if bp.get('fangs') and front:
@@ -280,8 +297,9 @@ def build_details(S, surf, lod):
                 P.box(0.28, bp['h'] * 0.95, 0.1, 'black', frame((s * (hw - 0.04), y, base - sgn * 0.08), (s, 0, 0)), bevel=0.025)
             return base + sgn * 0.09
         # в цвет кузова: сам бампер — часть обвеса, добавляем нижнюю решётку и молдинг
-        M = frame((0, y - bp['h'] * 0.3, base + sgn * 0.005), (0, 0, sgn))
-        P.box(W * 0.55, 0.07, 0.03, 'grille', M, bevel=0.015)
+        if not (custom_front if front else kind in faces.REAR):
+            M = frame((0, y - bp['h'] * 0.3, base + sgn * 0.005), (0, 0, sgn))
+            P.box(W * 0.55, 0.07, 0.03, 'grille', M, bevel=0.015)
         return base + sgn * 0.01
 
     fFace = bumper(True)
@@ -299,7 +317,10 @@ def build_details(S, surf, lod):
         P.box(0.52, 0.115, 0.012, 'plate', frame((0, bp['y'] + 0.02, rFace - 0.008), (0, 0, -1)))
 
     # ---------------- задние фонари
-    for s in (1, -1):
+    if kind in faces.REAR:
+        faces.REAR[kind](Dc, P, d)
+    faces.sides(Dc, P, S, kind, lod)
+    for s in ((1, -1) if kind not in faces.REAR else ()):
         ind = 'indL' if s > 0 else 'indR'
         st = tail['style']
         tw, th = tail['w'], tail['h']
@@ -332,14 +353,24 @@ def build_details(S, surf, lod):
     beltAt = lambda z: interp(S['belt'], z) - 0.02
     belt = beltAt(0.0)
     for s in (1, -1):
-        # зеркала
-        zm = S['zW0'] - 0.1
-        p, n = on_side(zm, beltAt(zm) + 0.06, s)
+        # зеркала: на передней кромке двери у основания стекла
+        zm = S['side'][0] - S.get('mirrorBack', 0.07)
+        p, n = on_side(zm, beltAt(zm) + 0.015, s)
         mat = 'paint' if bp['style'] == 'body' else 'black'
-        P.box(0.05, 0.05, 0.06, 'black', frame(p, (s, 0, 0), offset=0.03))
-        P.box(0.16, 0.1, 0.07, mat, frame((p[0] + s * 0.1, p[1] + 0.03, p[2] - 0.02), (0, 0, 1)), bevel=0.025)
-        if hi:
-            P.box(0.14, 0.085, 0.01, 'chrome', frame((p[0] + s * 0.1, p[1] + 0.03, p[2] - 0.06), (0, 0, -1)))
+        mstyle = S.get('mirror', 'modern' if bp['style'] == 'body' else 'rect')
+        if mstyle == 'round':  # ВАЗ-2101: круглое хромированное на ножке
+            c = (p[0] + s * 0.07, p[1] + 0.09, p[2])
+            P.box(0.016, 0.1, 0.016, 'chrome', frame((p[0] + s * 0.035, p[1] + 0.045, p[2]), (0, 0, 1), roll=-s * 0.6))
+            P.cyl(0.052, 0.035, 'chrome', frame(c, (0, 0, 1)), seg=16 if hi else 8)
+            P.cyl(0.044, 0.01, 'glass', frame((c[0], c[1], c[2] - 0.018), (0, 0, -1)), seg=16 if hi else 8)
+        else:
+            big = mstyle == 'modern'
+            w, h, dd = (0.19, 0.115, 0.08) if big else (0.12, 0.08, 0.05)
+            c = (p[0] + s * (0.035 + w / 2), p[1] + h * 0.55, p[2] - 0.01)
+            P.box(0.07, 0.045, 0.06, 'black', frame((p[0] + s * 0.03, p[1] + 0.03, p[2]), (s, 0, 0)), bevel=0.01)
+            P.box(w, h, dd, mat, frame(c, (0, 0, 1)), bevel=0.03 if big else 0.015)
+            if hi:
+                P.box(w - 0.025, h - 0.022, 0.01, 'glass', frame((c[0], c[1], c[2] - dd / 2), (0, 0, -1)))
         # ручки дверей
         for z in S['handles']:
             ph, nh = on_side(z, beltAt(z) - 0.1, s)
@@ -385,11 +416,8 @@ def build_details(S, surf, lod):
         P.box(1.1, 0.03, 0.26, 'black', frame((0, top_y + 0.015, zc), (0, 0, 1)))
         P.box(0.52, 0.11, 0.24, 'policeBlue', frame((0.28, top_y + 0.08, zc), (0, 0, 1)), bevel=0.03)
         P.box(0.52, 0.11, 0.24, 'policeRed', frame((-0.28, top_y + 0.08, zc), (0, 0, 1)), bevel=0.03)
-        for s in (1, -1):
-            for k in range(12):
-                z = F - 0.4 - k * (F - R - 0.8) / 11
-                pp, nn = on_side(z, 0.62, s)
-                P.box((F - R - 0.8) / 11 + 0.02, 0.11, 0.006, 'policeStripe', frame(pp, nn, offset=0.002))
+        for s in (1, -1):  # синяя полоса ДПС над колёсными арками
+            Dc.region(s, R + 0.12, F - 0.12, [(R, 0.745)], [(R, 0.835)], 'policeStripe', nu=24, nv=1, thick=0.004)
     if d.get('taxi'):
         zc = (S['zW1'] + S['zB1']) / 2
         P.box(0.52, 0.16, 0.2, 'taxiSign', frame((0, top_y + 0.08, zc), (0, 0, 1)), bevel=0.02)
@@ -398,7 +426,7 @@ def build_details(S, surf, lod):
                 P.box(0.006, 0.06, 0.1, 'black', frame((s * 0.262, top_y + 0.05 + (k % 2) * 0.06, zc - 0.15 + k * 0.1), (0, 0, 1)))
             for k in range(10):
                 z = 1.0 - k * 0.26
-                pp, nn = on_side(z, 0.64 + (k % 2) * 0.05, s)
+                pp, nn = on_side(z, 0.78 + (k % 2) * 0.05, s)
                 P.box(0.12, 0.05, 0.005, 'black', frame(pp, nn, offset=0.002))
 
     if not hi:

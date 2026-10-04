@@ -137,52 +137,84 @@ def gh_blend(S, z):
     return 1.0
 
 
-def section(S, z):
-    hw = half_width(S, z)
-    yt = interp(S['top'], z)
-    t = gh_blend(S, z)
+def warp_pts(S):
+    """Сдвиг верхней части сечений (оконная рамка, крыша) вдоль z относительно нижней:
+    задняя кромка бокового стекла идёт наклонно — от side[1] на линии окон до sideTopR у крыши
+    (широкая наклонная C/D-стойка седана), аналогично передняя — до sideTopF."""
     zF, zR = S['front'], S['rear']
-    endF = smooth01(1 - (zF - z) / 0.45) if zF - z < 0.45 else 0
-    endR = smooth01(1 - (z - zR) / 0.45) if z - zR < 0.45 else 0
+    pts = []
+    for key, zl in (('sideTopR', S['side'][1]), ('sideTopF', S['side'][0])):
+        zu = S.get(key)
+        if zu is None or abs(zu - zl) < 1e-4:
+            continue
+        sk = zu - zl
+        a = 0.3 + max(0.0, -sk)
+        b = 0.3 + max(0.0, sk)
+        pts += [(zl - a, zl - a), (zl, zu), (zl + b, zl + b)]
+    pts = sorted(pts)
+    return [(zR - 1, zR - 1)] + pts + [(zF + 1, zF + 1)]
+
+
+def upper_z(S, z):
+    return interp(S['_warp'], z)
+
+
+def lower_z(S, zu):
+    return interp([(b, a) for a, b in S['_warp']], zu)
+
+
+def section(S, z):
+    """Полусечение: точки 0..5 — на станции z, 6..9 — на сдвинутой станции upper_z(z).
+    Возвращает [(x, y, z)]."""
+    zu = upper_z(S, z)
+    hw = half_width(S, z)
+    hwu = half_width(S, zu)
+    yt = interp(S['top'], zu)
+    t = gh_blend(S, zu)
+    zF, zR = S['front'], S['rear']
+    endL = S.get('endLen', 0.45)
+    endF = smooth01(1 - (zF - z) / endL) if zF - z < endL else 0
+    endR = smooth01(1 - (z - zR) / endL) if z - zR < endL else 0
     yfloor = lerp(S['floor'], S['endFloor'], max(endF, endR))
     ysill = max(S['sill'], yfloor + 0.06)
-    hwTop = hw - S['tumble']
+    hwTop = hwu - S['tumble']
     drop = lerp(S['hoodDrop'], S['roofDrop'], t)
-    x6 = lerp(hw * S['hoodEdge'], hwTop, t)
+    x6 = lerp(hwu * S['hoodEdge'], hwTop, t)
     y6 = yt - drop
     yb = min(interp(S['belt'], z), y6 - 0.012)
     ysh = min(yb - S.get('shoulder', 0.06), yb - 0.02)
     ysh = max(ysh, ysill + 0.05)
     ymid = ysill + 0.45 * (ysh - ysill)
     bulge = S.get('bulge', 0.0)  # выпуклость боковины
-    x5 = hw * lerp(0.992, 0.975, t)
+    tb = gh_blend(S, z)
+    x5 = hw * lerp(0.992, 0.975, tb)
     pts = [
-        (0.0, yfloor),
-        (hw - 0.10, yfloor),
-        (hw - 0.012, ysill),
-        (hw + bulge, ymid),
-        (hw, ysh),
-        (x5, yb),
-        (x6, y6),
-        (x6 * S.get('pillarK', 0.86), yt - drop * 0.3),
-        (x6 * 0.42, yt - drop * 0.05),
-        (0.0, yt),
+        (0.0, yfloor, z),
+        (hw - S.get('floorIn', 0.10), yfloor, z),
+        (hw - 0.012, ysill, z),
+        (hw + bulge, ymid, z),
+        (hw, ysh, z),
+        (x5, yb, z),
+        (x6, y6, zu),
+        (x6 * S.get('pillarK', 0.86), yt - drop * 0.3, zu),
+        (x6 * 0.42, yt - drop * 0.05, zu),
+        (0.0, yt, zu),
     ]
     return pts
 
 
 def stations(S):
     zF, zR = S['front'], S['rear']
-    keys = {zF, zF - 0.025, zF - 0.1, zR, zR + 0.025, zR + 0.1,
-            S['zW0'], S['zW1'], S['zB1'], S['zB0'], S['side'][0], S['side'][1]}
+    S['_warp'] = warp_pts(S)
+    up = [S['zW0'], S['zW1'], S['zB1'], S['zB0']] + [z for z, _ in S['top']]
+    keys = {zF, zF - 0.025, zF - 0.1, zR, zR + 0.025, zR + 0.1, S['side'][0], S['side'][1]}
+    keys.update(round(lower_z(S, z), 5) for z in up)
     for p in S['pillars']:
         pw = S.get('pillarWs', {}).get(p, S['pillarW'])
         keys.add(p + pw / 2)
         keys.add(p - pw / 2)
     for ax in (S['axleF'], S['axleR']):
         keys.update({ax, ax - S['archR'], ax + S['archR']})
-    for z, _ in S['top']:
-        keys.add(z)
     keys = sorted(k for k in keys if zR - 1e-6 <= k <= zF + 1e-6)
     out = []
     for k in keys:
@@ -216,11 +248,11 @@ def build_body_cage(S, slots):
         ring = []
         # +x сторона k=0..9, затем −x сторона k=8..1
         for k in range(NPTS):
-            x, y = pts[k]
-            ring.append(bm.verts.new(G(x, y, z)))
+            x, y, zz = pts[k]
+            ring.append(bm.verts.new(G(x, y, zz)))
         for k in range(NPTS - 2, 0, -1):
-            x, y = pts[k]
-            ring.append(bm.verts.new(G(-x, y, z)))
+            x, y, zz = pts[k]
+            ring.append(bm.verts.new(G(-x, y, zz)))
         rings.append((z, ring))
     L = len(rings[0][1])
 
@@ -241,6 +273,7 @@ def build_body_cage(S, slots):
         z0, r0 = rings[i]
         z1, r1 = rings[i + 1]
         zm = (z0 + z1) / 2
+        zmu = (upper_z(S, z0) + upper_z(S, z1)) / 2
         for e in range(L):
             a, b = r0[e], r0[(e + 1) % L]
             c, d = r1[(e + 1) % L], r1[e]
@@ -252,9 +285,9 @@ def build_body_cage(S, slots):
                 mat = 'under'
             elif s == 5 and side_lo <= zm <= side_hi and not in_ranges(zm, pillar_ranges):
                 mat = 'glass'
-            elif s in (7, 8) and (zW1 <= zm <= zW0 or zB0 <= zm <= zB1):
+            elif s in (7, 8) and (zW1 <= zmu <= zW0 or zB0 <= zmu <= zB1):
                 mat = 'glass'
-            elif s == 6 and S.get('pillarless_top') and (zW1 <= zm <= zW0 or zB0 <= zm <= zB1):
+            elif s == 6 and S.get('pillarless_top') and (zW1 <= zmu <= zW0 or zB0 <= zmu <= zB1):
                 mat = 'glass'
             f.material_index = slots.idx(mat)
             if mat == 'glass':
@@ -297,6 +330,16 @@ def build_body_cage(S, slots):
                 others = [g for g in e.link_faces if g not in glass_set and g not in res['faces']]
                 if others:
                     e[crease] = 1.0
+        # острые углы окон: вершины, где жёсткая кромка поворачивает
+        vcr = bm.verts.layers.float.new('crease_vert')
+        frame_set = set(res['faces'])
+        for v in {v for f in list(glass_faces) + list(frame_set) for v in f.verts}:
+            hard = [e for e in v.link_edges if e[crease] >= 0.99]
+            if len(hard) == 2:
+                d0 = (hard[0].other_vert(v).co - v.co).normalized()
+                d1 = (hard[1].other_vert(v).co - v.co).normalized()
+                if d0.dot(d1) > -0.82:  # угол между кромками < ~145°
+                    v[vcr] = S.get('cornerSharp', 0.85)
         # утопить стёкла внутрь на 8 мм
         verts = {v for f in glass_faces for v in f.verts}
         for v in verts:

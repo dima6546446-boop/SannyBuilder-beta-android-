@@ -13,7 +13,7 @@ DIMS = json.load(open(os.path.join(HERE, 'cars_dims.json')))
 KEYS = ['W', 'tumble', 'zW0', 'zW1', 'zB1', 'zB0', 'belt', 'top', 'floor', 'sill', 'side', 'pillars']
 out = {}
 for cid, d in DIMS.items():
-    S = dict(SHAPES.get(cid) or SHAPES.get(d['id']) or SHAPES['vaz2107'])
+    S = dict(SHAPES.get(cid) or SHAPES.get(d.get('base', d['id'])) or SHAPES['vaz2107'])
     S['W'] = d['dims']['W']
     out[cid] = {k: S[k] for k in KEYS if k in S}
 dst = os.path.join(HERE, '..', '..', 'src', 'config', 'interiorAnchors.json')

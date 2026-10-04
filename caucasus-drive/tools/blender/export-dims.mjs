@@ -6,7 +6,7 @@ import { allRenderModels } from '../../src/config/cars.js';
 const out = {};
 for (const m of allRenderModels()) {
   out[m.key] = {
-    id: m.id, name: m.name, dims: m.dims, head: m.head, tail: m.tail, grille: m.grille,
+    id: m.id, base: m.base ?? m.id, name: m.name, dims: m.dims, head: m.head, tail: m.tail, grille: m.grille,
     bumper: m.bumper, trim: m.trim, pillars: m.pillars, glassBottom: m.glassBottom,
     fixedColor: m.fixedColor ?? null, police: !!m.police, taxi: !!m.taxi, rails: !!m.rails,
   };

@@ -1,6 +1,7 @@
 {
  "vaz2101": {
   "id": "vaz2101",
+  "base": "vaz2101",
   "name": "ВАЗ-2101",
   "dims": {
    "W": 1.61,
@@ -55,6 +56,7 @@
  },
  "vaz2106": {
   "id": "vaz2106",
+  "base": "vaz2106",
   "name": "ВАЗ-2106",
   "dims": {
    "W": 1.61,
@@ -110,6 +112,7 @@
  },
  "vaz2107": {
   "id": "vaz2107",
+  "base": "vaz2107",
   "name": "ВАЗ-2107",
   "dims": {
    "W": 1.62,
@@ -162,6 +165,7 @@
  },
  "oka": {
   "id": "oka",
+  "base": "oka",
   "name": "ВАЗ-1111",
   "dims": {
    "W": 1.42,
@@ -213,6 +217,7 @@
  },
  "vaz2109": {
   "id": "vaz2109",
+  "base": "vaz2109",
   "name": "ВАЗ-2109",
   "dims": {
    "W": 1.65,
@@ -265,6 +270,7 @@
  },
  "niva": {
   "id": "niva",
+  "base": "niva",
   "name": "ВАЗ-2121",
   "dims": {
    "W": 1.68,
@@ -317,6 +323,7 @@
  },
  "priora": {
   "id": "priora",
+  "base": "priora",
   "name": "Lada Priora",
   "dims": {
    "W": 1.68,
@@ -368,6 +375,7 @@
  },
  "granta": {
   "id": "granta",
+  "base": "granta",
   "name": "Lada Granta",
   "dims": {
    "W": 1.7,
@@ -419,6 +427,7 @@
  },
  "vesta": {
   "id": "vesta",
+  "base": "vesta",
   "name": "Lada Vesta",
   "dims": {
    "W": 1.76,
@@ -470,6 +479,7 @@
  },
  "largus": {
   "id": "largus",
+  "base": "largus",
   "name": "Lada Largus",
   "dims": {
    "W": 1.75,
@@ -522,6 +532,7 @@
  },
  "police": {
   "id": "police",
+  "base": "vaz2107",
   "name": "ДПС",
   "dims": {
    "W": 1.62,
@@ -574,6 +585,7 @@
  },
  "taxi": {
   "id": "taxi",
+  "base": "granta",
   "name": "Такси",
   "dims": {
    "W": 1.7,
