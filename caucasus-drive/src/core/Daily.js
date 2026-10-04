@@ -9,7 +9,7 @@ import { mulberry32 } from '../utils/math.js';
 const POOL = [
   { kind: 'km', goals: [3, 5, 8], text: (n) => `Проехать ${n} км`, reward: (n) => n * 450 },
   { kind: 'taxi', goals: [1, 2, 3], text: (n) => `Выполнить ${n} ${n === 1 ? 'заказ' : 'заказа'} такси`, reward: (n) => n * 1300 },
-  { kind: 'drift', goals: [400, 900, 1600], max: true, text: (n) => `Набрать ${n} очков дрифта или «шашек» за одно комбо`, reward: (n) => 800 + n * 2 },
+  { kind: 'drift', goals: [400, 900, 1600], max: true, text: (n) => `Набрать ${n} очков дрифта или «шашек» за одну серию`, reward: (n) => 800 + n * 2 },
   { kind: 'food', goals: [1, 2], text: (n) => (n === 1 ? 'Перекусить в ларьке или магазине' : `Купить еду ${n} раза`), reward: (n) => 600 * n },
   { kind: 'park', goals: [1, 2, 3], text: (n) => `Пройти ${n} ${n === 1 ? 'уровень' : 'уровня'} парковки`, reward: (n) => n * 1100 },
   { kind: 'whistle', goals: [2, 3], text: (n) => `Свистнуть прохожим ${n} раза`, reward: () => 900 },

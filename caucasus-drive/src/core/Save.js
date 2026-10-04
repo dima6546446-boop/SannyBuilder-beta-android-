@@ -12,7 +12,7 @@ const DEFAULT = () => ({
   license: false,
   settings: { controls: 'wheel', gearbox: 'auto', quality: null, volume: 0.8, cameraMode: 0, assist: true, fines: true },
   stats: { km: 0, fines: 0, taxi: 0, bestCombo: 0, crashes: 0 },
-  drift: { best: 0, bestSeries: 0, runs: 0 }, // дрифт-зона: рекорд заезда, лучшая серия (везде), заездов
+  drift: { best: 0, bestSeries: 0, runs: 0, freeBest: 0 }, // дрифт-зона: рекорд заезда, лучшая серия (везде), заездов; рекорд серии в городе
 });
 
 /**

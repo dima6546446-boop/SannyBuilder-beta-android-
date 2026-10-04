@@ -99,6 +99,8 @@ svg { fill: currentColor; }
 #dr-tag { font-weight: 900; font-size: 11px; letter-spacing: .5px; color: #fff; min-height: 13px; margin-top: 1px; line-height: 1.2; }
 #dr-tag.bank { color: #7dff9a; }
 #dr-tag.lost { color: #ff7a6a; }
+#dr-tag.record { color: #ffdf4a; text-shadow: 0 0 8px rgba(255,180,0,.8); }
+#dr-tag.best { color: rgba(255,255,255,.55); font-weight: 700; }
 #drift.idle .dr-row2 { opacity: .35; }
 @media (max-height: 420px) {
   .topbar .pill { padding: 5px 10px; font-size: 13px; } .logo small { display: none; } #dr-pts { font-size: 19px; } }

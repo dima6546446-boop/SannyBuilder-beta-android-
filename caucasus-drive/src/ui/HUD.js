@@ -86,7 +86,8 @@ export class HUD {
   }
 
   /**
-   * Панель дрифта. v: { angle (°), pts, mult, active, tag, tagKind ('' | 'bank' | 'lost') } или null.
+   * Панель дрифта. v: { angle (°), pts, mult, active, tag, tagKind ('' | 'bank' | 'record' | 'lost'), best } или null.
+   * Пока нет события, в строке метки — рекорд серии (если режим его передал).
    * Вызывается каждый кадр, DOM трогается ~15 раз в секунду и только при изменениях.
    */
   drift(v, dt = 0) {
@@ -100,10 +101,12 @@ export class HUD {
     set('ang', e.drAng, `${Math.round(Math.abs(v.angle))}°`);
     set('pts', e.drPts, Math.round(v.pts).toLocaleString('ru-RU'));
     set('mult', e.drMult, `×${v.mult.toFixed(1).replace('.0', '')}`);
-    set('tag', e.drTag, v.tag || '');
+    const best = !v.tag && v.best > 0;
+    set('tag', e.drTag, v.tag || (best ? `рекорд ${v.best.toLocaleString('ru-RU')}` : ''));
     const bar = `${Math.min(100, Math.abs(v.angle) / 60 * 100).toFixed(0)}%`;
     if (d.bar !== bar) { d.bar = bar; e.drBar.style.width = bar; }
-    if (d.tagKind !== v.tagKind) { d.tagKind = v.tagKind; e.drTag.className = v.tagKind || ''; }
+    const kind = v.tag ? v.tagKind || '' : best ? 'best' : '';
+    if (d.tagKind !== kind) { d.tagKind = kind; e.drTag.className = kind; }
     if (d.idle !== !v.active) { d.idle = !v.active; e.drift.classList.toggle('idle', d.idle); }
   }
 

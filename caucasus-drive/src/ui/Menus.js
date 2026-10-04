@@ -80,7 +80,7 @@ export class Menus {
       </div>
       <div class="main-grid">
         <div class="tile hot" data-act="levels"><span class="badge">КАРЬЕРА</span><div class="ic">${ICONS.park}</div><div class="t">Парковка</div><div class="s">30 уровней · ★ ${stars}</div></div>
-        <div class="tile" data-act="free"><span class="badge">ГОРОД</span><div class="ic">${ICONS.city}</div><div class="t">Свободная езда</div><div class="s">Такси-бомбила · шашки · АЗС</div></div>
+        <div class="tile" data-act="free"><span class="badge">ГОРОД</span><div class="ic">${ICONS.city}</div><div class="t">Свободная езда</div><div class="s">${s.drift?.freeBest ? `Такси · дрифт · рекорд ${s.drift.freeBest.toLocaleString('ru-RU')}` : 'Такси-бомбила · шашки · дрифт'}</div></div>
         <div class="tile" data-act="drift"><span class="badge">${s.drift?.best ? `★ ${s.drift.best.toLocaleString('ru-RU')}` : 'НОВОЕ'}</span><div class="ic">${ICONS.drift}</div><div class="t">Дрифт</div><div class="s">Автодром ДОСААФ</div></div>
         <div class="tile" data-act="exam"><span class="badge">${s.license ? 'СДАН' : '+10 000 ₽'}</span><div class="ic">${ICONS.exam}</div><div class="t">Экзамен ГИБДД</div><div class="s">Площадка + город</div></div>
         <div class="tile" data-act="garage"><span class="badge">${s.owned.length}/${CARS.length}</span><div class="ic">${ICONS.garage}</div><div class="t">Гараж</div><div class="s">${CAR_BY_ID[s.current].name} · тюнинг</div></div>

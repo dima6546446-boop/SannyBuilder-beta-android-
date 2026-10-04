@@ -35,7 +35,7 @@ const r = await page.evaluate(async () => {
     g.player.place(car.x - Math.sin(car.heading) * 25 - Math.cos(car.heading) * 2.4 * 0 + (-Math.cos(car.heading)) * -2.5, car.z - Math.cos(car.heading) * 25 + Math.sin(car.heading) * -2.5, car.heading);
     g.player.physics.vx = Math.sin(car.heading) * 25; g.player.physics.vz = Math.cos(car.heading) * 25; g.player.physics.gear = 4;
     step(2, { throttle: 1 });
-    out.combo = { ...g.mode.combo };
+    const sc = g.mode.drift.sc; out.series = { pts: Math.round(sc.pts), mult: sc.mult, bonuses: sc.bonuses };
   }
   return out;
 });

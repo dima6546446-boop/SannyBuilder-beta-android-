@@ -6,7 +6,7 @@
  * и за связки (новый занос в течение 1,2 с после предыдущего: +0,5, перекладка в другую
  * сторону: +1), до ×5. Итог серии = очки × множитель; он «сохраняется» (bank), когда машина
  * выходит из заноса и не входит в новый за окно связки. Удар, разворот или съезд на газон —
- * серия сгорает.
+ * серия сгорает. В городе в ту же серию идут «шашки» (bonus): одна серия — одна выплата.
  */
 export const DRIFT = {
   enterDeg: 12, stayDeg: 7, enterKmh: 20, stayKmh: 15, spinDeg: 105,
@@ -38,6 +38,8 @@ export class DriftScore {
     this.drifts = 0;      // заносов в серии
     this.maxAngle = 0;
     this.time = 0;        // суммарное время в заносе в серии
+    this.keepT = 0;       // после бонуса серия живёт дольше окна связки
+    this.bonuses = 0;     // «шашек» в серии
   }
 
   get inSeries() { return this.pts > 0; }
@@ -63,7 +65,7 @@ export class DriftScore {
       const dir = Math.sign(a);
       if (this.inSeries) {
         // связка: новый занос без паузы; перекладка — в другую сторону
-        const flip = dir !== this.dir;
+        const flip = this.dir !== 0 && dir !== this.dir; // после одних «шашек» стороны ещё нет
         this.mult = Math.min(DRIFT.maxMult, this.mult + (flip ? 1 : 0.5));
         this.onEvent?.(flip ? 'ПЕРЕКЛАДКА' : 'СВЯЗКА');
       }
@@ -101,15 +103,29 @@ export class DriftScore {
       this.pts += dt * 2 * Math.min(abs, 60) * speedK * this.smooth * prox * (opts.zone ?? 1);
     } else if (this.inSeries) {
       this.gapT += dt;
-      if (this.gapT > DRIFT.linkTime || kmh < 8) this.bank();
+      if (this.keepT > 0) this.keepT -= dt;
+      else if (this.gapT > DRIFT.linkTime || kmh < 8) this.bank();
     }
+  }
+
+  /**
+   * Очки вне заноса (обгон впритирку): идут в текущую серию (или открывают новую), +0,5 к множителю,
+   * серия не сохраняется ещё keep секунд — успеть связать следующим обгоном или заносом.
+   */
+  bonus(pts, text, keep = 4) {
+    if (this.inSeries) this.mult = Math.min(DRIFT.maxMult, this.mult + 0.5);
+    this.pts += pts;
+    this.gapT = 0;
+    this.keepT = Math.max(this.keepT, keep);
+    this.bonuses++;
+    this.onEvent?.(text);
   }
 
   /** Сохранить серию (выход из заноса или конец заезда). */
   bank() {
     if (!this.inSeries) return 0;
     const total = this.total;
-    const info = { mult: this.mult, drifts: this.drifts, maxAngle: Math.round(this.maxAngle), time: this.time };
+    const info = { mult: this.mult, drifts: this.drifts, bonuses: this.bonuses, maxAngle: Math.round(this.maxAngle), time: this.time };
     this.reset();
     this.onBank?.(total, info);
     return total;

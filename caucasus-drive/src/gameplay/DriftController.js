@@ -2,13 +2,15 @@ import { DriftScore, nearestObstacle } from './Drift.js';
 
 /**
  * Дрифт в игре: судейство (DriftScore) + панель HUD + звуки событий.
- * Режим передаёт onBank(total, info) → сколько рублей начислено (для строки итога).
+ * Режим передаёт onBank(total, info) → рубли или { money, record } (для строки итога)
+ * и best() — рекорд серии, который панель показывает, пока нет события.
  */
 export class DriftController {
-  constructor(game, { onBank } = {}) {
+  constructor(game, { onBank, best } = {}) {
     this.g = game;
     this.sc = new DriftScore();
-    this.view = { angle: 0, pts: 0, mult: 1, active: false, tag: '', tagKind: '' };
+    this.best = best || null;
+    this.view = { angle: 0, pts: 0, mult: 1, active: false, tag: '', tagKind: '', best: 0 };
     this.tagT = 0;
     this.near = Infinity;
     this._nearT = 0;
@@ -18,10 +20,11 @@ export class DriftController {
       this.g.audio.beep(text === 'БЛИЗКО!' ? 1500 : 1100 + this.sc.mult * 120, 0.07, 0.1, 'triangle');
     };
     this.sc.onBank = (total, info) => {
-      const money = onBank ? onBank(total, info) : 0;
+      const r = onBank ? onBank(total, info) : 0;
+      const money = typeof r === 'object' ? r.money : r, record = typeof r === 'object' && r.record;
       this.view.pts = total; this.view.mult = info.mult;
-      this._tag(`ИТОГ ${total.toLocaleString('ru-RU')}${money ? ` · +${money.toLocaleString('ru-RU')} ₽` : ''}`, 'bank', 2.5);
-      this.g.audio.coin();
+      this._tag(`${record ? 'РЕКОРД!' : 'ИТОГ'} ${total.toLocaleString('ru-RU')}${money ? ` · +${money.toLocaleString('ru-RU')} ₽` : ''}`, record ? 'record' : 'bank', record ? 3.5 : 2.5);
+      if (record) this.g.audio.success(); else this.g.audio.coin();
     };
     this.sc.onLost = (reason, pts) => {
       this.view.pts = 0; this.view.mult = 1;
@@ -54,6 +57,7 @@ export class DriftController {
     if (sc.inSeries) { v.pts = sc.pts * sc.mult; v.mult = sc.mult; }
     v.angle = sc.active ? sc.angle : 0;
     v.active = sc.active;
+    v.best = this.best ? this.best() : 0;
     g.hud.drift(sc.inSeries || this.tagT > 0 ? v : null, dt);
   }
 
