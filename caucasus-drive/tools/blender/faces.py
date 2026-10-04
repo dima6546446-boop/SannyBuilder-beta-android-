@@ -109,6 +109,27 @@ def front_niva(Dc, P, d):
         Dc.region('front', 0.52, 0.72, [(0.52, 0.665), (0.72, 0.665)], [(0.52, 0.715), (0.72, 0.715)], 'indL' if s > 0 else 'indR', nu=3, nv=1, thick=0.02, mirror=s)
 
 
+def front_vaz2109(Dc, P, d):
+    # узкие прямоугольные фары «клином», поворотники на углах, щель решётки со значком
+    for s in (1, -1):
+        lamp(Dc, 'front', s, 0.21, 0.67, [(0.21, 0.575), (0.67, 0.585)], [(0.21, 0.665), (0.67, 0.67)], m=0.01)
+        Dc.region('front', 0.22, 0.66, [(0.2, 0.617)], [(0.2, 0.623)], 'chrome', nu=3, nv=1, thick=0.02, mirror=s)
+        Dc.region('front', 0.68, 0.80, [(0.68, 0.585)], [(0.68, 0.665)], 'indL' if s > 0 else 'indR', nu=3, nv=1, thick=0.014, mirror=s)
+    Dc.region('front', -0.19, 0.19, [(-0.19, 0.595)], [(-0.19, 0.655)], 'grille', nu=4, nv=1, thick=0.01)
+    for y in (0.612, 0.637):
+        Dc.region('front', -0.18, 0.18, [(-0.2, y)], [(-0.2, y + 0.006)], 'black', nu=4, nv=1, thick=0.016)
+    Dc.disc('front', 0, 0.625, 0.04, 'chrome', thick=0.024, ry=0.026)
+
+
+def front_oka(Dc, P, d):
+    for s in (1, -1):
+        lamp(Dc, 'front', s, 0.25, 0.60, [(0.25, 0.53), (0.60, 0.53)], [(0.25, 0.65), (0.60, 0.65)], m=0.012)
+        Dc.region('front', 0.26, 0.59, [(0.2, 0.587)], [(0.2, 0.593)], 'chrome', nu=3, nv=1, thick=0.02, mirror=s)
+        Dc.region('front', 0.61, 0.73, [(0.61, 0.54)], [(0.61, 0.64)], 'indL' if s > 0 else 'indR', nu=3, nv=1, thick=0.014, mirror=s)
+    Dc.region('front', -0.20, 0.20, [(-0.2, 0.575)], [(-0.2, 0.615)], 'grille', nu=4, nv=1, thick=0.01)
+    Dc.disc('front', 0, 0.595, 0.03, 'chrome', thick=0.022, ry=0.02)
+
+
 # ======================================================================== зад
 def _tail(Dc, s, x0, x1, bot, top, split, nu=8):
     """Фонарь из секций: split — [(x_до, материал)] от внутреннего края наружу."""
@@ -175,7 +196,7 @@ def rear_niva(Dc, P, d):
         Dc.region('rear', 0.675, 0.785, [(0.675, 0.79)], [(0.675, 0.86)], 'reverseLamp' if s < 0 else 'tailLamp', nu=2, nv=1, thick=0.018, mirror=s)
 
 
-FRONT = {'priora': front_priora, 'granta': front_granta, 'vesta': front_vesta, 'largus': front_largus, 'niva': front_niva}
+FRONT = {'vaz2109': front_vaz2109, 'oka': front_oka, 'priora': front_priora, 'granta': front_granta, 'vesta': front_vesta, 'largus': front_largus, 'niva': front_niva}
 REAR = {'priora': rear_priora, 'granta': rear_granta, 'vesta': rear_vesta, 'largus': rear_largus,
         'vaz2109': rear_vaz2109, 'niva': rear_niva}
 
