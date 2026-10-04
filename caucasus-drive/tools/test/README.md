@@ -12,6 +12,8 @@ node foot.mjs /tmp/shots high       # пешком: ходьба, бег, пры
 node crowd2.mjs                     # наезд на прохожего со штрафами и без
 node shop.mjs /tmp/shots            # ларьки, покупка, еда
 node feat.mjs /tmp/shots            # неон, номера, дождь, радио, прострелы, задания дня
+node freedrift.mjs /tmp/shots       # дрифт в свободной езде: шашки в серии, удар, итог, рекорд, близость к припаркованным
+node plates.mjs /tmp/shots          # редактор номера в гараже: стрелки, цена, покупка, миграция старого id
 node hudsz.mjs /tmp/shots           # наложение кнопок HUD на экранах 640×360…915×412
 node gov2.mjs high                  # регулятор качества: модель «упор в GPU», vsync 30, восстановление
 node prof.mjs high                  # время CPU на кадр по подсистемам
