@@ -4,6 +4,9 @@
     <!-- WebGL 2 требует OpenGL ES 3.0 -->
     <uses-feature android:glEsVersion="0x00030000" android:required="true" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- онлайн: брокер PeerJS и WebRTC-соединения с другими игроками -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="false"

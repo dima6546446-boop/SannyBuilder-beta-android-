@@ -346,7 +346,7 @@ body.onfoot #sensors, body.onfoot #speed-limit, body.onfoot #btn-radio { display
 }
 .h1 { font-weight: 900; font-size: 22px; letter-spacing: 1px; text-transform: uppercase; }
 .main-grid {
-  margin-top: auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px;
+  margin-top: auto; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px;
 }
 .tile {
   position: relative; height: 128px; border-radius: 16px; overflow: hidden; padding: 12px;
@@ -469,3 +469,26 @@ body.onfoot #sensors, body.onfoot #speed-limit, body.onfoot #btn-radio { display
 .pl-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
 .pl-q { padding: 6px 7px; border-radius: 9px; background: rgba(255,255,255,.05); font-weight: 800; font-size: 12px; white-space: nowrap; }
 .pl-q small { display: block; font-size: 10px; font-weight: 600; color: var(--muted); }
+
+/* ---------- онлайн ---------- */
+.tile.online { background: linear-gradient(160deg, #1f6a8a, #123a52); }
+.tile.online .ic, .tile.online .s { color: #d6f1ff; }
+.ol { display: flex; gap: 18px; margin: auto; width: min(760px, 100%); }
+.ol-col { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ol-l { font-size: 12px; color: var(--muted); font-weight: 800; text-transform: uppercase; }
+.ol-in { background: var(--panel2); border: 1px solid var(--line); border-radius: 10px; color: #fff; font: 800 18px inherit; font-family: inherit; padding: 9px 12px; width: 100%; box-sizing: border-box; outline: none; }
+.ol-in:focus { border-color: var(--accent); }
+.ol-in.code { width: 110px; text-align: center; letter-spacing: 4px; text-transform: uppercase; }
+.ol-join { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+.ol-join .bigbtn { flex: 1; }
+.ol-sub { font-size: 11px; color: var(--muted); margin: -4px 0 2px; text-align: center; }
+.ol-fines { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 700; }
+.ol-fines .seg { display: flex; gap: 6px; }
+.ol-st { min-height: 18px; font-size: 13px; font-weight: 800; color: #9fd8ff; text-align: center; }
+.ol-st.bad { color: #ff8a7a; }
+.bigbtn.busy { opacity: .45; pointer-events: none; }
+#online-row { font-size: 12px; font-weight: 800; color: #9fd8ff; display: flex; align-items: center; gap: 6px; }
+#chat-menu { position: absolute; right: calc(10px + env(safe-area-inset-right)); top: 96px; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; pointer-events: auto; z-index: 5; }
+#chat-menu div { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 800; color: #fff; white-space: nowrap; }
+#chat-menu div:active { background: var(--accent); }
+@media (max-height: 420px) { .ol-in { padding: 7px 10px; font-size: 16px; } .ol { gap: 12px; } }

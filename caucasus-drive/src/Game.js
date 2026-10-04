@@ -28,6 +28,8 @@ import { TargetZone, Beacon, Cones, Pedestrian } from './gfx/Markers.js';
 import { Rules } from './gameplay/Rules.js';
 import { CAR_BY_ID } from './config/cars.js';
 import { mulberry32 } from './utils/math.js';
+import { RemotePlayers } from './net/RemotePlayers.js';
+import { FLAG } from './net/Net.js';
 
 /** Ввод для машины, пока игрок гуляет: стоит на ручнике. */
 const PARKED = { steer: 0, throttle: 0, brake: 1, handbrake: true, horn: false };
@@ -130,6 +132,8 @@ export class Game {
     this.crowd = new Crowd(this);
     this.shops = new Shops(this);
     this.radio = new Radio(audio);
+    this.remote = new RemotePlayers(this);
+    this._traf = [];
     this.daily = new Daily(this.save, (t, d) => {
       this.hud.toast(`✅ Задание дня: ${d.text} — забери ${d.reward.toLocaleString('ru-RU')} ₽ в меню «Задания»`, 'money', 4);
       this.audio.success();
@@ -472,13 +476,14 @@ export class Game {
     this.player.update(dt, foot ? PARKED : this.input, {
       surface: (x, z, out) => { this.city.surface(x, z, out); out.mu *= 1 - 0.16 * this.weather.level; return out; },
       colliders: [this.collision, ...extra],
-      traffic: this.traffic.cars,
+      traffic: this._trafficWithRemote(),
       night,
       clock: this.dayNight.time,
       rain: this.weather.level,
     });
     if (foot) this.walker.update(dt, { moveX: this.input.moveX, moveY: this.input.moveY, walk: this.input.walk, camYaw: this.cameraRig.footYaw });
     this.traffic.update(dt, this.player.physics, this.camera, this.focus);
+    if (this.remote.map.size) this.remote.update(dt, this.camera);
     this.rules.update(dt, this.player, this.player.surface.type);
     this.mode?.update(dt);
     this.crowd.update(dt);
@@ -521,6 +526,7 @@ export class Game {
     // тени машин — только в радиусе карты теней (+запас: камера стоит позади фокуса)
     this.instancer.begin(this.camera, night, this.dayNight.sun.castShadow ? this.q.shadowRange + 12 : 0);
     this.traffic.render(this.glow, blink);
+    if (this.remote.map.size) this.remote.render(this.instancer, this.glow, blink);
     const cam = this.camera.position, R2 = this.parkedR * this.parkedR;
     for (const pc of this.city.parked) {
       const dx = pc.x - cam.x, dz = pc.z - cam.z;
@@ -550,6 +556,34 @@ export class Game {
       focus: foot ? { x: this.walker.pos.x, z: this.walker.pos.z, heading: this.cameraRig.footYaw } : null,
       camera: this.camera, money: this.save.money,
     });
+  }
+
+  /** Трафик + машины других игроков онлайн (для столкновений). */
+  _trafficWithRemote() {
+    if (!this.remote.cars.length) return this.traffic.cars;
+    const a = this._traf;
+    a.length = 0;
+    for (const c of this.traffic.cars) a.push(c);
+    for (const c of this.remote.cars) a.push(c);
+    return a;
+  }
+
+  /** Состояние для онлайна: [x, z, heading, vx, vz, y, flags, wx, wz, wyaw, wv, wy]. */
+  netState() {
+    const pl = this.player, p = pl.physics, w = this.walker;
+    const ind = pl.indicator, bo = pl.blinkOn;
+    let f = (pl.lightsOn ? FLAG.lights : 0) | (p.braking ? FLAG.brake : 0) | (p.reversing ? FLAG.rev : 0);
+    if (!this.onFoot && this.input.horn) f |= FLAG.horn;
+    if (bo && (ind === 'L' || ind === 'H')) f |= FLAG.indL;
+    if (bo && (ind === 'R' || ind === 'H')) f |= FLAG.indR;
+    const r2 = (v) => Math.round(v * 100) / 100;
+    const d = [r2(p.x), r2(p.z), r2(p.heading), r2(p.vx), r2(p.vz), r2(pl.y), 0];
+    if (this.onFoot) {
+      f |= FLAG.foot | (w.state === 'sit' ? FLAG.sit : 0);
+      d.push(r2(w.pos.x), r2(w.pos.z), r2(w.yaw), r2(w.speed), r2(w.pos.y));
+    }
+    d[6] = f;
+    return d;
   }
 
   _playerGlow() {

@@ -24,8 +24,9 @@ const BYE = ['Спасибо, шеф! Сдачи не надо.', 'Довёз к
  * одна серия, одна выплата, без двойного счёта. Рекорд серии в городе — Save.drift.freeBest.
  */
 export class FreeRideMode {
-  constructor(game, { fines = true } = {}) {
+  constructor(game, { fines = true, online = false } = {}) {
     this.g = game;
+    this.online = online; // онлайн: случайная точка появления, чтобы игроки не появлялись друг в друге
     this.fines = fines; // false — камеры, ДПС и нарушения ничего не снимают
     this.name = 'free';
     this.allowWalk = true; // можно выйти из машины и гулять
@@ -36,6 +37,10 @@ export class FreeRideMode {
     const g = this.g;
     g.traffic.enabled = true;
     g.traffic.target = g.q.trafficCount;
+    if (!spawn && this.online) {
+      const i = 1 + ((this.rnd() * (N - 2)) | 0), j = 1 + ((this.rnd() * (N - 3)) | 0);
+      spawn = [coord(i) - CITY.LANES[1], coord(j) + HALF + 8 + this.rnd() * (SEG - 16), 0];
+    }
     const [x, z, h] = spawn || [coord(3) - CITY.LANES[1], coord(2) + HALF + 20, 0];
     g.player.place(x, z, h);
     g.cameraRig.snap();

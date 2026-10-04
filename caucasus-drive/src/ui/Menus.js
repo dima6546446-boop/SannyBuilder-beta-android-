@@ -11,6 +11,7 @@ const ICONS = {
   city: '<svg viewBox="0 0 24 24"><path d="M3 21V9l5-3v3l5-3v4h8v11zm4-3h2v-2H7zm0-4h2v-2H7zm5 4h2v-2h-2zm0-4h2v-2h-2zm5 4h2v-2h-2zm0-4h2v-2h-2z"/></svg>',
   exam: '<svg viewBox="0 0 24 24"><path d="M3 5h18v14H3zm2 2v10h14V7zm2 2h5v6H7zm7 0h4v2h-4zm0 3h4v2h-4z"/></svg>',
   drift: '<svg viewBox="0 0 24 24"><g transform="rotate(-20 14 12)"><path d="M8 9l1.4-3h7.2L18 9h1v6h-2v1.5h-2V15h-5v1.5H8V15H6V9zm1.8 0h6.4l-.8-1.8h-4.8z"/></g><circle cx="4" cy="17" r="2"/><circle cx="2.5" cy="13.5" r="1.4"/><circle cx="6" cy="20.5" r="1.3"/></svg>',
+  online: '<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm6.9 6h-2.9a15 15 0 0 0-1.4-3.6A8 8 0 0 1 18.9 8zM12 4c.8 1.2 1.5 2.5 1.9 4h-3.8c.4-1.5 1.1-2.8 1.9-4zM4.3 14a8 8 0 0 1 0-4h3.4a16 16 0 0 0 0 4zm.8 2h2.9a15 15 0 0 0 1.4 3.6A8 8 0 0 1 5.1 16zm2.9-8H5.1a8 8 0 0 1 4.3-3.6C8.9 5.5 8.4 6.7 8 8zm4 12c-.8-1.2-1.5-2.5-1.9-4h3.8c-.4 1.5-1.1 2.8-1.9 4zm2.3-6H9.7a14 14 0 0 1 0-4h4.6a14 14 0 0 1 0 4zm.3 5.6c.6-1.1 1.1-2.3 1.4-3.6h2.9a8 8 0 0 1-4.3 3.6zm1.8-5.6a16 16 0 0 0 0-4h3.4a8 8 0 0 1 0 4z"/></svg>',
   garage: '<svg viewBox="0 0 24 24"><path d="M12 3 2 8v13h4v-9h12v9h4V8zM8 14h8v2H8zm0 3h8v2H8z"/></svg>',
 };
 
@@ -84,6 +85,7 @@ export class Menus {
         <div class="tile hot" data-act="levels"><span class="badge">КАРЬЕРА</span><div class="ic">${ICONS.park}</div><div class="t">Парковка</div><div class="s">30 уровней · ★ ${stars}</div></div>
         <div class="tile" data-act="free"><span class="badge">ГОРОД</span><div class="ic">${ICONS.city}</div><div class="t">Свободная езда</div><div class="s">${s.drift?.freeBest ? `Такси · дрифт · рекорд ${s.drift.freeBest.toLocaleString('ru-RU')}` : 'Такси-бомбила · шашки · дрифт'}</div></div>
         <div class="tile" data-act="drift"><span class="badge">${s.drift?.best ? `★ ${s.drift.best.toLocaleString('ru-RU')}` : 'НОВОЕ'}</span><div class="ic">${ICONS.drift}</div><div class="t">Дрифт</div><div class="s">Автодром ДОСААФ</div></div>
+        <div class="tile online" data-act="online"><span class="badge">${this.app.net?.active ? '● В СЕТИ' : 'НОВОЕ'}</span><div class="ic">${ICONS.online}</div><div class="t">Онлайн</div><div class="s">Город с друзьями · до 8</div></div>
         <div class="tile" data-act="exam"><span class="badge">${s.license ? 'СДАН' : '+10 000 ₽'}</span><div class="ic">${ICONS.exam}</div><div class="t">Экзамен ГИБДД</div><div class="s">Площадка + город</div></div>
         <div class="tile" data-act="garage"><span class="badge">${s.owned.length}/${CARS.length}</span><div class="ic">${ICONS.garage}</div><div class="t">Гараж</div><div class="s">${CAR_BY_ID[s.current].name} · тюнинг</div></div>
       </div>
@@ -99,6 +101,7 @@ export class Menus {
       if (a === 'levels') this.show('levels');
       if (a === 'garage') this.show('garage');
       if (a === 'free') this.show('freeSetup');
+      if (a === 'online') this.show('online');
       if (a === 'exam') this.app.startExam();
       if (a === 'drift') this.app.startDrift();
     }));
@@ -127,6 +130,48 @@ export class Menus {
       const r = D.claim(+b.dataset.claim);
       if (r) { this.app.audio.coin(); this.show('daily'); }
     }));
+  }
+
+  // ---------------------------------------------------------------- онлайн
+  _online(err) {
+    const s = this.save.data.settings;
+    const el = this._screen(`
+      <div class="topbar"><div class="back" data-go="main">‹</div><div class="h1">Онлайн</div><div class="pill">до 8 игроков</div></div>
+      <div class="ol">
+        <div class="ol-col">
+          <label class="ol-l">Твой ник</label>
+          <input id="ol-nick" class="ol-in" maxlength="16" autocomplete="off" spellcheck="false" value="${(s.nick || '').replace(/"/g, '')}" placeholder="Ник">
+          <div class="ol-fines"><span>Штрафы в городе:</span>
+            <div class="seg"><div data-f="1" class="${s.fines !== false ? 'sel' : ''}">Вкл</div><div data-f="0" class="${s.fines === false ? 'sel' : ''}">Выкл</div></div></div>
+          <div class="help">Игроки соединяются напрямую. Лучше всего работает по Wi-Fi; через мобильный интернет у некоторых операторов соединиться не получится.</div>
+        </div>
+        <div class="ol-col">
+          <div class="bigbtn green" id="ol-quick">⚡ Быстрая игра</div>
+          <div class="ol-sub">случайные игроки в открытой комнате</div>
+          <div class="bigbtn" id="ol-create">🔒 Создать комнату</div>
+          <div class="ol-sub">получишь код — отправь его друзьям</div>
+          <div class="ol-join"><input id="ol-code" class="ol-in code" maxlength="4" autocomplete="off" spellcheck="false" placeholder="КОД"><div class="bigbtn" id="ol-go">Войти</div></div>
+          <div id="ol-status" class="ol-st ${err ? 'bad' : ''}">${err || ''}</div>
+        </div>
+      </div>`, 'dim');
+    const nick = el.querySelector('#ol-nick'), code = el.querySelector('#ol-code');
+    code.addEventListener('input', () => { code.value = code.value.toUpperCase().replace(/[^A-Z0-9]/g, ''); });
+    el.querySelectorAll('[data-f]').forEach((b) => b.addEventListener('click', () => {
+      s.fines = b.dataset.f === '1'; this.save.commit(); this.app.audio.click();
+      el.querySelectorAll('[data-f]').forEach((x) => x.classList.toggle('sel', x === b));
+    }));
+    const go = (mode, c) => {
+      this.app.audio.click();
+      if (mode === 'join' && c.length !== 4) { el.querySelector('#ol-status').textContent = 'Код комнаты — 4 символа'; return; }
+      s.nick = nick.value; this.save.commit();
+      el.querySelectorAll('.bigbtn').forEach((b) => b.classList.add('busy'));
+      el.querySelector('#ol-status').className = 'ol-st';
+      el.querySelector('#ol-status').textContent = mode === 'quick' ? 'Ищем комнату…' : mode === 'create' ? 'Создаём комнату…' : 'Подключаемся…';
+      this.app.startOnline(mode, c);
+    };
+    el.querySelector('#ol-quick').addEventListener('click', () => go('quick'));
+    el.querySelector('#ol-create').addEventListener('click', () => go('create'));
+    el.querySelector('#ol-go').addEventListener('click', () => go('join', code.value));
   }
 
   // ---------------------------------------------------------------- свободная езда: выбор штрафов
@@ -404,6 +449,7 @@ export class Menus {
         <b>Парковка:</b> поставьте машину в жёлтую зону по стрелке и остановитесь. Любое касание — провал. Быстрее норматива — три звезды.<br><br>
         <b>Город:</b> кнопка «такси» — возите пассажиров за рубли. Обгоны впритирку на скорости (<b>ШАШКИ</b>) и дрифт идут в одну серию: итог — рубли, рекорд серии в городе виден на панели дрифта.<br><br><b>Дрифт:</b> срыв — ручником или перегазовкой (отпустить газ и снова в пол с вывернутым рулём, задний привод), удержание — газом и контррулём. Очки = угол × скорость × плавность; множитель растёт за длинный занос и связки (перекладка — ×+1), рядом со стеной или машиной — бонус. Удар, конус или разворот сжигают серию. «Помощь при заносе» в настройках подруливает сама. Дрифт-зона ДОСААФ — заезд 90 с с рекордом и наградой.
         Камеры «Стрелка» и посты ДПС штрафуют за нарушения. Бензин — на АЗС (красная точка на карте).<br><br>
+        <b>Онлайн:</b> «Быстрая игра» — город со случайными игроками, «Создать комнату» — получишь код из 4 символов, друзья вводят его и попадают к тебе (до 8 человек). Кнопка с облачком — быстрые фразы. Если создатель комнаты выйдет, катаешься дальше один. Лучше всего работает по Wi-Fi.<br><br>
         <b>Экзамен ГИБДД:</b> змейка, параллельная парковка и гараж задом, потом маршрут по городу. Не набирайте 5 штрафных баллов, включайте поворотники!<br><br>
         <b>Клавиатура:</b> WASD — езда, Пробел — ручник, Q/E — передачи, Z/X/V — поворотники/аварийка, H — гудок, C — камера, L — фары, T — такси, F — действие, Esc — пауза.
       </div>`, 'dim');
@@ -415,6 +461,7 @@ export class Menus {
     const el = this._screen(`
       <div class="modal">
         <div class="h1">Пауза</div>
+        ${this.app.net?.active ? `<div class="help" style="text-align:center">Онлайн: комната <b>${this.app.net.pub ? 'открытая' : this.app.net.room}</b> · игроков ${this.app.net.count}. Другие видят твою машину на месте.</div>` : ''}
         <div class="row">
           <div class="bigbtn green" id="p-cont">Продолжить</div>
           ${mode !== 'free' ? '<div class="bigbtn" id="p-restart">Заново</div>' : ''}
@@ -422,7 +469,7 @@ export class Menus {
         <div class="row">
           <div class="linkbtn" id="p-cam">Камера</div>
           <div class="linkbtn" data-go="settings">Настройки</div>
-          <div class="linkbtn" id="p-menu">В меню</div>
+          <div class="linkbtn" id="p-menu">${this.app.net?.active ? 'Выйти из онлайна' : 'В меню'}</div>
         </div>
       </div>`, 'dim');
     el.querySelector('#p-cont').addEventListener('click', () => this.app.resume());

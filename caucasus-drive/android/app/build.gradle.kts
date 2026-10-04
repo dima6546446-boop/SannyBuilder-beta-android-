@@ -11,8 +11,8 @@ android {
         applicationId = "com.caucasusdrive.game"
         minSdk = 24          // Android 7.0+: WebView на Chromium с WebGL 2
         targetSdk = 34
-        versionCode = 9
-        versionName = "1.8.0"
+        versionCode = 10
+        versionName = "1.9.0"
     }
 
     buildTypes {
