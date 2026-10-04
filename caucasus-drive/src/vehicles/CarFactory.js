@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { buildInterior } from './Interior.js';
 import { prep, merge } from '../utils/geometry.js';
-import { ModelLibrary, meshesFromLod } from './ModelLibrary.js';
+import { ModelLibrary, meshesFromLod, SHADOW_PARTS } from './ModelLibrary.js';
 
 /**
  * Параметрический генератор автомобилей по описанию из config/cars.js.
@@ -565,7 +565,7 @@ export function buildPlayerModel(def, mats, wheelStyle = 'default', { driver = f
     for (const [part, list] of Object.entries(byPart)) {
       const mesh = new THREE.Mesh(merge(list), mats[part] || mats.black);
       mesh.name = part;
-      mesh.castShadow = part !== 'glass';
+      mesh.castShadow = SHADOW_PARTS.has(part);
       mesh.receiveShadow = part === 'paint';
       body.add(mesh);
     }

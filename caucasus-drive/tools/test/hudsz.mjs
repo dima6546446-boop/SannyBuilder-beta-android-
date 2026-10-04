@@ -6,11 +6,11 @@ for (const [w, h] of [[640, 360], [740, 360], [800, 360], [915, 412]]) {
   await page.goto(`http://localhost:4173/?autostart&nogov&q=low&free`);
   await page.waitForFunction(() => window.game && window.game.mode, null, { timeout: 180000 });
   await page.evaluate(() => { const a = window.app; a.game.renderer.setAnimationLoop(null); for (let i = 0; i < 30; i++) a.game.tick(1/30); a.game.render(0); });
-  await page.evaluate(() => { const g = window.game; g.mode.onTaxi(); document.getElementById('btn-action').classList.remove('hidden'); g.hud.mission('Такси · посадка', 'Пассажир ждёт: 300 м'); });
+  await page.evaluate(() => { const g = window.game; g.mode.onTaxi(); document.getElementById('btn-action').classList.remove('hidden'); g.hud.mission('Такси · посадка', 'Пассажир ждёт: 300 м'); g.mode.update = () => {}; g.hud.drift({ angle: 35, pts: 12345, mult: 2.5, active: true, tag: 'ПЕРЕКЛАДКА', tagKind: '' }, 1); });
   for (const foot of [false, true]) {
   if (foot) await page.evaluate(() => { const g = window.game; g.input.emit('door'); for (let i = 0; i < 10; i++) g.tick(1/30); g.render(0); });
   const boxes = await page.evaluate(() => {
-    const ids = ['btn-cam','btn-lights','btn-radio','btn-door','btn-pause','speed-limit','money-box','btn-horn','btn-taxi','btn-action','hb','lever','gas','brake','minimap','indicators','dash','wheel','mission','stick','btn-jump','btn-sit','btn-smoke','btn-whistle','btn-enter'];
+    const ids = ['drift', 'btn-cam','btn-lights','btn-radio','btn-door','btn-pause','speed-limit','money-box','btn-horn','btn-taxi','btn-action','hb','lever','gas','brake','minimap','indicators','dash','wheel','mission','stick','btn-jump','btn-sit','btn-smoke','btn-whistle','btn-enter'];
     const r = {}; for (const id of ids) { const e = document.getElementById(id); if (!e) continue; const b = e.getBoundingClientRect(); if (b.width) r[id] = [b.left|0, b.top|0, b.right|0, b.bottom|0]; }
     return r;
   });

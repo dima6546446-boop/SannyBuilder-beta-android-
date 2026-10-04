@@ -1,10 +1,12 @@
 import { CITY, coord } from '../world/RoadGraph.js';
 import { VIOLATION } from './Rules.js';
 import { mulberry32 } from '../utils/math.js';
+import { DriftController } from './DriftController.js';
 
 const { N, HALF } = CITY;
 const SEG = CITY.SPACING - 2 * HALF;
 const FUEL_PRICE = 56;
+let comboStamp = 0; // номер кадра для «шашек» (общий для всех заездов)
 
 const HELLO = [
   'Шеф, до ДК подбросишь?', 'Только не гони, у меня рассада!', 'На «Жигулях»? Ну давай, с ветерком!',
@@ -16,7 +18,8 @@ const BYE = ['Спасибо, шеф! Сдачи не надо.', 'Довёз к
 
 /**
  * Свободная езда по городу: такси-«бомбила», АЗС, камеры «Стрелка» и посты ДПС
- * со штрафами, «шашки» (обгоны впритирку) и дрифт с комбо-множителем.
+ * со штрафами, «шашки» (обгоны впритирку) с комбо-множителем и дрифт с судейством
+ * (DriftController: угол × скорость × плавность, связки, близость к стенам; на автодроме ДОСААФ ×1,5).
  */
 export class FreeRideMode {
   constructor(game, { fines = true } = {}) {
@@ -39,7 +42,8 @@ export class FreeRideMode {
     g.traffic.prefill(g.camera);
     this.taxi = { on: false, stage: 'off', timer: 0 };
     this.combo = { pts: 0, mult: 1, events: 0, timer: 0, kind: '' };
-    this.prevAlong = new Map();
+    this.drift = new DriftController(g, { onBank: (total, info) => this._bankDrift(total, info) });
+    this.inZone = false;
     this.camCooldown = new Map();
     this.lowFuelWarned = false;
     g.hud.showLimit(true);
@@ -61,6 +65,8 @@ export class FreeRideMode {
     g.rules.onViolation = null;
     this._endTaxi(true);
     this._payCombo();
+    this.drift.bank();
+    this.drift.hide();
     document.getElementById('btn-taxi').classList.add('hidden');
     g.hud.setAction(null);
     g.hud.nav(null);
@@ -248,33 +254,26 @@ export class FreeRideMode {
     if (T.stage === 'wait' && T.timer > 0) g.hud.mission('Такси', 'Ждём заказ…');
   }
 
-  // ---------------------------------------------------------------- «шашки» и дрифт
+  // ---------------------------------------------------------------- «шашки»
   _combo(dt) {
     const g = this.g, p = g.player.physics, c = this.combo;
     const s = Math.sin(p.heading), co = Math.cos(p.heading);
     const kmh = p.speed * 3.6;
-    const seen = new Set();
+    // положение «впереди/позади» с прошлого кадра хранится на самой машине (без Map/Set в кадре)
+    const stamp = ++comboStamp;
     for (const car of g.traffic.cars) {
       const dx = car.x - p.x, dz = car.z - p.z;
       if (Math.abs(dx) > 30 || Math.abs(dz) > 30) continue;
-      seen.add(car.id);
       const along = dx * s + dz * co;
       const side = -dx * co + dz * s;
-      const prev = this.prevAlong.get(car.id);
-      this.prevAlong.set(car.id, along);
+      const prev = car._comboSeen === stamp - 1 ? car._comboAlong : undefined;
+      car._comboSeen = stamp;
+      car._comboAlong = along;
       if (prev !== undefined && prev > 0 && along <= 0 && Math.abs(side) < 3.1 && kmh > 60) {
         const pts = Math.round((3.1 - Math.abs(side)) * 160 + kmh * 2);
         this._addCombo(pts, Math.abs(side) < 2.2 ? 'ВПРИТИРКУ!' : 'ШАШКИ');
       }
     }
-    for (const id of this.prevAlong.keys()) if (!seen.has(id)) this.prevAlong.delete(id);
-    // дрифт
-    if (p.slipRear > 0.28 && p.speed > 8 && g.player.surface.type !== 2) {
-      c.pts += dt * 260 * p.slipRear * c.mult;
-      c.timer = 2.5;
-      c.kind = 'ДРИФТ';
-      c.drifting = true;
-    } else c.drifting = false;
     if (c.pts > 0) {
       c.timer -= dt;
       g.hud.combo(`${c.kind} ×${c.mult} · ${Math.round(c.pts)}`);
@@ -306,8 +305,32 @@ export class FreeRideMode {
     g.hud.combo(null);
   }
 
+  // ---------------------------------------------------------------- дрифт
+  _drift(dt) {
+    const g = this.g, p = g.player.physics;
+    const zone = g.city.inAutodrome(p.x, p.z);
+    if (zone !== this.inZone) {
+      this.inZone = zone;
+      if (zone) g.hud.toast('Дрифт-зона ДОСААФ: очки дрифта ×1,5', 'good', 2.5);
+    }
+    this.drift.update(dt, { zone: zone ? 1.5 : 1 });
+  }
+
+  /** Серия дрифта сохранена: рубли, задание дня, рекорды. Возвращает начисленные рубли. */
+  _bankDrift(total) {
+    const g = this.g, st = g.save.data;
+    const money = Math.round(total / 5);
+    if (money > 0) g.save.addMoney(money);
+    g.daily.progress('drift', total);
+    if (total > st.stats.bestCombo) st.stats.bestCombo = total;
+    if (total > st.drift.bestSeries) st.drift.bestSeries = total;
+    g.save.commit();
+    return money;
+  }
+
   onCrash(strength) {
     const g = this.g;
+    if (strength > 0.08) this.drift.lose('Удар');
     if (this.combo.pts > 0) {
       g.hud.toast('Шашки не удались! Комбо сгорело', 'bad');
       this.combo = { pts: 0, mult: 1, events: 0, timer: 0, kind: '' };
@@ -325,6 +348,7 @@ export class FreeRideMode {
   onPedHit() {
     const g = this.g;
     if (this.combo.pts > 0) { this.combo = { pts: 0, mult: 1, events: 0, timer: 0, kind: '' }; g.hud.combo(null); }
+    this.drift.lose('Пешеход');
     if (this.fines) this._fine(5000, 'ДПС: наезд на пешехода', 'dps');
     else g.hud.toast('Пешеход! Аккуратнее, он еле увернулся', 'bad', 2.5);
   }
@@ -334,6 +358,7 @@ export class FreeRideMode {
     this._fuel();
     this._taxi(dt);
     this._combo(dt);
+    this._drift(dt);
     this.g.beacon.update(dt);
   }
 

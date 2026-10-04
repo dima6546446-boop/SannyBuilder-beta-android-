@@ -28,12 +28,19 @@ export class CarInstancer {
       return im;
     };
     const shadows = quality.shadows && quality.name === 'high';
+    // в проход теней идут только машины в зоне карты теней: они записаны в начало буфера
+    // экземпляров, и на время прохода count урезается до nSh (дальние LOD0 тень не рисуют)
+    const shadowCount = function () { this.userData.full = this.count; this.count = this.userData.nSh; };
+    const restoreCount = function () { this.count = this.userData.full; };
     this.meshes = this.models.map((m) => {
       const g = buildInstanceGeometries(m);
       const lod0 = mk(g.lod0, `Car_${m.key}_LOD0`);
       lod0.castShadow = shadows;
       lod0.userData.cast = shadows;
-      return { lod0, lod1: mk(g.lod1, `Car_${m.key}_LOD1`), n0: 0, n1: 0, lamps: lampPoints(m) };
+      lod0.userData.nSh = 0;
+      lod0.onBeforeShadow = shadowCount;
+      lod0.onAfterShadow = restoreCount;
+      return { lod0, lod1: mk(g.lod1, `Car_${m.key}_LOD1`), n0: 0, n1: 0, nFar: 0, far: [], lamps: lampPoints(m) };
     });
     this.cap = cap;
 
@@ -71,8 +78,10 @@ export class CarInstancer {
 
   modelIndex(key) { return this.index[key] ?? 0; }
 
-  begin(camera, night) {
-    for (const m of this.meshes) { m.n0 = 0; m.n1 = 0; }
+  /** shadowR — радиус карты теней вокруг камеры (0 — теней нет). */
+  begin(camera, night, shadowR = 0) {
+    for (const m of this.meshes) { m.n0 = 0; m.n1 = 0; m.nFar = 0; }
+    this.shadowR2 = shadowR * shadowR;
     this.nb = 0;
     this.nBeams = 0;
     this.night = night;
@@ -100,7 +109,8 @@ export class CarInstancer {
     if (!visible) return;
     this._m.compose(this._p.set(car.x, y, car.z), this._q, this._s);
     if (d2 < this.q.carLodDistance * this.q.carLodDistance) {
-      if (M.n0 < this.cap) { M.lod0.setMatrixAt(M.n0, this._m); M.lod0.setColorAt(M.n0, car.color); M.n0++; }
+      if (this.shadowR2 > 0 && d2 > this.shadowR2) { if (M.nFar < this.cap) M.far[M.nFar++] = car; } // допишем в end()
+      else if (M.n0 < this.cap) { M.lod0.setMatrixAt(M.n0, this._m); M.lod0.setColorAt(M.n0, car.color); M.n0++; }
     } else if (M.n1 < this.cap) { M.lod1.setMatrixAt(M.n1, this._m); M.lod1.setColorAt(M.n1, car.color); M.n1++; }
 
     if (this.nb < this.blobs.instanceMatrix.count) {
@@ -139,6 +149,13 @@ export class CarInstancer {
 
   end() {
     for (const M of this.meshes) {
+      M.lod0.userData.nSh = M.n0;
+      for (let i = 0; i < M.nFar && M.n0 < this.cap; i++) {
+        const car = M.far[i];
+        this._q.setFromAxisAngle(this._up, car.heading);
+        this._m.compose(this._p.set(car.x, car.y ?? 0, car.z), this._q, this._s);
+        M.lod0.setMatrixAt(M.n0, this._m); M.lod0.setColorAt(M.n0, car.color); M.n0++;
+      }
       M.lod0.count = M.n0; M.lod1.count = M.n1;
       M.lod0.visible = M.n0 > 0; M.lod1.visible = M.n1 > 0;
       if (M.n0) { M.lod0.instanceMatrix.needsUpdate = true; M.lod0.instanceColor.needsUpdate = true; }

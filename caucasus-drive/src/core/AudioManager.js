@@ -55,6 +55,7 @@ export class AudioManager {
     // --- визг шин ---
     const sq = this._noiseLoop();
     const sf = ctx.createBiquadFilter(); sf.type = 'bandpass'; sf.frequency.value = 1900; sf.Q.value = 7;
+    this.skidFilter = sf;
     this.skidGain = ctx.createGain(); this.skidGain.gain.value = 0;
     sq.connect(sf).connect(this.skidGain).connect(this.master);
 
@@ -108,7 +109,8 @@ export class AudioManager {
   /**
    * @param mix — громкость мотора 0..1 (игрок вышел из машины и отошёл — мотор тише)
    */
-  update(rpm, load, skid, speed, mix = 1) {
+  /** squeal — тон визга 0..1: глубокий занос ниже и грубее, быстрый лёгкий — выше. */
+  update(rpm, load, skid, speed, mix = 1, squeal = 0.5) {
     if (!this.enabled) return;
     const t = this.ctx.currentTime;
     const f = (rpm / 60) * ((this.cyl ?? 4) / 2); // частота вспышек 4-тактного мотора
@@ -119,6 +121,8 @@ export class AudioManager {
     this.eGain.gain.setTargetAtTime((0.1 + load * 0.16 + (rpm / 6500) * 0.08) * (this.rasp ?? 1) * mix, t, 0.06);
     this.rumbleGain.gain.setTargetAtTime((0.15 + load * 0.25) * mix, t, 0.1);
     this.skidGain.gain.setTargetAtTime(Math.min(skid, 1) * 0.28, t, 0.05);
+    this.skidFilter.frequency.setTargetAtTime(1350 + squeal * 1100, t, 0.08);
+    this.skidFilter.Q.setTargetAtTime(4 + squeal * 5, t, 0.1);
     this.windGain.gain.setTargetAtTime(Math.min(speed / 45, 1) * 0.12, t, 0.2);
   }
 

@@ -8,6 +8,7 @@ const ICONS = {
   park: '<svg viewBox="0 0 24 24"><path d="M5 3h8a6 6 0 0 1 0 12H9v6H5zm4 4v4h4a2 2 0 0 0 0-4z"/></svg>',
   city: '<svg viewBox="0 0 24 24"><path d="M3 21V9l5-3v3l5-3v4h8v11zm4-3h2v-2H7zm0-4h2v-2H7zm5 4h2v-2h-2zm0-4h2v-2h-2zm5 4h2v-2h-2zm0-4h2v-2h-2z"/></svg>',
   exam: '<svg viewBox="0 0 24 24"><path d="M3 5h18v14H3zm2 2v10h14V7zm2 2h5v6H7zm7 0h4v2h-4zm0 3h4v2h-4z"/></svg>',
+  drift: '<svg viewBox="0 0 24 24"><g transform="rotate(-20 14 12)"><path d="M8 9l1.4-3h7.2L18 9h1v6h-2v1.5h-2V15h-5v1.5H8V15H6V9zm1.8 0h6.4l-.8-1.8h-4.8z"/></g><circle cx="4" cy="17" r="2"/><circle cx="2.5" cy="13.5" r="1.4"/><circle cx="6" cy="20.5" r="1.3"/></svg>',
   garage: '<svg viewBox="0 0 24 24"><path d="M12 3 2 8v13h4v-9h12v9h4V8zM8 14h8v2H8zm0 3h8v2H8z"/></svg>',
 };
 
@@ -80,6 +81,7 @@ export class Menus {
       <div class="main-grid">
         <div class="tile hot" data-act="levels"><span class="badge">КАРЬЕРА</span><div class="ic">${ICONS.park}</div><div class="t">Парковка</div><div class="s">30 уровней · ★ ${stars}</div></div>
         <div class="tile" data-act="free"><span class="badge">ГОРОД</span><div class="ic">${ICONS.city}</div><div class="t">Свободная езда</div><div class="s">Такси-бомбила · шашки · АЗС</div></div>
+        <div class="tile" data-act="drift"><span class="badge">${s.drift?.best ? `★ ${s.drift.best.toLocaleString('ru-RU')}` : 'НОВОЕ'}</span><div class="ic">${ICONS.drift}</div><div class="t">Дрифт</div><div class="s">Автодром ДОСААФ</div></div>
         <div class="tile" data-act="exam"><span class="badge">${s.license ? 'СДАН' : '+10 000 ₽'}</span><div class="ic">${ICONS.exam}</div><div class="t">Экзамен ГИБДД</div><div class="s">Площадка + город</div></div>
         <div class="tile" data-act="garage"><span class="badge">${s.owned.length}/${CARS.length}</span><div class="ic">${ICONS.garage}</div><div class="t">Гараж</div><div class="s">${CAR_BY_ID[s.current].name} · тюнинг</div></div>
       </div>
@@ -96,6 +98,7 @@ export class Menus {
       if (a === 'garage') this.show('garage');
       if (a === 'free') this.show('freeSetup');
       if (a === 'exam') this.app.startExam();
+      if (a === 'drift') this.app.startDrift();
     }));
     this.app.garage.setFraming(0);
   }
@@ -320,7 +323,7 @@ export class Menus {
         <b>Управление:</b> руль слева (или стрелки/наклон), справа — газ, тормоз, рычаг <b>R · N · D</b> и ручник.
         Поворотники — кнопки под картой (Z/X на клавиатуре). Свайп по экрану — осмотреться. Камеры — кнопка с фотоаппаратом.<br><br>
         <b>Парковка:</b> поставьте машину в жёлтую зону по стрелке и остановитесь. Любое касание — провал. Быстрее норматива — три звезды.<br><br>
-        <b>Город:</b> кнопка «такси» — возите пассажиров за рубли. Обгоны впритирку на скорости и дрифт дают <b>ШАШКИ</b>-комбо.
+        <b>Город:</b> кнопка «такси» — возите пассажиров за рубли. Обгоны впритирку на скорости дают <b>ШАШКИ</b>-комбо.<br><br><b>Дрифт:</b> срыв — ручником или перегазовкой (отпустить газ и снова в пол с вывернутым рулём, задний привод), удержание — газом и контррулём. Очки = угол × скорость × плавность; множитель растёт за длинный занос и связки (перекладка — ×+1), рядом со стеной или машиной — бонус. Удар, конус или разворот сжигают серию. «Помощь при заносе» в настройках подруливает сама. Дрифт-зона ДОСААФ — заезд 90 с с рекордом и наградой.
         Камеры «Стрелка» и посты ДПС штрафуют за нарушения. Бензин — на АЗС (красная точка на карте).<br><br>
         <b>Экзамен ГИБДД:</b> змейка, параллельная парковка и гараж задом, потом маршрут по городу. Не набирайте 5 штрафных баллов, включайте поворотники!<br><br>
         <b>Клавиатура:</b> WASD — езда, Пробел — ручник, Q/E — передачи, Z/X/V — поворотники/аварийка, H — гудок, C — камера, L — фары, T — такси, F — действие, Esc — пауза.
@@ -350,6 +353,7 @@ export class Menus {
   }
 
   _result(r) {
+    if (r.drift) { this._driftResult(r); return; }
     const stars = r.stars ? `<div class="stars">${'<b>★</b>'.repeat(r.stars)}${'★'.repeat(3 - r.stars)}</div>` : '';
     const title = r.exam ? (r.ok ? 'Экзамен сдан! 🪪' : 'Экзамен не сдан') : (r.ok ? 'Припарковано!' : 'Провал');
     const log = r.log?.length ? `<div class="help" style="margin-top:8px">${r.log.join('<br>')}</div>` : '';
@@ -371,6 +375,22 @@ export class Menus {
     el.querySelector('#r-next')?.addEventListener('click', () => this.app.startParking(r.level + 1));
     el.querySelector('#r-retry').addEventListener('click', () => (r.exam ? this.app.startExam() : this.app.startParking(r.level)));
     el.querySelector('#r-menu').addEventListener('click', () => this.app.toMenu(r.exam ? 'main' : 'levels'));
+  }
+
+  _driftResult(r) {
+    const el = this._screen(`
+      <div class="modal">
+        <div class="h1">${r.record && r.score > 0 ? 'Новый рекорд! 🏁' : 'Заезд окончен'}</div>
+        <div class="reward" style="font-size:30px">${r.score.toLocaleString('ru-RU')} очков</div>
+        <div class="help">Серий: ${r.series} · рекорд зоны: ${r.best.toLocaleString('ru-RU')}</div>
+        ${r.reward ? `<div class="reward">+${rub(r.reward)}</div>${r.record && r.score > 0 ? '<div class="help">в том числе 1 000 ₽ за рекорд</div>' : ''}` : ''}
+        <div class="row">
+          <div class="bigbtn green" id="r-retry">Ещё заезд</div>
+          <div class="bigbtn gray" id="r-menu">Меню</div>
+        </div>
+      </div>`, 'dim');
+    el.querySelector('#r-retry').addEventListener('click', () => this.app.startDrift());
+    el.querySelector('#r-menu').addEventListener('click', () => this.app.toMenu('main'));
   }
 
   showResult(r) { this.app.showResult(r); }

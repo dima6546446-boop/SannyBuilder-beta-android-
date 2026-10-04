@@ -18,7 +18,9 @@ export class HUD {
       sensors: $('sensors'), sf: [...document.querySelectorAll('#sensor-f i')], sr: [...document.querySelectorAll('#sensor-r i')],
       dl: $('dash-ind-l'), dr: $('dash-ind-r'), il: $('ind-l'), ir: $('ind-r'), hz: $('hazard'),
       action: $('btn-action'), flash: $('flash'), map: $('minimap'),
+      drift: $('drift'), drAng: $('dr-ang'), drPts: $('dr-pts'), drMult: $('dr-mult'), drBar: document.querySelector('#dr-bar i'), drTag: $('dr-tag'),
     };
+    this._dr = { shown: false, ang: '', pts: '', mult: '', bar: '', tag: '', tagKind: '', idle: null, t: 0 };
     this.ctx = this.el.map.getContext('2d');
     this._t = 0;
     this._navTarget = null;
@@ -81,6 +83,28 @@ export class HUD {
     if (!text) { this.el.combo.classList.add('hidden'); return; }
     this.el.combo.classList.remove('hidden');
     this.el.combo.textContent = text;
+  }
+
+  /**
+   * Панель дрифта. v: { angle (°), pts, mult, active, tag, tagKind ('' | 'bank' | 'lost') } или null.
+   * Вызывается каждый кадр, DOM трогается ~15 раз в секунду и только при изменениях.
+   */
+  drift(v, dt = 0) {
+    const d = this._dr, e = this.el;
+    if (!v) { if (d.shown) { e.drift.classList.add('hidden'); d.shown = false; } return; }
+    if (!d.shown) { e.drift.classList.remove('hidden'); d.shown = true; d.t = 1; }
+    d.t += dt;
+    if (d.t < 0.066) return;
+    d.t = 0;
+    const set = (k, el, val) => { if (d[k] !== val) { d[k] = val; el.textContent = val; } };
+    set('ang', e.drAng, `${Math.round(Math.abs(v.angle))}°`);
+    set('pts', e.drPts, Math.round(v.pts).toLocaleString('ru-RU'));
+    set('mult', e.drMult, `×${v.mult.toFixed(1).replace('.0', '')}`);
+    set('tag', e.drTag, v.tag || '');
+    const bar = `${Math.min(100, Math.abs(v.angle) / 60 * 100).toFixed(0)}%`;
+    if (d.bar !== bar) { d.bar = bar; e.drBar.style.width = bar; }
+    if (d.tagKind !== v.tagKind) { d.tagKind = v.tagKind; e.drTag.className = v.tagKind || ''; }
+    if (d.idle !== !v.active) { d.idle = !v.active; e.drift.classList.toggle('idle', d.idle); }
   }
 
   nav(target) { this._navTarget = target; if (!target) this.el.nav.classList.remove('show'); }

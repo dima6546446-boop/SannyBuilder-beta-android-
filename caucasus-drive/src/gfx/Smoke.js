@@ -51,25 +51,28 @@ export class Smoke {
     this.active = 0;
   }
 
-  emit(x, y, z, vx, vz, dust = false) {
+  /** k — сила дыма 0..1 (угол заноса × скорость): крупнее, плотнее и дольше висит. */
+  emit(x, y, z, vx, vz, dust = false, k = 0.5) {
     const i = this.head;
     this.head = (this.head + 1) % this.max;
+    this._emitted = true;
     this.p[i * 3] = x + (Math.random() - 0.5) * 0.3;
     this.p[i * 3 + 1] = y + 0.2;
     this.p[i * 3 + 2] = z + (Math.random() - 0.5) * 0.3;
     this.v[i * 3] = vx * 0.2 + (Math.random() - 0.5) * 0.8;
     this.v[i * 3 + 1] = 0.5 + Math.random() * 0.6;
     this.v[i * 3 + 2] = vz * 0.2 + (Math.random() - 0.5) * 0.8;
-    this.maxLife[i] = this.life[i] = dust ? 1.0 : 1.8 + Math.random();
-    this.size[i] = 0.6;
-    this.alpha[i] = this.a0[i] = dust ? 0.35 : 0.5;
-    this.grow[i] = 2.2;
+    this.maxLife[i] = this.life[i] = dust ? 1.0 : 1.3 + k * 1.4 + Math.random();
+    this.size[i] = 0.5 + k * 0.4;
+    this.alpha[i] = this.a0[i] = dust ? 0.35 : 0.28 + k * 0.32;
+    this.grow[i] = 1.6 + k * 1.6;
   }
 
   /** Маленький клуб дыма (сигарета, выдох): без случайного разброса, медленный рост. */
   emitPuff(x, y, z, vx, vy, vz, size, alpha, life) {
     const i = this.head;
     this.head = (this.head + 1) % this.max;
+    this._emitted = true;
     this.p[i * 3] = x; this.p[i * 3 + 1] = y; this.p[i * 3 + 2] = z;
     this.v[i * 3] = vx; this.v[i * 3 + 1] = vy; this.v[i * 3 + 2] = vz;
     this.maxLife[i] = this.life[i] = life;
@@ -79,8 +82,13 @@ export class Smoke {
   }
 
   update(dt, camera, renderer, light) {
+    // нет живых частиц — ни цикла, ни загрузки буферов, ни draw call
+    if (this.active === 0 && !this._emitted) { this.points.visible = false; return; }
+    this._emitted = false;
+    let alive = 0;
     for (let i = 0; i < this.max; i++) {
       if (this.life[i] <= 0) { this.alpha[i] = 0; this.size[i] = 0; continue; }
+      alive++;
       this.life[i] -= dt;
       const k = Math.max(0, this.life[i] / this.maxLife[i]);
       this.p[i * 3] += this.v[i * 3] * dt;
@@ -93,5 +101,7 @@ export class Smoke {
     this.uniforms.projScale.value = renderer.domElement.height / (2 * Math.tan((camera.fov * Math.PI) / 360));
     this.uniforms.tint.value.setScalar(0.25 + 0.6 * light);
     this.aP.needsUpdate = this.aS.needsUpdate = this.aA.needsUpdate = true;
+    this.active = alive;
+    this.points.visible = true;
   }
 }

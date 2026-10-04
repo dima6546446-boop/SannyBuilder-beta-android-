@@ -44,13 +44,20 @@ class Library {
 
 export const ModelLibrary = new Library();
 
+/**
+ * В карту теней идут только части, которые формируют силуэт тени (кузов, днище, бамперы,
+ * шины). Хром (~10k треугольников), фонари, номера и решётка тень почти не меняют,
+ * а стоили 8–10 лишних draw calls в проходе теней.
+ */
+export const SHADOW_PARTS = new Set(['paint', 'under', 'black', 'rubber']);
+
 /** Подмеши уровня как объект Three (материалы — из словаря mats по имени). */
 export function meshesFromLod(parts, mats, fallback) {
   const g = new THREE.Group();
   for (const p of parts) {
     const m = new THREE.Mesh(p.geometry, mats[p.material] || fallback);
     m.name = p.material;
-    m.castShadow = p.material !== 'glass';
+    m.castShadow = SHADOW_PARTS.has(p.material);
     m.receiveShadow = p.material === 'paint';
     g.add(m);
   }

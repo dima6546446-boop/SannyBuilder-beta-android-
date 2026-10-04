@@ -1,4 +1,4 @@
-import { clamp, lerp } from '../utils/math.js';
+import { clamp, lerp, smoothstep } from '../utils/math.js';
 
 const G = 9.81;
 const STEP = 1 / 120; // фиксированный шаг физики
@@ -50,6 +50,10 @@ export function makeSpec(def, tuning = {}) {
     corneringR: 10.0 * (lower < 0 ? 1.08 : 1),
     handbrakeGrip: 0.35,
     stabilityAssist: 0.35,
+    driftAssist: 1,       // помощник контрруления и ограничитель угла (настройка «Помощь при заносе»)
+    csInto: 0.12,         // помощник: на сколько (рад) колёса недокручены от вектора скорости
+    driftDrag: 0.1,       // доля μN задней оси, которая тормозит машину при боковом скольжении
+    power: s.hp * 745.7 * eng, // Вт — тяга в заносе (буксующие колёса, «как на нужной передаче»)
     tank: s.tank,
   };
 }
@@ -82,6 +86,12 @@ export class VehiclePhysics {
     this.fuel = spec.tank * 0.7;
     this.odometer = 0;
     this._acc = 0;
+    // дрифт
+    this.driftAngle = 0;   // угол заноса задней оси, рад (знак — сторона заноса; 0 при движении задом)
+    this.sliding = 0;      // 0 — едем по сцеплению, 1 — полноценный занос
+    this.kickT = 0;        // «перегазовка»: время сорванной задней оси
+    this._liftT = 9;       // сколько секунд назад отпустили газ
+    this._prevThr = 0;
   }
 
   setSpec(spec) {
@@ -91,7 +101,7 @@ export class VehiclePhysics {
   }
 
   reset(x, z, heading) {
-    Object.assign(this, { x, z, heading, vx: 0, vz: 0, yawRate: 0, steer: 0, axLong: 0, ayLat: 0, speed: 0, vLong: 0, _acc: 0 });
+    Object.assign(this, { x, z, heading, vx: 0, vz: 0, yawRate: 0, steer: 0, axLong: 0, ayLat: 0, speed: 0, vLong: 0, _acc: 0, driftAngle: 0, sliding: 0, kickT: 0, _liftT: 9, _prevThr: 0 });
     this.gear = 1;
     if (!this.manual) this.selector = 'D';
   }
@@ -161,9 +171,31 @@ export class VehiclePhysics {
     const driveIn = hasFuel ? input.throttle : 0;
     const brakeIn = input.brake;
 
-    // --- руль: предел угла ≈ предел сцепления (v²·δ/L ≤ μg) с запасом для заноса
-    const steerLimit = clamp(26 / (vLong * vLong + 1), 0.03, s.maxSteer);
-    this.steer += clamp(input.steer * steerLimit - this.steer, -s.steerSpeed * dt, s.steerSpeed * dt);
+    // --- занос: угол скольжения задней оси (в обычном повороте ≈ 0 даже на малой скорости,
+    // в отличие от угла кузова в центре масс)
+    const fwd = vLong > 1;
+    const vLatR = vLat + s.cgToRear * this.yawRate;
+    const slipR = fwd ? Math.atan2(vLatR, vLong) : 0;
+    // гистерезис: войти в занос труднее, чем удержать (иначе машина «щёлкает» обратно в сцепление)
+    const inSlide = this.sliding > 0.3;
+    const slideK = fwd && speed > 4 ? smoothstep(inSlide ? 0.06 : 0.14, inSlide ? 0.22 : 0.32, Math.abs(slipR)) : 0;
+    const assist = s.driftAssist;
+
+    // --- руль: предел угла ≈ предел сцепления (v²·δ/L ≤ μg) с запасом для заноса;
+    // в заносе предел снимается — нужен полный руль на контрруление
+    const steerLimit = lerp(clamp(26 / (vLong * vLong + 1), 0.03, s.maxSteer), s.maxSteer, slideK);
+    let steerTarget = input.steer * steerLimit;
+    if (assist > 0 && slideK > 0) {
+      // помощник контрруления: передние колёса смотрят по вектору скорости передней оси,
+      // руль игрока добавляет или убирает угол (так держат занос на геймпаде в Car X)
+      const vLatF0 = vLat - s.cgToFront * this.yawRate;
+      const align = Math.atan2(vLatF0, vLong);
+      // передним колёсам нужен небольшой угол «в поворот» — иначе они не тянут и занос гаснет
+      const cs = clamp(align - Math.sign(slipR) * s.csInto + input.steer * 0.32, -s.maxSteer, s.maxSteer);
+      steerTarget = lerp(steerTarget, cs, slideK * assist);
+    }
+    const steerRate = s.steerSpeed * (1 + slideK * 1.5);
+    this.steer += clamp(steerTarget - this.steer, -steerRate * dt, steerRate * dt);
     const delta = this.steer;
     const cosD = Math.cos(delta), sinD = Math.sin(delta);
 
@@ -191,7 +223,7 @@ export class VehiclePhysics {
     if (rpm > s.revLimit) engineT = 0;
     const movingWithGear = gear !== 0 && vLong * Math.sign(total) > 0.5;
     const engineBrake = movingWithGear && this.shiftTimer <= 0 ? (1 - driveIn) * (rpm / 6000) * 28 : 0;
-    const Fdrive = gear === 0 ? 0 : ((engineT - engineBrake) * total * s.drivetrainEff) / s.wheelRadius;
+    let Fdrive = gear === 0 ? 0 : ((engineT - engineBrake) * total * s.drivetrainEff) / s.wheelRadius;
 
     // автомат: пороги зависят от педали, разнесены против «охоты» передач
     if (!this.manual && this.selector === 'D' && gear >= 1 && this.shiftTimer <= 0) {
@@ -209,6 +241,11 @@ export class VehiclePhysics {
     const mu = s.tireGrip * surfaceMu;
     const maxF = mu * Nf, maxR = mu * Nr;
     let FxF = 0, FxR = 0, usedF = 0, usedR = 0;
+    // в заносе ведущие колёса буксуют: тяга ограничена мощностью, а не текущей передачей
+    // (иначе 70-сильный «Жигуль» не удержит занос газом — а в жанре это главное)
+    if (slideK > 0 && s.drive !== 'FWD' && gear >= 1 && this.shiftTimer <= 0) {
+      Fdrive = Math.max(Fdrive, driveIn * slideK * Math.min(s.power * s.drivetrainEff / Math.max(speed, 8), 0.6 * mu * Nr));
+    }
     if (s.drive === 'RWD') { FxR = clamp(Fdrive, -maxR, maxR); usedR = Math.abs(Fdrive) / maxR; }
     else if (s.drive === 'FWD') { FxF = clamp(Fdrive, -maxF, maxF); usedF = Math.abs(Fdrive) / maxF; }
     else {
@@ -220,10 +257,18 @@ export class VehiclePhysics {
     let latAvailR = circle(usedR);
     const latAvailF = circle(usedF);
     if (input.handbrake) latAvailR *= s.handbrakeGrip;
+    // в заносе ведущие задние колёса буксуют: газ держит угол, сброс газа возвращает сцепление
+    if (s.drive !== 'FWD') latAvailR *= 1 - 0.5 * slideK * driveIn * (s.drive === 'AWD' ? 0.5 : 1);
+    // перегазовка (RWD): отпустил газ и снова в пол с вывернутым рулём — задняя ось срывается
+    if (driveIn < 0.3 && this._prevThr >= 0.3) this._liftT = 0;
+    this._liftT += dt;
+    if (s.drive === 'RWD' && driveIn > 0.8 && this._prevThr <= 0.8 && this._liftT < 0.45
+      && Math.abs(input.steer) > 0.5 && speed > 7 && speed < 32 && gear >= 1) this.kickT = 0.45;
+    this._prevThr = driveIn;
+    if (this.kickT > 0) { this.kickT -= dt; latAvailR *= 0.5; }
 
     // --- увод шин
     const vLatF = vLat - s.cgToFront * this.yawRate;
-    const vLatR = vLat + s.cgToRear * this.yawRate;
     const alphaF = Math.atan2(vLatF * cosD - vLong * sinD, Math.max(Math.abs(vLong * cosD + vLatF * sinD), 2.0));
     const alphaR = Math.atan2(vLatR, Math.max(Math.abs(vLong), 2.0));
     const FyF = -mu * Nf * latAvailF * Math.tanh(s.corneringF * alphaF);
@@ -236,14 +281,28 @@ export class VehiclePhysics {
     Fx += -s.rollCoef * s.mass * G * Math.tanh(vLong * 2) * (surfaceMu < 0.8 ? 4 : 1);
     const brakeTotal = brakeIn * s.brakeForce + (input.handbrake ? s.handbrakeForce : 0);
     if (Math.abs(vLong) > 0.01) Fx -= Math.sign(vLong) * Math.min(brakeTotal, (Math.abs(vLong) * s.mass) / dt);
+    // скользящая боком шина тормозит и вдоль хода: занос «съедает» скорость
+    if (slideK > 0) Fx -= slideK * s.driftDrag * mu * Nr * Math.min(1, Math.abs(Math.sin(slipR)) * 2.5);
     const FyFront = FyF * cosD + FxF * sinD;
     const Fy = FyR + FyFront;
 
     // --- рыскание
     let torque = s.cgToRear * FyR - s.cgToFront * FyFront;
     const yawKin = (-vLong * Math.tan(delta)) / L;
-    if (s.stabilityAssist > 0 && speed > 3 && !input.handbrake) {
-      torque += (yawKin - this.yawRate) * s.inertia * s.stabilityAssist * 3;
+    // стабилизация: в обычной езде тянет рыскание к кинематическому, в управляемом заносе
+    // (помощник включён) отпускает — иначе она «выпрямляет» машину против контрруления
+    const stab = s.stabilityAssist * (1 - slideK * (assist > 0 ? 1 : 0));
+    if (stab > 0 && speed > 3 && !input.handbrake) {
+      torque += (yawKin - this.yawRate) * s.inertia * stab * 3;
+    }
+    if (assist > 0 && slideK > 0) {
+      // ограничитель угла: за ~50° мягко не даёт развернуться, гасит рост угла
+      const over = Math.abs(slipR) - 0.85;
+      if (over > -0.2) {
+        const sgn = Math.sign(slipR);
+        torque -= sgn * Math.max(0, over) * s.inertia * 30 * assist;
+        if (this.yawRate * sgn > 0) torque -= this.yawRate * s.inertia * 2.5 * smoothstep(-0.2, 0.1, over) * assist;
+      }
     }
 
     // --- интегрирование
@@ -278,16 +337,24 @@ export class VehiclePhysics {
     this.speed = Math.hypot(this.vx, this.vz);
     this.slipFront = Math.abs(alphaF);
     this.slipRear = Math.abs(alphaR);
-    this.rpm = lerp(this.rpm, Math.min(rpm, s.revLimit + 100), 0.2);
+    const vLatNew = -this.vx * Math.cos(this.heading) + this.vz * Math.sin(this.heading);
+    // угол заноса до ±180° (больше 90° — машину развернуло); на малой скорости не определён
+    this.driftAngle = this.speed > 2 && !this.reversing ? Math.atan2(vLatNew + s.cgToRear * this.yawRate, this.vLong) : 0;
+    this.sliding = slideK;
+    // в заносе с газом задние колёса буксуют — мотор раскручивается (только звук и тахометр)
+    const spinRpm = s.drive !== 'FWD' ? slideK * driveIn * 0.55 : 0;
+    this.rpm = lerp(this.rpm, Math.min(lerp(rpm, s.revLimit - 300, spinRpm), s.revLimit + 100), 0.2);
     this.load = driveIn;
     this.braking = brakeIn > 0.1;
     this.reversing = this.gear < 0;
   }
 
-  /** Интенсивность визга шин 0..1 */
+  /** Интенсивность визга шин 0..1: растёт с углом заноса и скоростью. */
   get skid() {
     if (this.speed < 2) return Math.min(this.wheelSpin, 1) * 0.6;
+    const v = Math.min(1, this.speed / 12);
     const lat = Math.max(0, this.slipRear - 0.12) * 4 + Math.max(0, this.slipFront - 0.18) * 3;
-    return Math.min(1, lat + this.wheelSpin * 0.6);
+    const drift = this.sliding * (0.55 + Math.min(Math.abs(this.driftAngle), 0.9) * 0.5);
+    return Math.min(1, Math.max(lat, drift) * v + this.wheelSpin * 0.6);
   }
 }

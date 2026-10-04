@@ -198,6 +198,7 @@ export class Game {
     if (this.player.physics) {
       this.player.physics.setManual(s.gearbox === 'manual');
       this.player.physics.spec.stabilityAssist = s.assist ? 0.35 : 0;
+      this.player.physics.spec.driftAssist = s.assist ? 1 : 0; // помощник контрруления
     }
     this.audio.setVolume(s.volume);
   }
@@ -517,7 +518,8 @@ export class Game {
     this.glow.setGroup('cams', blink);
     this.glow.uniforms.intensity.value = this._bloomActive ? 0.75 : 1.0;
     this.glow.beginDynamic();
-    this.instancer.begin(this.camera, night);
+    // тени машин — только в радиусе карты теней (+запас: камера стоит позади фокуса)
+    this.instancer.begin(this.camera, night, this.dayNight.sun.castShadow ? this.q.shadowRange + 12 : 0);
     this.traffic.render(this.glow, blink);
     const cam = this.camera.position, R2 = this.parkedR * this.parkedR;
     for (const pc of this.city.parked) {
@@ -533,7 +535,9 @@ export class Game {
 
     const p = this.player.physics;
     const mix = foot ? Math.max(0, 1 - Math.hypot(this.walker.pos.x - p.x, this.walker.pos.z - p.z) / 30) * 0.6 : 1;
-    this.audio.update(p.rpm, p.load, p.skid, p.speed, mix);
+    // тон визга: скорость поднимает, большой угол заноса опускает
+    const squeal = Math.min(1, Math.max(0, p.speed / 25 - Math.abs(p.driftAngle) * 0.6 * p.sliding + 0.3));
+    this.audio.update(p.rpm, p.load, p.skid, p.speed, mix, squeal);
     if (this.mode && p.speed > 0.5) {
       this.daily.progress('km', p.speed * dt / 1000);
       this.daily.progress('speed', Math.round(p.speed * 3.6));

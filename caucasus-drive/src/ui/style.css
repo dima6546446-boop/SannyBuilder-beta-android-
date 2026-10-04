@@ -83,6 +83,27 @@ svg { fill: currentColor; }
   letter-spacing: 1px; font-style: italic;
 }
 
+/* дрифт: очки серии и множитель, под ними угол со шкалой (0–60°) и метка события/итога.
+   Узкая панель (≤150 px): на экране 640×360 она стоит по центру между миникартой и кнопками */
+#drift {
+  min-width: 128px; max-width: 150px; text-align: center; background: rgba(10,12,16,.55); border: 1px solid rgba(255,210,80,.35);
+  border-radius: 12px; padding: 3px 10px 4px; font-style: italic; font-variant-numeric: tabular-nums;
+}
+#drift .dr-row { display: flex; align-items: baseline; justify-content: center; gap: 6px; white-space: nowrap; }
+#drift .dr-row2 { display: flex; align-items: center; gap: 6px; margin-top: 1px; }
+#dr-ang { font-weight: 900; font-size: 12px; color: #9fd8ff; min-width: 26px; text-align: left; }
+#dr-pts { font-weight: 900; font-size: 22px; line-height: 1.1; color: #ffdf4a; text-shadow: 0 2px 0 #a33, 0 0 12px rgba(255,120,0,.7); }
+#dr-mult { font-weight: 900; font-size: 15px; color: #ff9d2a; }
+#dr-bar { flex: 1; height: 4px; background: rgba(255,255,255,.12); border-radius: 2px; overflow: hidden; }
+#dr-bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #4ab0ff, #ffdf4a 60%, #ff4a2a); }
+#dr-tag { font-weight: 900; font-size: 11px; letter-spacing: .5px; color: #fff; min-height: 13px; margin-top: 1px; line-height: 1.2; }
+#dr-tag.bank { color: #7dff9a; }
+#dr-tag.lost { color: #ff7a6a; }
+#drift.idle .dr-row2 { opacity: .35; }
+@media (max-height: 420px) {
+  .topbar .pill { padding: 5px 10px; font-size: 13px; } .logo small { display: none; } #dr-pts { font-size: 19px; } }
+@media (max-width: 700px) { #drift { min-width: 0; max-width: 128px; padding: 3px 8px 4px; } }
+
 #hud-tr { position: absolute; right: calc(10px + env(safe-area-inset-right)); top: 10px; display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
 /* знак ограничения стоит в одном ряду с деньгами — раньше он висел отдельно и на низких
    экранах (360 px) оказывался под кнопками гудка/такси */
@@ -315,7 +336,7 @@ body.onfoot #sensors, body.onfoot #speed-limit, body.onfoot #btn-radio { display
 .logo { font-weight: 900; font-size: 30px; letter-spacing: 2px; line-height: 1; font-style: italic; text-shadow: 0 3px 0 rgba(0,0,0,.5); }
 .logo b { color: var(--accent); }
 .logo small { display: block; font-size: 11px; letter-spacing: 3px; color: var(--muted); font-style: normal; font-weight: 700; margin-top: 4px; }
-.pill { background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-weight: 800; font-size: 15px; }
+.pill { white-space: nowrap; background: var(--panel2); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; font-weight: 800; font-size: 15px; }
 .pill.gold { color: var(--gold); }
 .back {
   width: 44px; height: 44px; border-radius: 12px; background: var(--panel2); border: 1px solid var(--line);
@@ -323,7 +344,7 @@ body.onfoot #sensors, body.onfoot #speed-limit, body.onfoot #btn-radio { display
 }
 .h1 { font-weight: 900; font-size: 22px; letter-spacing: 1px; text-transform: uppercase; }
 .main-grid {
-  margin-top: auto; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;
+  margin-top: auto; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px;
 }
 .tile {
   position: relative; height: 128px; border-radius: 16px; overflow: hidden; padding: 12px;
@@ -331,8 +352,8 @@ body.onfoot #sensors, body.onfoot #speed-limit, body.onfoot #btn-radio { display
   background: linear-gradient(160deg, rgba(40,44,52,.92), rgba(14,16,20,.95)); box-shadow: 0 8px 24px rgba(0,0,0,.45);
 }
 .tile:active { transform: scale(.97); }
-.tile .ic { position: absolute; right: 10px; top: 8px; width: 54px; height: 54px; opacity: .9; color: var(--accent); }
-.tile .t { font-weight: 900; font-size: 20px; text-transform: uppercase; letter-spacing: .5px; }
+.tile .ic { position: absolute; right: 10px; top: 8px; width: 46px; height: 46px; opacity: .9; color: var(--accent); }
+.tile .t { font-weight: 900; font-size: clamp(15px, 1.8vw, 20px); line-height: 1.15; text-transform: uppercase; letter-spacing: .3px; }
 .tile .s { font-size: 12px; color: var(--muted); margin-top: 2px; }
 .tile.hot { background: linear-gradient(160deg, #ff7a2a, #c43a10); }
 .tile.hot .ic, .tile.hot .s { color: #ffe7d6; }
@@ -408,17 +429,19 @@ body.onfoot #sensors, body.onfoot #speed-limit, body.onfoot #btn-radio { display
 .help { font-size: 12px; color: var(--muted); line-height: 1.6; max-width: 640px; }
 
 @media (max-height: 420px) {
-  .tile { height: 100px; } .tile .t { font-size: 17px; }
+  .tile { height: 100px; } .tile .t { font-size: 15px; } .tile .ic { width: 38px; height: 38px; }
   .logo { font-size: 24px; }
   .level-grid { grid-template-columns: repeat(10, minmax(0, 1fr)); }
   #gas { height: 136px; } #brake { height: 80px; }
   .fbtn { width: 56px; height: 56px; } .fbtn.big { width: 76px; height: 76px; }
   #btn-action, #btn-enter { bottom: 88px; } #btn-shop { bottom: 140px; }
 }
+/* телефоны: 5 плиток меню — 3 + 2 (в одну строку не влезают подписи) */
+@media (max-width: 1000px) { .main-grid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 760px) {
+  .topbar .pill:not(.gold):not(.daily) { display: none; }
   .main-foot > div:first-child { display: none; }
   .main-foot { justify-content: flex-end; }
-  .main-grid { grid-template-columns: repeat(2, 1fr); }
   .garage { grid-template-columns: 1fr; }
   .level-grid { grid-template-columns: repeat(6, 1fr); }
 }

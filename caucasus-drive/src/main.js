@@ -7,6 +7,7 @@ import { Menus } from './ui/Menus.js';
 import { ParkingMode } from './gameplay/ParkingMode.js';
 import { FreeRideMode } from './gameplay/FreeRideMode.js';
 import { ExamMode } from './gameplay/ExamMode.js';
+import { DriftMode } from './gameplay/DriftMode.js';
 import { CAR_BY_ID, allRenderModels } from './config/cars.js';
 import { ModelLibrary } from './vehicles/ModelLibrary.js';
 
@@ -14,7 +15,7 @@ const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 
 /**
- * Приложение: меню (3D-гараж на фоне) ↔ игра (режимы «Парковка», «Город», «Экзамен»).
+ * Приложение: меню (3D-гараж на фоне) ↔ игра (режимы «Парковка», «Город», «Экзамен», «Дрифт»).
  */
 class App {
   constructor() {
@@ -65,6 +66,7 @@ class App {
     if (params.has('free')) this.startFree(params.has('nofines') ? false : undefined);
     else if (params.has('level')) this.startParking(+params.get('level'));
     else if (params.has('exam')) this.startExam();
+    else if (params.has('drift')) this.startDrift();
     else this.menus.show('main');
     if (params.has('t')) this.game.dayNight.setTime(parseFloat(params.get('t')));
     // заставка держится, пока название не проявится полностью, затем плавно растворяется
@@ -122,6 +124,7 @@ class App {
   startParking(i) { this.lastStart = () => this.startParking(i); this.game.setTimePreset(i % 5 === 4 ? 1 : i % 7 === 6 ? 3 : 0); this._enterPlay(new ParkingMode(this.game, i)); }
   startFree(fines = this.save.data.settings.fines !== false) { this.lastStart = () => this.startFree(fines); this._enterPlay(new FreeRideMode(this.game, { fines })); }
   startExam() { this.lastStart = () => this.startExam(); this.game.setTimePreset(0); this._enterPlay(new ExamMode(this.game)); }
+  startDrift() { this.lastStart = () => this.startDrift(); this.game.setTimePreset(0); this._enterPlay(new DriftMode(this.game)); }
   restart() { this.lastStart?.(); }
 
   pause() {

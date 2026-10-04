@@ -237,9 +237,12 @@ export class PlayerCar {
     this.mats.chrome.envMapIntensity = env * 1.3;
     this.mats.glass.envMapIntensity = env * 1.8;
 
-    // --- следы и дым с задних (или ведущих передних) колёс
+    // --- следы и дым с задних колёс: густота зависит от угла заноса и скорости
     const sk = p.skid;
     const skid = sk > 0.35 || (input.handbrake && p.speed > 3);
+    const driftK = p.sliding * Math.min(1, Math.abs(p.driftAngle) / 0.6) * Math.min(1, p.speed / 14);
+    const markK = Math.max(driftK, Math.min(1, (sk - 0.35) * 1.5));
+    const smokeK = Math.max(driftK, (sk - 0.45) * 1.2);
     const fx = Math.sin(p.heading), fz = Math.cos(p.heading);
     const rx = -fz, rz = fx;
     const d = this.def.dims;
@@ -247,11 +250,11 @@ export class PlayerCar {
       const side = i === 0 ? 1 : -1;
       const wx = p.x + fx * d.axleR + rx * side * (d.track / 2);
       const wz = p.z + fz * d.axleR + rz * side * (d.track / 2);
-      this.skids.add(i, wx, this.y, wz, skid && this.surface.type !== 2);
+      this.skids.add(i, wx, this.y, wz, skid && this.surface.type !== 2, markK);
       if (this.smoke) {
         const grass = this.surface.type === 2 && p.speed > 4;
-        if ((sk > 0.45 && this.surface.type !== 2 && Math.random() < sk * 0.9) || (grass && Math.random() < 0.3)) {
-          this.smoke.emit(wx, this.y, wz, p.vx, p.vz, grass);
+        if ((smokeK > 0 && this.surface.type !== 2 && Math.random() < 0.2 + smokeK * 0.75) || (grass && Math.random() < 0.3)) {
+          this.smoke.emit(wx, this.y, wz, p.vx, p.vz, grass, Math.min(1, smokeK));
         }
       }
     }

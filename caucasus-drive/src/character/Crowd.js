@@ -146,7 +146,15 @@ export class Crowd {
     const pl = g.player, p = pl.physics, h = pl.half;
     const cs = Math.sin(p.heading), cc = Math.cos(p.heading);
     this._sayT -= dt;
-    for (const n of this.npcs) {
+    // направление камеры — один раз на кадр, без аллокаций
+    const fwd = this._fwd || (this._fwd = new THREE.Vector3());
+    g.camera.getWorldDirection(fwd);
+    const cam = g.camera.position;
+    // тень от прохожего — только в зоне карты теней (дальше она всё равно не видна)
+    const shR = g.q.shadowRange + 5, shadows = this._shadows ?? (this._shadows = g.q.shadows && g.q.name === 'high');
+    const push = this._push || (this._push = (nx, nz, depth) => { const m = this._pushN; m.x += nx * depth; m.z += nz * depth; });
+    for (let idx = 0; idx < this.npcs.length; idx++) {
+      const n = this.npcs[idx];
       if (!n.active) { this._spawn(n, f.x, f.z, false); continue; }
       const dF = Math.hypot(n.x - f.x, n.z - f.z);
       if (dF > 95) {
@@ -201,7 +209,7 @@ export class Crowd {
       if (moving) {
         n.x += vx * dt; n.z += vz * dt;
         // коллизии со статикой и игроком пешком
-        if (!far) col.collideCircle(n.x, n.z, R, (nx, nz, depth) => { n.x += nx * depth; n.z += nz * depth; });
+        if (!far) { this._pushN = n; col.collideCircle(n.x, n.z, R, push); }
         const sp = Math.hypot(vx, vz);
         if (sp > 0.2) n.yaw = dampAngle(n.yaw, Math.atan2(vx, vz), 8, dt);
         n.v = sp;
@@ -213,11 +221,9 @@ export class Crowd {
 
       const root = n.c.root;
       // рисуем только тех, кто близко и перед камерой (SkinnedMesh не умеет сам отсекаться)
-      const cam = g.camera.position, cdx = n.x - cam.x, cdz = n.z - cam.z;
-      const fwd = this._fwd || (this._fwd = new THREE.Vector3());
-      if ((n.t * 30 | 0) % 4 === 0) g.camera.getWorldDirection(fwd);
-      const idx = this.npcs.indexOf(n);
+      const cdx = n.x - cam.x, cdz = n.z - cam.z;
       root.visible = dF < 60 && cdx * fwd.x + cdz * fwd.z > -4 && (this.density >= 1 || idx % 2 === 0);
+      if (shadows) n.c.mesh.castShadow = dF < shR && g.degrade < 2;
       const gy = n.state === 'bench' ? CURB + 0.5 + 0.06 - 0.52 : this._ground(n.x, n.z);
       root.position.set(n.x, gy, n.z);
       root.rotation.y = n.yaw;
