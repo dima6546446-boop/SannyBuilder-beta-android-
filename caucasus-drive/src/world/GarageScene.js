@@ -124,7 +124,7 @@ export class GarageScene {
   showCar(def, tv) {
     if (this.model) {
       this.turntable.remove(this.model.root);
-      this.model.root.traverse((o) => { if (o.isMesh) o.geometry.dispose(); });
+      this.model.root.traverse((o) => { if (o.isMesh && !o.geometry.userData.shared) o.geometry.dispose(); });
       Object.values(this.mats).forEach((m) => m.dispose());
     }
     this.def = def;

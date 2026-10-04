@@ -69,7 +69,7 @@ export class PlayerCar {
 
     if (this.model) {
       this.root.remove(this.model.root);
-      this.model.root.traverse((o) => { if (o.isMesh) o.geometry.dispose(); });
+      this.model.root.traverse((o) => { if (o.isMesh && !o.geometry.userData.shared) o.geometry.dispose(); });
     }
     if (this.mats) Object.values(this.mats).forEach((m) => m.dispose());
     this.mats = createCarMaterials({ color: tv.color, envMap: null, T: this.T, quality: this.q, tint: tv.tint });

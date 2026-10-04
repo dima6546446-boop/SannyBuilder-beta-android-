@@ -25,6 +25,7 @@ class Library {
         gltf.scene.traverse((o) => {
           const lod = ['LOD_hi', 'LOD0', 'LOD1'].find((n) => o.name === n || o.name.startsWith(`${n}_`) || o.parent?.name === n);
           if (!o.isMesh || !lod) return;
+          o.geometry.userData.shared = true; // общая для всех экземпляров — не освобождать при смене машины
           (lods[lod] ||= []).push({ geometry: o.geometry, material: o.material.name || 'paint' });
         });
         if (lods.LOD_hi && lods.LOD0 && lods.LOD1) this.models[key] = { hi: lods.LOD_hi, lod0: lods.LOD0, lod1: lods.LOD1 };
