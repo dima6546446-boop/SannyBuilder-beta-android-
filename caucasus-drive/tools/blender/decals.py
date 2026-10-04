@@ -27,10 +27,30 @@ class Decals:
     # ------------------------------------------------------------ проекция
     def project(self, view, a, b):
         D = self.S['dims']['dims']
-        if view == 'front':
-            o, d, fb = (a, b, D['front'] + 2), (0, 0, -1), (a, b, D['front'])
-        elif view == 'rear':
-            o, d, fb = (a, b, D['rear'] - 2), (0, 0, 1), (a, b, D['rear'])
+        if view in ('front', 'rear'):
+            # a — развёртка по периметру в плане: до начала скругления угла это x,
+            # дальше — длина дуги вокруг угла и затем расстояние вдоль борта
+            fr = view == 'front'
+            zE = D['front'] if fr else D['rear']
+            sz = 1 if fr else -1
+            r = max(0.05, self.S['cornerF'] if fr else self.S['cornerR'])
+            hw = D['W'] / 2
+            xc = hw - r
+            sg = 1 if a >= 0 else -1
+            ax = abs(a)
+            if ax <= xc:
+                o, d, fb = (a, b, zE + sz * 2), (0, 0, -sz), (a, b, zE)
+            elif ax - xc <= r * math.pi / 2:
+                ph = (ax - xc) / r
+                nx, nz = math.sin(ph), math.cos(ph)
+                px, pz = xc + r * nx, zE - sz * r + sz * r * nz
+                o = (sg * (px + nx), b, pz + sz * nz)
+                d = (-sg * nx, 0, -sz * nz)
+                fb = (sg * px, b, pz)
+            else:
+                rest = ax - xc - r * math.pi / 2
+                pz = zE - sz * (r + rest)
+                o, d, fb = (sg * (hw + 1), b, pz), (-sg, 0, 0), (sg * hw, b, pz)
         elif view == 'top':
             o, d, fb = (a, 4, b), (0, -1, 0), (a, 1.0, b)
         else:  # сбоку: view = +1 (левый борт, +x) / -1

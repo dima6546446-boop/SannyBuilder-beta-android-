@@ -137,6 +137,10 @@ def build_details(S, surf, lod):
     F, R, W = D['front'], D['rear'], D['W']
     hw = W / 2
     head, tail, gr, bp = d['head'], d['tail'], d['grille'], d['bumper']
+    # уточнения оптики под форму кузова (shapes.py), габариты в cars.js не трогаем
+    head = dict(head, **S.get('headOv', {}))
+    gr = dict(gr, **S.get('grilleOv', {}))
+    tail = dict(tail, **S.get('tailOv', {}))
     classic = bp['style'] == 'chrome'
     kind = d.get('base') or d['id']
     Dc = Decals(P, surf, S, lod)
@@ -210,9 +214,11 @@ def build_details(S, surf, lod):
             p, n = on_front(s * (hw - 0.2), bp['y'] + bp['h'] / 2 + 0.06)
             P.box(0.13, 0.05, 0.03, ind, frame(p, n, offset=0.01), bevel=0.006)
         else:
-            x = s * (head['x'] + head['w'] / 2 + 0.05)
-            p, n = on_front(x, head['y'])
-            P.box(0.07, head['h'] * 0.85, 0.03, ind, frame(p, n, offset=0.008), bevel=0.006)
+            # поворотник на углу кузова, загибается на крыло
+            x0 = head['x'] + head['w'] / 2 + 0.03
+            x1 = max(x0 + 0.04, hw - 0.03)
+            hy = head['h'] * 0.42
+            Dc.region('front', x0, x1, [(x0, head['y'] - hy)], [(x0, head['y'] + hy)], ind, nu=3, nv=1, thick=0.016, mirror=s)
 
     # ---------------- решётка
     gy = gr['y']
@@ -226,7 +232,7 @@ def build_details(S, surf, lod):
             nb = 18 if hi else 8
             for k in range(nb):
                 P.box(0.008, gr['h'] - 0.02, 0.015, 'chrome', frame(p, n, offset=0.03) @ Matrix.Translation(((k - (nb - 1) / 2) * gr['w'] / nb, 0, 0)))
-            P.box(0.1, 0.07, 0.02, 'tailLamp', frame(p, n, offset=0.045))
+            P.box(0.11, 0.075, 0.02, 'chrome', frame(p, n, offset=0.045), bevel=0.01)
     elif st == 'chrome-mesh':  # 2101
         P.box(gr['w'], gr['h'], 0.04, 'chrome', Mg, bevel=0.01)
         P.box(gr['w'] - 0.04, gr['h'] - 0.04, 0.02, 'grille', frame(p, n, offset=0.012))
@@ -310,9 +316,12 @@ def build_details(S, surf, lod):
     if gr['style'] == 'xface':
         py = bp['y'] - 0.08
     P.box(0.52, 0.115, 0.012, 'plate', frame((0, py, fFace + 0.008), (0, 0, 1)))
-    if classic:
-        p, n = on_rear(0.0, bp['y'] + bp['h'] / 2 + 0.11)
+    if classic or S.get('rearPlateY'):
+        p, n = on_rear(0.0, S.get('rearPlateY') or bp['y'] + bp['h'] / 2 + 0.11)
+        n = (0, n[1] * 0.3, n[2]) if not classic else n  # номер на крышке багажника — почти вертикально
         P.box(0.52, 0.115, 0.012, 'plate', frame(p, n, offset=0.006))
+        if not classic:  # ниша под номер
+            P.box(0.56, 0.15, 0.008, 'black', frame(p, n, offset=0.0))
     else:
         P.box(0.52, 0.115, 0.012, 'plate', frame((0, bp['y'] + 0.02, rFace - 0.008), (0, 0, -1)))
 

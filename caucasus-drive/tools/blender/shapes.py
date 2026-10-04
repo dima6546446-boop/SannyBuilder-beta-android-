@@ -56,6 +56,7 @@ SHAPES = {
         cornerF=0.08, cornerR=0.09, shoulder=0.07, bulge=0.004,
         archY=0.30, crease=dict(BOXY), chromeTrim=True,
         seams=[0.74, -0.28, -1.18], antenna=True, endLen=0.32,
+        headOv=dict(y=0.70), grilleOv=dict(y=0.705, h=0.27), tailOv=dict(y=0.725, h=0.23, w=0.46, x=0.55),
     ),
     # ---------------------------------------------------------------- ВАЗ-1111 «Ока» (1988)
     'oka': dict(
@@ -111,7 +112,7 @@ SHAPES = {
         roofDrop=0.08, hoodDrop=0.035, hoodEdge=0.95, pillarK=0.86,
         cornerF=0.30, cornerR=0.18, shoulder=0.05, bulge=0.01,
         archY=0.30, crease=dict(SOFT, edge=0.65, cap=0.8), chromeTrim=False,
-        seams=[0.85, -0.38, -1.42],
+        rearPlateY=0.76, seams=[0.85, -0.38, -1.42],
     ),
     # ---------------------------------------------------------------- Lada Granta (2011)
     'granta': dict(
@@ -125,7 +126,7 @@ SHAPES = {
         roofDrop=0.08, hoodDrop=0.035, hoodEdge=0.95, pillarK=0.86,
         cornerF=0.30, cornerR=0.17, shoulder=0.05, bulge=0.012,
         archY=0.31, crease=dict(SOFT, shoulder=0.6, edge=0.7, cap=0.85), chromeTrim=False,
-        seams=[0.80, -0.36, -1.38],
+        rearPlateY=0.79, seams=[0.80, -0.36, -1.38],
     ),
     # ---------------------------------------------------------------- Lada Vesta (2015)
     'vesta': dict(
@@ -139,7 +140,7 @@ SHAPES = {
         roofDrop=0.09, hoodDrop=0.04, hoodEdge=0.94, pillarK=0.85,
         cornerF=0.34, cornerR=0.20, shoulder=0.06, bulge=0.015,
         archY=0.32, crease=dict(SOFT, shoulder=0.75, edge=0.7, cap=0.85), chromeTrim=False,
-        seams=[0.84, -0.40, -1.46],
+        rearPlateY=0.8, seams=[0.84, -0.40, -1.46],
     ),
     # ---------------------------------------------------------------- Lada Largus (2012)
     'largus': dict(
