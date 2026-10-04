@@ -440,6 +440,8 @@ body.onfoot #sensors, body.onfoot #speed-limit, body.onfoot #btn-radio { display
 }
 /* телефоны: 5 плиток меню — 3 + 2 (в одну строку не влезают подписи) */
 @media (max-width: 1000px) { .main-grid { grid-template-columns: repeat(3, 1fr); } }
+/* 761–860 px (800×360 и т.п.): три колонки гаража раньше не влезали — правая панель уезжала за экран */
+@media (max-width: 860px) { .garage { grid-template-columns: 200px minmax(0, 1fr) 270px; } .carousel { gap: 8px; } }
 @media (max-width: 760px) {
   .topbar .pill:not(.gold):not(.daily) { display: none; }
   .main-foot > div:first-child { display: none; }
@@ -447,3 +449,23 @@ body.onfoot #sensors, body.onfoot #speed-limit, body.onfoot #btn-radio { display
   .garage { grid-template-columns: 1fr; }
   .level-grid { grid-template-columns: repeat(6, 1fr); }
 }
+
+/* редактор номера: 9 позиций со стрелками, превью на canvas, быстрый выбор */
+.plate-ed { display: flex; flex-direction: column; gap: 8px; }
+#pl-prev { width: 100%; max-width: 260px; align-self: center; height: auto; border-radius: 6px; box-shadow: 0 3px 10px rgba(0,0,0,.4); }
+.pl-slots { display: flex; justify-content: center; gap: 1px; }
+.pl-slot { display: flex; flex-direction: column; align-items: center; width: 23px; border-radius: 7px; background: rgba(255,255,255,.05); }
+.pl-slot.gap { margin-left: 5px; }
+.pl-slot.gap:first-child { margin-left: 0; }
+.pl-slot.reg { background: rgba(80,140,255,.12); }
+.pl-arr { width: 100%; text-align: center; font-size: 11px; line-height: 22px; color: var(--accent2); }
+.pl-arr:active, .pl-ch:active { background: rgba(255,106,26,.35); border-radius: 6px; }
+.pl-ch { font-weight: 900; font-size: 19px; line-height: 24px; min-height: 24px; width: 100%; text-align: center; }
+.pl-info { font-size: 12px; color: var(--muted); text-align: center; min-height: 15px; }
+.pl-info b { color: var(--gold); }
+.pl-info .ok { color: var(--ok); }
+.plate-ed .bigbtn { padding: 9px 12px; font-size: 14px; width: 100%; max-width: 300px; align-self: center; box-sizing: border-box; }
+.pl-qh { font-size: 11px; font-weight: 800; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.pl-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.pl-q { padding: 6px 7px; border-radius: 9px; background: rgba(255,255,255,.05); font-weight: 800; font-size: 12px; white-space: nowrap; }
+.pl-q small { display: block; font-size: 10px; font-weight: 600; color: var(--muted); }

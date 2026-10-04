@@ -7,12 +7,8 @@ import * as THREE from 'three';
 
 const _cache = new Map();
 
-/** Текстура номера по ГОСТ: белое поле, буквы-цифры, справа — регион, «RUS» и флаг. */
-export function plateTexture(text, region) {
-  const key = text + region;
-  if (_cache.has(key)) return _cache.get(key);
-  const c = document.createElement('canvas'); c.width = 520; c.height = 112;
-  const g = c.getContext('2d');
+/** Номер по ГОСТ на canvas 520×112: белое поле, буквы-цифры, справа — регион, «RUS» и флаг. */
+export function drawPlate(g, text, region) {
   g.fillStyle = '#111'; g.fillRect(0, 0, 520, 112);
   g.fillStyle = '#f4f4f0'; g.fillRect(4, 4, 512, 104);
   g.strokeStyle = '#111'; g.lineWidth = 4; g.strokeRect(8, 8, 504, 96);
@@ -23,16 +19,39 @@ export function plateTexture(text, region) {
   g.font = 'bold 66px "Arial Narrow", Arial, sans-serif'; g.fillText(l1, 52, 88);
   g.font = 'bold 84px "Arial Narrow", Arial, sans-serif'; g.fillText(num, 170, 92);
   g.font = 'bold 66px "Arial Narrow", Arial, sans-serif'; g.fillText(l2, 316, 88);
-  g.font = 'bold 60px "Arial Narrow", Arial, sans-serif'; g.fillText(region, 457, 70);
+  // трёхзначный регион ужимаем по ширине, чтобы не залезал на рамку
+  g.font = 'bold 60px "Arial Narrow", Arial, sans-serif'; g.fillText(region, 457, 70, 104);
   g.font = 'bold 18px Arial'; g.fillText('RUS', 440, 96);
   const fy = 82;
   [['#fff', 0], ['#1c3fa8', 1], ['#d52b1e', 2]].forEach(([col, i]) => { g.fillStyle = col; g.fillRect(468, fy + i * 5, 28, 5); });
   g.strokeStyle = '#111'; g.lineWidth = 1; g.strokeRect(468, fy, 28, 15);
+}
+
+function makePlateTexture(c) {
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.SRGBColorSpace;
   t.anisotropy = 4;
+  return t;
+}
+
+/** Текстура номера (кэш по тексту: машины игрока и гаража делят одну). */
+export function plateTexture(text, region) {
+  const key = text + region;
+  if (_cache.has(key)) return _cache.get(key);
+  const c = document.createElement('canvas'); c.width = 520; c.height = 112;
+  drawPlate(c.getContext('2d'), text, region);
+  const t = makePlateTexture(c);
   _cache.set(key, t);
   return t;
+}
+
+let _preview = null;
+/** Одна текстура для живого предпросмотра в редакторе: перерисовывается, а не плодит новые. */
+export function platePreviewTexture(text, region) {
+  if (!_preview) { const c = document.createElement('canvas'); c.width = 520; c.height = 112; _preview = makePlateTexture(c); }
+  drawPlate(_preview.image.getContext('2d'), text, region);
+  _preview.needsUpdate = true;
+  return _preview;
 }
 
 /** Номерные знаки: находим плашки 'plate' модели и кладём поверх них текстуру. */

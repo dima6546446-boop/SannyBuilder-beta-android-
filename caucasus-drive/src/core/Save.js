@@ -1,4 +1,5 @@
 import { CAR_BY_ID, TUNING } from '../config/cars.js';
+import { normalizePlate } from '../config/plates.js';
 
 const KEY = 'caucasusdrive.save.v1';
 const LEGACY_KEYS = ['ladaparking.save.v1']; // прогресс версий «Лада Паркинг» подхватывается
@@ -7,7 +8,7 @@ const DEFAULT = () => ({
   money: 15000,
   owned: ['vaz2107'],
   current: 'vaz2107',
-  tuning: {},          // id → {color, wheels, height, tint, engine, tires}
+  tuning: {},          // id → {color, wheels, height, tint, engine, tires, neon, plate: {text, region}, horn, exhaust}
   stars: {},           // levelIndex → 1..3
   license: false,
   settings: { controls: 'wheel', gearbox: 'auto', quality: null, volume: 0.8, cameraMode: 0, assist: true, fines: true },
@@ -62,7 +63,7 @@ export class Save {
       engine: t.engine ?? 0,
       tires: t.tires ?? 0,
       neon: t.neon ?? 0,
-      plate: t.plate ?? 0,
+      plate: normalizePlate(t.plate), // {text, region}; старый формат — id из TUNING.plate
       horn: t.horn ?? 0,
       exhaust: t.exhaust ?? 0,
     };
@@ -84,7 +85,7 @@ export class Save {
       engine: TUNING.engine.find((x) => x.id === t.engine)?.value ?? 1,
       tires: TUNING.tires.find((x) => x.id === t.tires)?.value ?? 1,
       neon: TUNING.neon.find((x) => x.id === t.neon)?.value ?? null,
-      plate: (([text, region]) => ({ text, region }))(TUNING.plate.find((x) => x.id === t.plate)?.value ?? TUNING.plate[0].value),
+      plate: t.plate,
       horn: TUNING.horn.find((x) => x.id === t.horn)?.value ?? 0,
       exhaust: TUNING.exhaust.find((x) => x.id === t.exhaust)?.value ?? 0,
     };

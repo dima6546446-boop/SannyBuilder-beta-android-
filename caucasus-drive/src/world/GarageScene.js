@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { buildPlayerModel, createCarMaterials, buildWheels } from '../vehicles/CarFactory.js';
-import { attachPlates, attachNeon } from '../vehicles/Extras.js';
+import { attachPlates, attachNeon, plateTexture, platePreviewTexture } from '../vehicles/Extras.js';
 
 /**
  * 3D-гараж для меню: кирпичные стены ГСК, лампы дневного света, стеллаж с шинами,
@@ -144,6 +144,14 @@ export class GarageScene {
     attachPlates(this.model.body, tv.plate);
     const neon = attachNeon(this.model.root, this.def, tv.neon);
     if (neon) neon.userData.glowMat.opacity = 0.9;
+  }
+
+  /** Номер без пересборки: preview — черновик из редактора (одна общая текстура), иначе — купленный. */
+  setPlate(plate, preview = false) {
+    const grp = this.model?.root.getObjectByName('Plates');
+    if (!grp || !plate) return;
+    const tex = preview ? platePreviewTexture(plate.text, plate.region) : plateTexture(plate.text, plate.region);
+    for (const m of grp.children) m.material.map = tex; // map → map: шейдер тот же
   }
 
   setColor(hex) { this.mats?.paint.color.setHex(hex); }

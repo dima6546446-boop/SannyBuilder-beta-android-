@@ -1,6 +1,8 @@
 import { CARS, CAR_BY_ID, TUNING, PAINT_PALETTE } from '../config/cars.js';
 import { LEVELS } from '../config/levels.js';
 import { QUALITY_PRESETS, saveQualityName } from '../config/quality.js';
+import { PLATE_PRESETS, PLATE_SLOTS, plateToSlots, slotsToPlate, plateStep, platePrice, plateEq, plateValid } from '../config/plates.js';
+import { drawPlate } from '../vehicles/Extras.js';
 
 const hex = (n) => `#${n.toString(16).padStart(6, '0')}`;
 const rub = (n) => `${Math.round(n).toLocaleString('ru-RU')} ₽`;
@@ -211,6 +213,10 @@ export class Menus {
     el.querySelector('#g-select')?.addEventListener('click', () => { this.save.select(def.id); this.app.audio.click(); this.app.refreshCar(); this.show('garage'); });
     if (owned) this._bindTuning(el, def);
     this.app.garage.showCar(def, this.save.tuningValues(def.id));
+    if (owned && this.tab === 'plate' && this.plateDraft) { // модель пересобрана — вернуть на неё черновик номера
+      const p = slotsToPlate(this.plateDraft.slots);
+      this.app.garage.setPlate(p, !plateEq(p, tv.plate));
+    }
     this.app.garage.setFraming(0);
   }
 
@@ -228,6 +234,7 @@ export class Menus {
       return `${head}<div class="swatches">${sw}</div><input type="range" class="hue" id="hue" min="0" max="360" value="0">
         <div class="opt" style="margin-top:8px">Покраска<span class="pr">${rub(TUNING.paintPrice)}</span></div>`;
     }
+    if (this.tab === 'plate') return head + this._plateHtml(def, tv);
     const list = TUNING[this.tab];
     const cur = tv[this.tab];
     return head + list.map((o) => {
@@ -239,8 +246,15 @@ export class Menus {
   _bindTuning(el, def) {
     const panel = el.querySelector('#tuning');
     const rebind = () => { panel.innerHTML = this._tuningHtml(def, this.save.tuningOf(def.id)); this._bindTuning(el, def); };
-    panel.querySelectorAll('[data-tab]').forEach((t) => t.addEventListener('click', () => { this.tab = t.dataset.tab; this.app.audio.click(); rebind(); }));
     const g = this.app.garage;
+    panel.querySelectorAll('[data-tab]').forEach((t) => t.addEventListener('click', () => {
+      if (this.tab === 'plate') g.setPlate(this.save.tuningOf(def.id).plate); // черновик номера не сохранён — вернуть купленный
+      this.tab = t.dataset.tab;
+      this.plateDraft = null;
+      this.app.audio.click();
+      rebind();
+    }));
+    if (this.tab === 'plate') this._bindPlate(panel, def);
     panel.querySelectorAll('[data-color]').forEach((s) => s.addEventListener('click', () => {
       const c = +s.dataset.color;
       if (c === this.save.tuningOf(def.id).color) return;
@@ -284,6 +298,71 @@ export class Menus {
     }));
   }
 
+  // ---------------------------------------------------------------- редактор номера
+  /**
+   * Номер «Б ЦЦЦ ББ РЕГ»: каждая позиция листается стрелками ▲▼ или тапом по символу
+   * (без системной клавиатуры — в WebView она закрывает пол-экрана). Черновик виден сразу
+   * на canvas и на машине в 3D-гараже; платится только «Поставить».
+   */
+  _plateHtml(def, tv) {
+    if (!this.plateDraft || this.plateDraft.car !== def.id) this.plateDraft = { car: def.id, slots: plateToSlots(tv.plate) };
+    const slots = this.plateDraft.slots.map((ch, k) => `<div class="pl-slot ${k === 0 || k === 4 || k === 6 ? 'gap' : ''} ${k >= 6 ? 'reg' : ''}" data-k="${k}">
+        <div class="pl-arr" data-d="1">▲</div><div class="pl-ch" data-d="1">${ch || '·'}</div><div class="pl-arr" data-d="-1">▼</div></div>`).join('');
+    const quick = PLATE_PRESETS.map((p, i) => `<div class="pl-q" data-pi="${i}">${p.text} ${p.region}<small>${p.name}</small></div>`).join('');
+    return `<div class="plate-ed">
+      <canvas id="pl-prev" width="520" height="112"></canvas>
+      <div class="pl-slots">${slots}</div>
+      <div class="pl-info" id="pl-info"></div>
+      <div class="bigbtn" id="pl-buy"></div>
+      <div class="pl-qh">Быстрый выбор</div>
+      <div class="pl-quick">${quick}</div>
+    </div>`;
+  }
+
+  _bindPlate(panel, def) {
+    const g = this.app.garage, d = this.plateDraft;
+    const cv = panel.querySelector('#pl-prev').getContext('2d');
+    const info = panel.querySelector('#pl-info'), buy = panel.querySelector('#pl-buy');
+    const refresh = () => {
+      const p = slotsToPlate(d.slots);
+      const cur = this.save.tuningOf(def.id).plate;
+      drawPlate(cv, p.text, p.region);
+      panel.querySelectorAll('.pl-slot').forEach((el, k) => { el.querySelector('.pl-ch').textContent = d.slots[k] || '·'; });
+      const own = plateEq(p, cur);
+      const { price, tags, pretty } = platePrice(p);
+      d.price = own ? 0 : price;
+      info.innerHTML = own ? '<span class="ok">Этот номер уже стоит</span>'
+        : `${pretty ? '<b>Красивый номер</b>' : 'Обычный номер'}${tags.length ? ` · ${tags.join(', ')}` : ''}`;
+      buy.textContent = own ? 'Установлено' : `Поставить · ${rub(price)}`;
+      buy.className = `bigbtn ${own ? 'gray' : this.save.money < price ? 'disabled' : 'green'}`;
+      g.setPlate(p, !own);
+    };
+    panel.querySelectorAll('.pl-slot').forEach((el) => {
+      const k = +el.dataset.k;
+      el.querySelectorAll('[data-d]').forEach((b) => b.addEventListener('click', () => {
+        d.slots = plateStep(d.slots, k, +b.dataset.d);
+        this.app.audio.click();
+        refresh();
+      }));
+    });
+    panel.querySelectorAll('[data-pi]').forEach((el) => el.addEventListener('click', () => {
+      d.slots = plateToSlots(PLATE_PRESETS[+el.dataset.pi]);
+      this.app.audio.click();
+      refresh();
+    }));
+    buy.addEventListener('click', () => {
+      const p = slotsToPlate(d.slots);
+      if (!plateValid(p) || plateEq(p, this.save.tuningOf(def.id).plate)) return;
+      if (!this.save.spend(d.price)) { this.app.audio.beep(250, 0.2, 0.12); this.app.hudToastMenu('Не хватает денег'); return; }
+      this.save.setTuning(def.id, { plate: p });
+      g.setExtras(this.save.tuningValues(def.id));
+      this.app.audio.coin();
+      this.app.refreshCar();
+      this.show('garage');
+    });
+    refresh();
+  }
+
   // ---------------------------------------------------------------- настройки
   _settings() {
     const s = this.save.data.settings;
@@ -323,7 +402,7 @@ export class Menus {
         <b>Управление:</b> руль слева (или стрелки/наклон), справа — газ, тормоз, рычаг <b>R · N · D</b> и ручник.
         Поворотники — кнопки под картой (Z/X на клавиатуре). Свайп по экрану — осмотреться. Камеры — кнопка с фотоаппаратом.<br><br>
         <b>Парковка:</b> поставьте машину в жёлтую зону по стрелке и остановитесь. Любое касание — провал. Быстрее норматива — три звезды.<br><br>
-        <b>Город:</b> кнопка «такси» — возите пассажиров за рубли. Обгоны впритирку на скорости дают <b>ШАШКИ</b>-комбо.<br><br><b>Дрифт:</b> срыв — ручником или перегазовкой (отпустить газ и снова в пол с вывернутым рулём, задний привод), удержание — газом и контррулём. Очки = угол × скорость × плавность; множитель растёт за длинный занос и связки (перекладка — ×+1), рядом со стеной или машиной — бонус. Удар, конус или разворот сжигают серию. «Помощь при заносе» в настройках подруливает сама. Дрифт-зона ДОСААФ — заезд 90 с с рекордом и наградой.
+        <b>Город:</b> кнопка «такси» — возите пассажиров за рубли. Обгоны впритирку на скорости (<b>ШАШКИ</b>) и дрифт идут в одну серию: итог — рубли, рекорд серии в городе виден на панели дрифта.<br><br><b>Дрифт:</b> срыв — ручником или перегазовкой (отпустить газ и снова в пол с вывернутым рулём, задний привод), удержание — газом и контррулём. Очки = угол × скорость × плавность; множитель растёт за длинный занос и связки (перекладка — ×+1), рядом со стеной или машиной — бонус. Удар, конус или разворот сжигают серию. «Помощь при заносе» в настройках подруливает сама. Дрифт-зона ДОСААФ — заезд 90 с с рекордом и наградой.
         Камеры «Стрелка» и посты ДПС штрафуют за нарушения. Бензин — на АЗС (красная точка на карте).<br><br>
         <b>Экзамен ГИБДД:</b> змейка, параллельная парковка и гараж задом, потом маршрут по городу. Не набирайте 5 штрафных баллов, включайте поворотники!<br><br>
         <b>Клавиатура:</b> WASD — езда, Пробел — ручник, Q/E — передачи, Z/X/V — поворотники/аварийка, H — гудок, C — камера, L — фары, T — такси, F — действие, Esc — пауза.
