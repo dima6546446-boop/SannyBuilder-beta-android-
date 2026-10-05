@@ -1,0 +1,101 @@
+{
+ "_note": "Модели машин с Sketchfab под CC-BY: автор обязательно указывается в титрах (CREDITS.md и экран «Как играть»). Скачивание — tools/assets/import_all.sh (нужна переменная SKETCHFAB_TOKEN). Granta, Largus, ДПС и такси остаются процедурными (подходящих моделей под свободной лицензией нет).",
+ "cars": [
+  {
+   "id": "vaz2101",
+   "uid": "79e4c0ed1beb4d29b19b64ca86f5f8a3",
+   "alt": "31200fbcff0c4f2d80c24f81a786b594",
+   "name": "VAZ-2101 3D Model",
+   "author": "Alda Campeny",
+   "authorUrl": "https://sketchfab.com/AlStone",
+   "url": "https://sketchfab.com/3d-models/vaz-2101-3d-model-79e4c0ed1beb4d29b19b64ca86f5f8a3",
+   "license": "CC Attribution",
+   "faces": 193688,
+   "flip": false
+  },
+  {
+   "id": "vaz2106",
+   "uid": "fe54951ce9b64b4f9cee3168ab477aae",
+   "alt": "8773918bb20a4331ac47b66c0c33ca77",
+   "name": "vaz 2106",
+   "author": "mirvaliyev_3d",
+   "authorUrl": "https://sketchfab.com/mirvaliyev_3d",
+   "url": "https://sketchfab.com/3d-models/vaz-2106-fe54951ce9b64b4f9cee3168ab477aae",
+   "license": "CC Attribution",
+   "faces": 76053,
+   "flip": false
+  },
+  {
+   "id": "vaz2107",
+   "uid": "31201f80892b404a8e49c272490a664c",
+   "alt": "55bd23c141284e758e4eacc01df14037",
+   "name": "LADA 2107",
+   "author": "tiunov.se",
+   "authorUrl": "https://sketchfab.com/tiunov.se",
+   "url": "https://sketchfab.com/3d-models/lada-2107-31201f80892b404a8e49c272490a664c",
+   "license": "CC Attribution",
+   "faces": 105221,
+   "flip": false
+  },
+  {
+   "id": "vaz2109",
+   "uid": "cae567b477284a0c978da6e68d660200",
+   "alt": "ba67f556d96d4a209e8c790603318f3a",
+   "name": "VAZ 2109",
+   "author": "Ford mondeo",
+   "authorUrl": "https://sketchfab.com/tnikita",
+   "url": "https://sketchfab.com/3d-models/vaz-2109-cae567b477284a0c978da6e68d660200",
+   "license": "CC Attribution",
+   "faces": 35329,
+   "flip": false
+  },
+  {
+   "id": "niva",
+   "uid": "5a83c0cc63df418fa5bb9a2bf98dc9a6",
+   "alt": "178ad16761b0451d94b96ad9a74dd0d6",
+   "name": "Lada Niva",
+   "author": "tiunov.se",
+   "authorUrl": "https://sketchfab.com/tiunov.se",
+   "url": "https://sketchfab.com/3d-models/lada-niva-5a83c0cc63df418fa5bb9a2bf98dc9a6",
+   "license": "CC Attribution",
+   "faces": 134171,
+   "flip": false
+  },
+  {
+   "id": "oka",
+   "uid": "f11aeb6caa62470a942a89838da4df42",
+   "alt": "199d27241aa94c528c4d0f8041f1a502",
+   "name": "Vaz-1111, \"OKA\"",
+   "author": "Anserkon",
+   "authorUrl": "https://sketchfab.com/anserkon",
+   "url": "https://sketchfab.com/3d-models/vaz-1111-oka-f11aeb6caa62470a942a89838da4df42",
+   "license": "CC Attribution",
+   "faces": 30304,
+   "flip": false
+  },
+  {
+   "id": "priora",
+   "uid": "b6522aae5ada4911acbf5b446d6bcc51",
+   "alt": "4c67aa9408564f989460878c374dcb0f",
+   "name": "LADA Priora VAZ sedan",
+   "author": "Okopchi",
+   "authorUrl": "https://sketchfab.com/Okopchi",
+   "url": "https://sketchfab.com/3d-models/lada-priora-vaz-sedan-b6522aae5ada4911acbf5b446d6bcc51",
+   "license": "CC Attribution",
+   "faces": 12298,
+   "flip": false
+  },
+  {
+   "id": "vesta",
+   "uid": "74d0168d94fd486889f93e7f0c6cd264",
+   "alt": "b804fab0498f42be8b40f0201d7ed7c0",
+   "name": "Lada Vesta SW NG",
+   "author": "S.K.",
+   "authorUrl": "https://sketchfab.com/Streetsraker",
+   "url": "https://sketchfab.com/3d-models/lada-vesta-sw-ng-74d0168d94fd486889f93e7f0c6cd264",
+   "license": "CC Attribution",
+   "faces": 25748,
+   "flip": false
+  }
+ ]
+}

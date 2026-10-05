@@ -3,6 +3,7 @@ import { LEVELS } from '../config/levels.js';
 import { QUALITY_PRESETS, saveQualityName } from '../config/quality.js';
 import { PLATE_PRESETS, PLATE_SLOTS, plateToSlots, slotsToPlate, plateStep, platePrice, plateEq, plateValid } from '../config/plates.js';
 import { drawPlate } from '../vehicles/Extras.js';
+import { MODEL_CREDITS } from '../config/credits.js';
 
 const hex = (n) => `#${n.toString(16).padStart(6, '0')}`;
 const rub = (n) => `${Math.round(n).toLocaleString('ru-RU')} ₽`;
@@ -451,6 +452,7 @@ export class Menus {
         Камеры «Стрелка» и посты ДПС штрафуют за нарушения. Бензин — на АЗС (красная точка на карте).<br><br>
         <b>Онлайн:</b> «Быстрая игра» — город со случайными игроками, «Создать комнату» — получишь код из 4 символов, друзья вводят его и попадают к тебе (до 8 человек). Кнопка с облачком — быстрые фразы. Если создатель комнаты выйдет, катаешься дальше один. Лучше всего работает по Wi-Fi.<br><br>
         <b>Экзамен ГИБДД:</b> змейка, параллельная парковка и гараж задом, потом маршрут по городу. Не набирайте 5 штрафных баллов, включайте поворотники!<br><br>
+        ${MODEL_CREDITS.length ? `<b>Модели машин (CC BY):</b> ${MODEL_CREDITS.map((c) => `${c.name} — ${c.author}`).join('; ')}.<br><br>` : ''}
         <b>Клавиатура:</b> WASD — езда, Пробел — ручник, Q/E — передачи, Z/X/V — поворотники/аварийка, H — гудок, C — камера, L — фары, T — такси, F — действие, Esc — пауза.
       </div>`, 'dim');
   }

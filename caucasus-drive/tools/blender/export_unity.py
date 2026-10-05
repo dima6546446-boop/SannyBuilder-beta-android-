@@ -67,6 +67,12 @@ def export_car(cid, out_dir, hi_level):
         obs.append(ob)
     obs += [B.build_car_object(cid, l) for l in ('lod0', 'lod1')]
     path = os.path.join(out_dir, f'{cid}.bytes')
+    stats = write_bytes(path, obs)
+    print(f'UNITY {cid}: {stats}  {os.path.getsize(path) // 1024} KB (gzip)')
+
+
+def write_bytes(path, obs):
+    """Записать объекты-LOD (имя объекта = имя LOD) в .bytes (gzip). Возвращает {LOD: (вершины, треугольники)}."""
     stats = {}
     with open(path, 'wb') as f:
         f.write(b'CDM1')
@@ -86,7 +92,7 @@ def export_car(cid, out_dir, hi_level):
             stats[ob.name] = (len(verts), sum(len(i) for i in subs.values()) // 3)
     raw = open(path, 'rb').read()
     open(path, 'wb').write(gzip.compress(raw, 9))  # загрузчик в Unity распознаёт gzip по сигнатуре
-    print(f'UNITY {cid}: {stats}  {os.path.getsize(path) // 1024} KB (gzip)')
+    return stats
 
 
 if __name__ == '__main__':
