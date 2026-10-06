@@ -43,7 +43,7 @@ namespace CaucasusDrive
     public class DailyState { public string date = ""; public List<DailyTask> tasks = new List<DailyTask>(); }
 
     [Serializable]
-    public class Stats { public float km, walk; public int fines, taxi, bestCombo, crashes, food, washes, online; }
+    public class Stats { public float km, walk; public int fines, taxi, bestCombo, crashes, food, washes, online, escapes; }
 
     [Serializable]
     public class DriftStats { public int best, bestSeries, runs; }

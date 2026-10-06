@@ -13,13 +13,14 @@ namespace CaucasusDrive
     {
         public override string Name => "free";
         public override bool Restartable => false;
-        public override bool AllowWalk => true;
+        public override bool AllowWalk => pursuit == null || !pursuit.active;
         static readonly string[] Hello = { "Шеф, до ДК подбросишь?", "Только не гони, у меня рассада!", "На «Жигулях»? Ну давай, с ветерком!", "Командир, свободен? Опаздываю!", "А музыку можно погромче?", "Мне к тёще, но можно не торопиться…", "Поехали! Как Гагарин говорил.", "Главное — довези целым." };
         static readonly string[] Ouch = { "Эй, аккуратнее!", "Я на такое не подписывался!", "У меня яйца в сумке!", "Шеф, ты права где купил?" };
         static readonly string[] Bye = { "Спасибо, шеф! Сдачи не надо.", "Довёз как короля!", "Держи на бензин.", "Отлично доехали!" };
         const float FuelPrice = 56f, SEG = CityC.SPACING - 2 * CityC.HALF;
 
         readonly bool fines;
+        Pursuit pursuit;
         readonly DriftScore drift = new DriftScore();
         readonly Rng rnd = new Rng(System.Environment.TickCount & 0xffff);
         readonly Dictionary<int, float> camCool = new Dictionary<int, float>();
@@ -35,6 +36,7 @@ namespace CaucasusDrive
 
         public override void Enter()
         {
+            pursuit = new Pursuit(app);
             app.traffic.enabled = true;
             app.traffic.target = app.quality.traffic;
             app.traffic.Clear();
@@ -71,6 +73,7 @@ namespace CaucasusDrive
 
         public override void Exit()
         {
+            pursuit?.Exit();
             app.crowd.Stop();
             app.rules.onViolation = null;
             EndTaxi(true);
@@ -121,11 +124,12 @@ namespace CaucasusDrive
                 {
                     float over = kmh - 60f;
                     Fine(over > 60 ? 2500 : over > 40 ? 1500 : 500, "камера «Стрелка», " + Mathf.RoundToInt(kmh) + " км/ч при 60", true);
+                    if (fines && kmh > 115f && Random.value < 0.75f) pursuit?.Start("Превышение " + Mathf.RoundToInt(kmh) + " км/ч");
                     camCool[i] = 10f;
                 }
             }
             dpsCool -= dt;
-            if (kmh > 90f && dpsCool <= 0 && NearDps(p, 60f)) { Fine(1500, "превышение " + Mathf.RoundToInt(kmh) + " км/ч", false); dpsCool = 12f; }
+            if (kmh > 90f && dpsCool <= 0 && NearDps(p, 60f)) { Fine(1500, "превышение " + Mathf.RoundToInt(kmh) + " км/ч", false); dpsCool = 12f; if (fines && kmh > 110f) pursuit?.Start("Превышение " + Mathf.RoundToInt(kmh) + " км/ч"); }
         }
 
         // ------------------------------------------------------------------ топливо и АЗС
@@ -311,13 +315,14 @@ namespace CaucasusDrive
         public override void OnPedHit(float speed)
         {
             drift.Lose("Пешеход");
-            if (fines) Fine(5000, "наезд на пешехода", false);
+            if (fines) { Fine(5000, "наезд на пешехода", false); pursuit?.Start("Наезд на пешехода"); }
             else app.hud.Toast("Пешеход! Аккуратнее, он еле увернулся", HUD.Bad, 2.5f);
         }
 
         public override void Update(float dt)
         {
             Cameras(dt);
+            pursuit?.Update(dt);
             Fuel(dt);
             Taxi(dt);
             Overtakes();
@@ -332,7 +337,12 @@ namespace CaucasusDrive
             }
             app.hud.Drift(drift.InSeries, drift.Total, drift.mult, drift.active ? drift.angle : 0, app.save.d.freeBest);
             app.beacon.Update(dt);
-            if (taxi == "off" && !atPump && p.fuel >= p.spec.tank * 0.15f) app.hud.Mission(null, null, 0);
+            if (taxi == "off" && !atPump && p.fuel >= p.spec.tank * 0.15f && !(pursuit != null && pursuit.active)) app.hud.Mission(null, null, 0);
+        }
+
+        public override void RenderGlow(Glow glow, bool blink)
+        {
+            pursuit?.RenderGlow(glow, blink);
         }
     }
 
