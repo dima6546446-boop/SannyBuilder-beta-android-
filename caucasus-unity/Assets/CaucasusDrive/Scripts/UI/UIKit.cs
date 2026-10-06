@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -168,6 +169,47 @@ namespace CaucasusDrive
             return b;
         }
 
+        // ------------------------------------------------------------------ иконки (светлые круглые кнопки с чёрным значком)
+        public static readonly Color Light = new Color(0.96f, 0.96f, 0.95f, 0.9f), Ink = new Color(0.1f, 0.1f, 0.11f, 1f), RingC = new Color(0.62f, 0.62f, 0.64f, 0.95f);
+        static readonly Dictionary<string, Sprite> iconCache = new Dictionary<string, Sprite>();
+
+        /// <summary>Белый значок с прозрачностью из Resources/Icons (красится через Image.color).</summary>
+        public static Sprite Icon(string name)
+        {
+            Sprite sp;
+            if (iconCache.TryGetValue(name, out sp)) return sp;
+            var t = Resources.Load<Texture2D>("Icons/ic_" + name);
+            if (t != null) { t.wrapMode = TextureWrapMode.Clamp; t.filterMode = FilterMode.Bilinear; sp = Sprite.Create(t, new Rect(0, 0, t.width, t.height), new Vector2(0.5f, 0.5f), 100f); }
+            iconCache[name] = sp;
+            return sp;
+        }
+
+        public static Image IconAt(Transform parent, string name, Vector2 aMin, Vector2 aMax, Vector2 pos, Vector2 size, Color c)
+        {
+            var rt = Rect(parent, "Icon_" + name, aMin, aMax, pos, size);
+            var im = rt.gameObject.AddComponent<Image>();
+            im.sprite = Icon(name); im.color = c; im.raycastTarget = false; im.preserveAspect = true;
+            if (im.sprite == null) im.enabled = false;
+            return im;
+        }
+
+        /// <summary>Круглая кнопка в стиле иконок: светлый круг с тонким серым ободком и тёмным значком (или коротким текстом).</summary>
+        public static Button RoundButton(Transform parent, string icon, string text, Vector2 aMin, Vector2 aMax, Vector2 pos, Vector2 size, System.Action onClick, int fontSize = 15, Color? face = null, Color? ink = null)
+        {
+            var rt = Rect(parent, "Round_" + (icon ?? text), aMin, aMax, pos, size);
+            var ring = rt.gameObject.AddComponent<Image>(); ring.sprite = Circle; ring.color = RingC;
+            var f = Fill(rt, "Face", 3, 3, 3, 3);
+            var img = f.gameObject.AddComponent<Image>(); img.sprite = Circle; img.color = face ?? Light;
+            var b = rt.gameObject.AddComponent<Button>();
+            b.targetGraphic = img;
+            var cb = b.colors; cb.pressedColor = new Color(0.72f, 0.72f, 0.72f); cb.highlightedColor = Color.white; cb.fadeDuration = 0.05f; b.colors = cb;
+            b.onClick.AddListener(() => { App.I?.audio?.Click(); onClick?.Invoke(); });
+            var col = ink ?? Ink;
+            if (icon != null) IconAt(f, icon, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, size * 0.56f, col);
+            else Label(f, text, fontSize, col);
+            return b;
+        }
+
         public static void Clear(Transform t) { for (int i = t.childCount - 1; i >= 0; i--) Object.Destroy(t.GetChild(i).gameObject); }
     }
 
@@ -177,6 +219,12 @@ namespace CaucasusDrive
         public bool held;
         public System.Action onDown;
         int pointers;
+        Image img; Color baseCol; bool haveBase;
+        void Update()
+        {
+            if (!haveBase) { img = GetComponent<Image>(); if (img == null) return; baseCol = img.color; haveBase = true; }
+            img.color = Color.Lerp(img.color, held ? new Color(baseCol.r * 0.72f, baseCol.g * 0.72f, baseCol.b * 0.72f, baseCol.a) : baseCol, 0.5f);
+        }
         public void OnPointerDown(PointerEventData e) { pointers++; held = true; onDown?.Invoke(); }
         public void OnPointerUp(PointerEventData e) { pointers = Mathf.Max(0, pointers - 1); held = pointers > 0; }
         void OnDisable() { pointers = 0; held = false; }

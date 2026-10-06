@@ -39,6 +39,7 @@ namespace CaucasusDrive
             {
                 int k = i;
                 var b = UIKit.Button(s, "", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-270 + i * 270, 10), new Vector2(255, 130), cols[i], acts[k]);
+                UIKit.IconAt(b.transform, i == 0 ? "play" : "people", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -30), new Vector2(38, 38), new Color(1, 1, 1, 0.9f));
                 UIKit.LabelAt(b.transform, titles[i], 22, Color.white, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 84), new Vector2(-20, 36), TextAnchor.MiddleLeft);
                 UIKit.LabelAt(b.transform, subs[i], 14, new Color(1, 1, 1, 0.78f), new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 42), new Vector2(-20, 44), TextAnchor.MiddleLeft, false);
             }

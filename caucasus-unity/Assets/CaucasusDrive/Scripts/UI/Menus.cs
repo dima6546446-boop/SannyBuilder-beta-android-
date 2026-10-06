@@ -172,15 +172,18 @@ namespace CaucasusDrive
             {
                 int k = i;
                 var b = UIKit.Button(s, "", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-393 + (i % 4) * 262, 255 - (i / 4) * 135), new Vector2(250, 122), cols[i], acts[k]);
+                string[] tic = { "brake", "play", "wheel", "pedal", "speedo", "people", "gear", "settings" };
+                UIKit.IconAt(b.transform, tic[i], new Vector2(1, 1), new Vector2(1, 1), new Vector2(-34, -34), new Vector2(44, 44), new Color(1, 1, 1, 0.92f));
                 UIKit.LabelAt(b.transform, titles[i], 24, Color.white, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 76), new Vector2(-24, 36), TextAnchor.MiddleLeft);
                 UIKit.LabelAt(b.transform, subs[i], 15, new Color(1, 1, 1, 0.75f), new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 38), new Vector2(-24, 30), TextAnchor.MiddleLeft, false);
             }
             UIKit.Button(s, ready > 0 ? "ЗАДАНИЯ · забрать " + ready : "ЗАДАНИЯ ДНЯ", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-110, 40), new Vector2(260, 50), ready > 0 ? UIKit.Green : UIKit.Bg, () => Show("daily"), 18);
             UIKit.Button(s, "ДОСТИЖЕНИЯ " + Achievements.Count(app.save.d) + "/" + Achievements.All.Length, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(170, 40), new Vector2(260, 50), UIKit.Bg, () => Show("ach"), 18);
             Achievements.Check(app);
-            var tg = UIKit.Button(s, "Telegram: t.me/caucasusdrive", new Vector2(0, 0), new Vector2(0, 0), new Vector2(190, 40), new Vector2(340, 50), M.Hex(0x229ed9), () => Application.OpenURL("https://t.me/caucasusdrive"), 20);
+            var tg = UIKit.Button(s, "      Telegram: t.me/caucasusdrive", new Vector2(0, 0), new Vector2(0, 0), new Vector2(190, 40), new Vector2(340, 50), M.Hex(0x229ed9), () => Application.OpenURL("https://t.me/caucasusdrive"), 20);
             UIKit.Button(s, "Как играть", new Vector2(1, 0), new Vector2(1, 0), new Vector2(-120, 40), new Vector2(200, 50), UIKit.Bg, () => Show("help"), 20);
             tg.name = "Telegram";
+            UIKit.IconAt(tg.transform, "telegram", new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(34, 0), new Vector2(30, 30), Color.white);
         }
 
         // ------------------------------------------------------------------ штрафы: спросить при входе в город

@@ -53,15 +53,15 @@ namespace CaucasusDrive
         {
             // нижний ряд кнопок справа сверху
             var tr = (RectTransform)root.Find("TopRight");
-            radioBtn = UIKit.Button(tr, "РАДИО", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -146), new Vector2(58, 52), UIKit.Bg, () => app.CycleRadio(), 14);
+            radioBtn = UIKit.RoundButton(tr, null, "РАДИО", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-32, -152), new Vector2(56, 56), () => app.CycleRadio(), 11);
             radioLabel = radioBtn.GetComponentInChildren<Text>();
-            doorBtn = UIKit.Button(tr, "ВЫЙТИ", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-96, -146), new Vector2(58, 52), UIKit.Bg, () => app.ToggleFoot(), 13);
+            doorBtn = UIKit.RoundButton(tr, null, "ВЫЙТИ", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-98, -152), new Vector2(56, 56), () => app.ToggleFoot(), 11);
             doorLabel = doorBtn.GetComponentInChildren<Text>();
-            taxiBtn = UIKit.Button(tr, "ТАКСИ", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-162, -146), new Vector2(58, 52), UIKit.Bg, () => app.mode?.OnTaxi(), 14);
-            taxiImg = taxiBtn.GetComponent<Image>();
+            taxiBtn = UIKit.RoundButton(tr, null, "ТАКСИ", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-164, -152), new Vector2(56, 56), () => app.mode?.OnTaxi(), 11);
+            taxiImg = (Image)taxiBtn.targetGraphic;
             taxiBtn.gameObject.SetActive(false);
             // онлайн: фразы и список игроков
-            chatBtn = UIKit.Button(tr, "ЧАТ", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-228, -146), new Vector2(58, 52), UIKit.Bg, () => chatPanel.gameObject.SetActive(!chatPanel.gameObject.activeSelf), 14);
+            chatBtn = UIKit.RoundButton(tr, "people", null, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-230, -152), new Vector2(56, 56), () => chatPanel.gameObject.SetActive(!chatPanel.gameObject.activeSelf));
             chatBtn.gameObject.SetActive(false);
             chatPanel = UIKit.Rect(root, "Chat", new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-160, 10), new Vector2(270, 4 * 58 + 12));
             UIKit.Img(chatPanel, UIKit.Bg2);
@@ -131,7 +131,7 @@ namespace CaucasusDrive
 
         // ------------------------------------------------------------------ API для режимов
         public void ShowTaxi(bool on) { taxiVisible = on; taxiBtn.gameObject.SetActive(on); TaxiOn(false); }
-        public void TaxiOn(bool on) { taxiImg.color = on ? new Color(0.75f, 0.6f, 0.05f, 0.95f) : UIKit.Bg; }
+        public void TaxiOn(bool on) { taxiImg.color = on ? UIKit.Gold : UIKit.Light; }
         public void ShowLimit(bool on) { limitOn = on; }
         public void ShowChat(bool on) { chatBtn.gameObject.SetActive(on); if (!on) chatPanel.gameObject.SetActive(false); }
         public void NetList(string text) { if (netText == null) return; bool on = !string.IsNullOrEmpty(text); if (netText.gameObject.activeSelf != on) netText.gameObject.SetActive(on); if (on) netText.text = text; }
@@ -168,7 +168,7 @@ namespace CaucasusDrive
             sensorText.color = m < 0.4f ? new Color(1f, 0.3f, 0.25f) : m < 1f ? UIKit.Gold : Color.white;
         }
 
-        public void SetRadioLabel(string name) { radioLabel.text = string.IsNullOrEmpty(name) ? "РАДИО" : name; radioBtn.GetComponent<Image>().color = string.IsNullOrEmpty(name) ? UIKit.Bg : new Color(0.12f, 0.35f, 0.5f, 0.9f); }
+        public void SetRadioLabel(string name) { radioLabel.text = string.IsNullOrEmpty(name) ? "РАДИО" : name; ((Image)radioBtn.targetGraphic).color = string.IsNullOrEmpty(name) ? UIKit.Light : new Color(0.55f, 0.8f, 0.95f, 0.95f); }
 
         public void SetDoor(bool allowWalk) { doorBtn.gameObject.SetActive(allowWalk); }
 
