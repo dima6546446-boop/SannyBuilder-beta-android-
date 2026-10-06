@@ -73,7 +73,7 @@ namespace CaucasusDrive
             new A { id = "license", title = "С правами", desc = "Сдать экзамен ГИБДД", value = d => d.license ? 1 : 0, goal = 1, reward = 2000 },
             new A { id = "stars60", title = "Отличник ДОСААФ", desc = "Набрать 60 звёзд в парковке", value = Stars, goal = 60, reward = 5000 },
             new A { id = "cars5", title = "Коллекционер", desc = "Собрать 5 машин", value = d => d.owned.Count, goal = 5, reward = 5000 },
-            new A { id = "cars10", title = "Весь АвтоВАЗ", desc = "Собрать все 10 машин", value = d => d.owned.Count, goal = 10, reward = 20000 },
+            new A { id = "cars10", title = "Весь АвтоВАЗ", desc = "Собрать 10 машин АвтоВАЗ", value = d => d.owned.Count, goal = 10, reward = 20000 },
             new A { id = "food10", title = "Гурман", desc = "Купить еду 10 раз", value = d => d.stats.food, goal = 10, reward = 1000 },
             new A { id = "walk2k", title = "Пешеход", desc = "Пройти пешком 2 км", value = d => d.stats.walk, goal = 2000, reward = 1500 },
             new A { id = "wash5", title = "Чистюля", desc = "Помыть машину 5 раз", value = d => d.stats.washes, goal = 5, reward = 1000 },
