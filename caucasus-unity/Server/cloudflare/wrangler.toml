@@ -1,0 +1,13 @@
+# Игровой сервер на Cloudflare Workers (бесплатный тариф). Деплой: npx wrangler deploy
+name = "caucasus-drive"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "Room"
+
+# бесплатному тарифу нужны Durable Objects на SQLite
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Room"]

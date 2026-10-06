@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "type": "module",
+  "description": "Headless-тесты CAUCASUS DRIVE (Playwright + Chromium/SwiftShader). Ставятся отдельно от игры.",
+  "dependencies": { "playwright": "^1.63.0", "peer": "^1.0.2" }
+}

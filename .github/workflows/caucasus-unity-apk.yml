@@ -1,0 +1,82 @@
+# Сборка Unity-версии CAUCASUS DRIVE в APK (game-ci) и публикация в Releases → «CAUCASUS DRIVE (Unity)».
+# Нужны секреты репозитория: UNITY_LICENSE (содержимое .ulf), UNITY_EMAIL, UNITY_PASSWORD — см. caucasus-unity/README.md.
+# Без секретов сборка пропускается (не падает).
+name: CAUCASUS DRIVE Unity APK
+
+on:
+  push:
+    branches: [ 'claude/autovaz-mobile-driving-sim-232iuq', main, master ]
+    paths: [ 'caucasus-unity/**', '.github/workflows/caucasus-unity-apk.yml' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Есть ли лицензия Unity
+        id: lic
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        run: |
+          if [ -n "$UNITY_LICENSE" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Нет секрета UNITY_LICENSE — Unity-сборка пропущена (инструкция: caucasus-unity/README.md)"
+          fi
+
+      - name: Освободить место на диске (Unity + Android SDK ≈ 20 ГБ)
+        if: steps.lic.outputs.ok == 'true'
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          android: false
+          large-packages: false
+
+      - uses: actions/checkout@v4
+        if: steps.lic.outputs.ok == 'true'
+
+      - uses: actions/cache@v4
+        if: steps.lic.outputs.ok == 'true'
+        with:
+          path: caucasus-unity/Library
+          key: unity-library-android-${{ hashFiles('caucasus-unity/Packages/manifest.json') }}
+          restore-keys: unity-library-android-
+
+      - name: Сборка APK
+        if: steps.lic.outputs.ok == 'true'
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: caucasus-unity
+          targetPlatform: Android
+          androidExportType: androidPackage
+          buildName: CaucasusDrive
+          buildMethod: CaucasusDrive.EditorTools.CaucasusSetup.BuildAndroidCI
+
+      - name: Найти APK
+        if: steps.lic.outputs.ok == 'true'
+        run: |
+          mkdir -p out
+          find build caucasus-unity/Builds -name '*.apk' -exec cp {} out/CaucasusDrive-Unity.apk \; 2>/dev/null || true
+          ls -la out
+          test -f out/CaucasusDrive-Unity.apk
+
+      - uses: actions/upload-artifact@v4
+        if: steps.lic.outputs.ok == 'true'
+        with:
+          name: CaucasusDrive-Unity
+          path: out/
+
+      - name: Публикация в Releases
+        if: steps.lic.outputs.ok == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: caucasus-unity-latest
+          name: CAUCASUS DRIVE (Unity) — последняя сборка
+          prerelease: true
+          files: out/CaucasusDrive-Unity.apk

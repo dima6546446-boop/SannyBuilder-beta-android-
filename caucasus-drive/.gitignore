@@ -1,0 +1,13 @@
+node_modules/
+dist/
+public/basis/
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+*.iml
+.idea/
+android/.kotlin/
+tools/blender/__pycache__/
+out/
+tools/test/node_modules

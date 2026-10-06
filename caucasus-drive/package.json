@@ -1,0 +1,23 @@
+{
+  "name": "caucasus-drive",
+  "version": "1.9.0",
+  "private": true,
+  "description": "CAUCASUS DRIVE — мобильный 3D-симулятор парковки и вождения автомобилей АвтоВАЗ (Three.js + Android WebView)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "copy-basis": "node scripts/copy-basis.mjs",
+    "copy-draco": "node scripts/copy-draco.mjs",
+    "models": "node tools/blender/export-dims.mjs && blender -b --python tools/blender/build_cars.py -- public/models",
+    "android:assets": "npm run build && node scripts/check-dist.mjs"
+  },
+  "dependencies": {
+    "peerjs": "^1.5.5",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

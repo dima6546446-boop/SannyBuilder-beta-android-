@@ -1,0 +1,5 @@
+<linker>
+  <!-- WebSocket-клиент (Cloudflare) и сокеты не должны вырезаться при сборке IL2CPP -->
+  <assembly fullname="System" preserve="all"/>
+  <assembly fullname="System.Core" preserve="all"/>
+</linker>

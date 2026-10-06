@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Иконка CAUCASUS DRIVE: закат над снежными вершинами Кавказа, серпантин и «семёрка» -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- небо -->
+    <path android:fillColor="#1C2A5A" android:pathData="M18,4h72a14,14 0,0 1,14 14v72a14,14 0,0 1,-14 14h-72a14,14 0,0 1,-14 -14v-72a14,14 0,0 1,14 -14z"/>
+    <path android:fillColor="#E8613A" android:pathData="M4,40h100v50a14,14 0,0 1,-14 14H18A14,14 0,0 1,4 90z"/>
+    <path android:fillColor="#F7A24B" android:pathData="M4,52h100v38a14,14 0,0 1,-14 14H18A14,14 0,0 1,4 90z"/>
+    <!-- солнце -->
+    <path android:fillColor="#FFE08A" android:pathData="M72,46m-11,0a11,11 0,1 1,22 0a11,11 0,1 1,-22 0"/>
+    <!-- дальний хребет -->
+    <path android:fillColor="#5B3A6E" android:pathData="M4,62L20,44L30,52L46,30L58,46L66,40L80,54L92,42L104,52V104H4z"/>
+    <!-- ближний хребет со снежными шапками -->
+    <path android:fillColor="#2B2140" android:pathData="M4,72L22,52L34,62L52,36L68,58L78,50L104,70V104H4z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M52,36L59.5,46.5L55,44.5L51,48L47.5,44L44.8,45.6z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M22,52L26.5,57.4L23.5,56.4L20.5,58.6L18.6,55.8z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M78,50L83,54L80,53.5L77.5,55.5L74.2,53z"/>
+    <!-- дорога -->
+    <path android:fillColor="#1A1A1A" android:pathData="M4,104V88C30,82 70,82 104,74V104z"/>
+    <path android:fillColor="#FFD54F" android:pathData="M14,92.2l12,-2.2l0.4,1.6l-12,2.2zM40,88.2l12,-1.4l0.2,1.6l-12,1.4zM66,85.6l12,-1.6l0.3,1.6l-12,1.6z"/>
+    <!-- машина -->
+    <path android:fillColor="#C62828" android:pathData="M26,84l4,-6h10l6,-6h18l7,6h10l2,6v5H26z"/>
+    <path android:fillColor="#9FC3E6" android:pathData="M48,77l4,-3.4h11l4.6,3.4z"/>
+    <path android:fillColor="#111111" android:pathData="M38,89m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0M72,89m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0"/>
+    <path android:fillColor="#D9D9D9" android:pathData="M38,89m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0M72,89m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0"/>
+    <path android:fillColor="#FFF3C4" android:pathData="M81,80h4v3h-4z"/>
+</vector>
