@@ -120,7 +120,7 @@ namespace CaucasusDrive
             bool show = dist < 140f;
             if (tag.gameObject.activeSelf != show) tag.gameObject.SetActive(show);
             if (!show) return;
-            string txt = tagT > 0f ? prof.name + "\n<color=#ffd24a>" + tagText + "</color>" : prof.name;
+            string txt = tagT > 0f ? prof.name + "\n<color=#d0d0d0>" + tagText + "</color>" : prof.name;
             if (tag.text != txt) tag.text = txt;
             tag.richText = true;
             tag.transform.position = anchor;

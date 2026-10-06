@@ -52,12 +52,12 @@ namespace CaucasusDrive
             mb.rectTransform.pivot = new Vector2(1, 1); mb.rectTransform.anchoredPosition = Vector2.zero;
             money = UIKit.Label(mb.transform, "0 ₽", 28, UIKit.Gold);
             fpsText = UIKit.LabelAt(tr, "", 18, new Color(0.5f, 0.9f, 0.5f), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-55, -205), new Vector2(110, 26), TextAnchor.MiddleRight, false); // под кнопками, не налезает на деньги
-            string[] icons = { "II", "КАМ", "ФАРЫ" };
+            string[] icons = { "pause", "camera", "lights" };
             System.Action[] acts = { () => app.Pause(), () => app.NextCamera(), () => { app.player.CycleLights(); } };
             for (int i = 0; i < 3; i++)
             {
                 int k = i;
-                var b = UIKit.RoundButton(tr, null, icons[i], new Vector2(1, 1), new Vector2(1, 1), new Vector2(-32 - i * 66, -88), new Vector2(56, 56), acts[k], i == 0 ? 24 : 13);
+                var b = UIKit.RoundButton(tr, icons[i], null, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-32 - i * 66, -88), new Vector2(56, 56), acts[k]);
                 if (i == 2) lightsBtn = (Image)b.targetGraphic;
             }
         }
@@ -93,10 +93,10 @@ namespace CaucasusDrive
             var dot = UIKit.Rect(map, "Me", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(16, 16));
             mapDot = dot.gameObject.AddComponent<Image>(); mapDot.sprite = UIKit.Circle; mapDot.color = UIKit.Accent;
             // индикаторы поворотов и аварийка под картой
-            string[] ic = { "left", null, "right" };
+            string[] ic = { "left", "hazard", "right" };
             System.Action[] acts = { () => app.player.ToggleIndicator('L'), () => app.player.ToggleHazard(), () => app.player.ToggleIndicator('R') };
             for (int i = 0; i < 3; i++)
-                UIKit.RoundButton(root, ic[i], "!!", new Vector2(0, 1), new Vector2(0, 1), new Vector2(46 + i * 64, -222), new Vector2(56, 56), acts[i], 22, null, i == 1 ? new Color(0.8f, 0.15f, 0.12f) : UIKit.Ink);
+                UIKit.RoundButton(root, ic[i], null, new Vector2(0, 1), new Vector2(0, 1), new Vector2(46 + i * 64, -222), new Vector2(56, 56), acts[i], 22, null, UIKit.Ink);
         }
 
         /// <summary>Карта города 512×512 (1 px ≈ 1.17 м): дороги, кварталы, АЗС, автодром.</summary>
@@ -174,8 +174,8 @@ namespace CaucasusDrive
         {
             while (toasts.childCount >= 3) Object.DestroyImmediate(toasts.GetChild(0).gameObject);
             var rt = UIKit.Rect(toasts, "Toast", new Vector2(0.5f, 1), new Vector2(0.5f, 1), Vector2.zero, new Vector2(740, 48));
-            UIKit.Img(rt, kind == Good ? new Color(0.1f, 0.35f, 0.18f, 0.9f) : kind == Bad ? new Color(0.45f, 0.1f, 0.08f, 0.9f) : UIKit.Bg);
-            UIKit.Label(rt, text, 20, Color.white);
+            UIKit.Img(rt, kind == Good ? new Color(0.22f, 0.22f, 0.22f, 0.94f) : kind == Bad ? UIKit.Light : UIKit.Bg);
+            UIKit.Label(rt, text, 20, kind == Bad ? UIKit.Ink : Color.white);
             Object.Destroy(rt.gameObject, seconds);
         }
 
@@ -223,8 +223,8 @@ namespace CaucasusDrive
             right = Hold(arrowsRoot, ">", new Vector2(1, 0.5f), new Vector2(-70, 0), new Vector2(128, 128), UIKit.Light, "right", true);
 
             gas = Hold(controls, "ГАЗ", new Vector2(1, 0), new Vector2(-80, 130), new Vector2(112, 230), UIKit.Light, "pedal", false, UIKit.Ink);
-            brake = Hold(controls, "ТОРМОЗ", new Vector2(1, 0), new Vector2(-206, 95), new Vector2(120, 160), UIKit.Light, "pedal", false, new Color(0.78f, 0.14f, 0.1f));
-            handbrake = Hold(controls, "РУЧНИК", new Vector2(1, 0), new Vector2(-206, 232), new Vector2(84, 84), UIKit.Light, "brake", true, new Color(0.78f, 0.14f, 0.1f));
+            brake = Hold(controls, "ТОРМОЗ", new Vector2(1, 0), new Vector2(-206, 95), new Vector2(120, 160), UIKit.Ink, "pedal", false, Color.white);
+            handbrake = Hold(controls, "РУЧНИК", new Vector2(1, 0), new Vector2(-206, 232), new Vector2(84, 84), UIKit.Light, "brake", true, UIKit.Ink);
             horn = Hold(controls, "БИП", new Vector2(1, 0), new Vector2(-80, 296), new Vector2(76, 76), UIKit.Light, null, true, UIKit.Ink);
             horn.onDown = null;
 
@@ -235,7 +235,7 @@ namespace CaucasusDrive
             for (int i = 0; i < 3; i++)
             {
                 char c = sel[i][0];
-                var b = UIKit.Button(autoBox, sel[i], new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -42 - i * 82), new Vector2(70, 72), UIKit.Accent, () => { app.player.phys.SetSelector(c); }, 34);
+                var b = UIKit.Button(autoBox, sel[i], new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -42 - i * 82), new Vector2(70, 72), UIKit.Ink, () => { app.player.phys.SetSelector(c); }, 34);
                 selBtns[i] = b.GetComponent<Image>(); selTxt[i] = b.GetComponentInChildren<Text>();
             }
             // механика: + и −
@@ -295,14 +295,14 @@ namespace CaucasusDrive
             speed.text = Mathf.RoundToInt(p.speed * 3.6f).ToString();
             gear.text = p.GearLabel;
             rpmFill.fillAmount = Mathf.Clamp01(p.rpm / p.spec.revLimit);
-            rpmFill.color = p.rpm > p.spec.upshiftRpm + 300 ? new Color(1f, 0.25f, 0.2f) : UIKit.Accent;
+            rpmFill.color = p.rpm > p.spec.upshiftRpm + 300 ? Color.white : new Color(0.6f, 0.6f, 0.6f);
             fuelFill.fillAmount = p.fuel / p.spec.tank;
-            fuelFill.color = p.fuel < p.spec.tank * 0.15f ? new Color(1f, 0.3f, 0.2f) : UIKit.Green;
+            fuelFill.color = p.fuel < p.spec.tank * 0.15f ? new Color(0.4f, 0.4f, 0.4f) : UIKit.Green;
             money.text = M.Rub(app.save.Money);
             fpsText.text = app.save.d.settings.showFps ? Mathf.RoundToInt(app.quality.fps) + " FPS" : "";
-            lightsBtn.color = app.player.lightsMode == 1 ? UIKit.Gold : app.player.lightsMode == 2 ? new Color(0.55f, 0.55f, 0.58f, 0.9f) : UIKit.Light;
+            lightsBtn.color = app.player.lightsMode == 1 ? Color.white : app.player.lightsMode == 2 ? new Color(0.5f, 0.5f, 0.5f, 0.9f) : UIKit.Light;
             if (!p.manual)
-                for (int i = 0; i < 3; i++) { bool on = "DNR"[i] == p.selector; selBtns[i].color = on ? UIKit.Accent : new Color(1, 1, 1, 0.001f); selTxt[i].color = on ? Color.white : UIKit.Ink; }
+                for (int i = 0; i < 3; i++) { bool on = "DNR"[i] == p.selector; selBtns[i].color = on ? UIKit.Ink : new Color(1, 1, 1, 0.001f); selTxt[i].color = on ? Color.white : UIKit.Ink; }
 
             // карта: вращается так, что курс машины — вверх
             var pos = app.onFoot ? app.walker.Pos : app.player.Position;

@@ -8,11 +8,11 @@ namespace CaucasusDrive
     /// <summary>Конструктор интерфейса из кода (uGUI): закруглённые панели, текст, кнопки. Без префабов.</summary>
     public static class UIKit
     {
-        public static readonly Color Bg = new Color(0.06f, 0.07f, 0.09f, 0.82f);
-        public static readonly Color Bg2 = new Color(0.12f, 0.13f, 0.16f, 0.92f);
-        public static readonly Color Accent = M.Hex(0xff6a1a);
-        public static readonly Color Gold = M.Hex(0xffc94a);
-        public static readonly Color Green = M.Hex(0x2fbf5a);
+        public static readonly Color Bg = new Color(0.05f, 0.05f, 0.05f, 0.84f);
+        public static readonly Color Bg2 = new Color(0.14f, 0.14f, 0.14f, 0.94f);
+        public static readonly Color Accent = new Color(0.96f, 0.96f, 0.96f, 1f);
+        public static readonly Color Gold = new Color(0.94f, 0.94f, 0.94f, 1f);
+        public static readonly Color Green = new Color(0.84f, 0.84f, 0.84f, 1f);
         public static readonly Color Muted = new Color(1f, 1f, 1f, 0.6f);
 
         static Font font;
@@ -116,10 +116,14 @@ namespace CaucasusDrive
             return rt;
         }
 
+        /// <summary>Чёрно-белая тема интерфейса: любой цвет приводится к серому (по яркости), прозрачность сохраняется.</summary>
+        public static Color Mono(Color c) { float l = Mathf.Clamp01(0.299f * c.r + 0.587f * c.g + 0.114f * c.b); return new Color(l, l, l, c.a); }
+        public static float Lum(Color c) { return 0.299f * c.r + 0.587f * c.g + 0.114f * c.b; }
+
         public static Image Img(RectTransform rt, Color c, bool round = true)
         {
             var img = rt.gameObject.AddComponent<Image>();
-            img.color = c;
+            img.color = Mono(c);
             if (round)
             {
                 img.sprite = Rounded; img.type = Image.Type.Sliced;
@@ -139,7 +143,7 @@ namespace CaucasusDrive
         {
             var rt = Fill(parent, "Text");
             var t = rt.gameObject.AddComponent<Text>();
-            t.font = Font; t.text = text; t.fontSize = size; t.color = c; t.alignment = align;
+            t.font = Font; t.text = text; t.fontSize = size; t.color = Mono(c); t.alignment = align;
             t.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal;
             t.horizontalOverflow = HorizontalWrapMode.Wrap; t.verticalOverflow = VerticalWrapMode.Overflow;
             t.raycastTarget = false;
@@ -150,22 +154,23 @@ namespace CaucasusDrive
         {
             var rt = Rect(parent, "Label", aMin, aMax, pos, sz);
             var t = rt.gameObject.AddComponent<Text>();
-            t.font = Font; t.text = text; t.fontSize = size; t.color = c; t.alignment = align;
+            t.font = Font; t.text = text; t.fontSize = size; t.color = Mono(c); t.alignment = align;
             t.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal;
             t.horizontalOverflow = HorizontalWrapMode.Wrap; t.verticalOverflow = VerticalWrapMode.Overflow;
             t.raycastTarget = false;
             return t;
         }
 
-        public static Button Button(Transform parent, string text, Vector2 aMin, Vector2 aMax, Vector2 pos, Vector2 size, Color bg, System.Action onClick, int fontSize = 26)
+        public static Button Button(Transform parent, string text, Vector2 aMin, Vector2 aMax, Vector2 pos, Vector2 size, Color bg, System.Action onClick, int fontSize = 26, bool keepColor = false)
         {
             var rt = Rect(parent, "Btn_" + text, aMin, aMax, pos, size);
             var img = Img(rt, bg);
+            if (keepColor) img.color = bg;                 // цветные плитки (выбор краски кузова) остаются цветными
             var b = rt.gameObject.AddComponent<Button>();
             b.targetGraphic = img;
             var cb = b.colors; cb.pressedColor = new Color(0.75f, 0.75f, 0.75f); cb.highlightedColor = Color.white; cb.fadeDuration = 0.05f; b.colors = cb;
             b.onClick.AddListener(() => { App.I?.audio?.Click(); onClick?.Invoke(); });
-            Label(rt, text, fontSize, Color.white);
+            Label(rt, text, fontSize, Lum(img.color) > 0.62f ? Ink : Color.white);
             return b;
         }
 

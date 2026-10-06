@@ -38,7 +38,8 @@ namespace CaucasusDrive
     public partial class HUD
     {
         Button radioBtn, taxiBtn, doorBtn, shopBtn, carBtn;
-        Text radioLabel, doorLabel, sensorText, shopLabel, netText;
+        Text radioLabel, sensorText, shopLabel, netText;
+        Image doorIcon;
         Button chatBtn;
         RectTransform chatPanel;
         Image taxiImg, flashImg, smokeImg;
@@ -53,15 +54,16 @@ namespace CaucasusDrive
         {
             // нижний ряд кнопок справа сверху
             var tr = (RectTransform)root.Find("TopRight");
-            radioBtn = UIKit.RoundButton(tr, null, "РАДИО", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-32, -152), new Vector2(56, 56), () => app.CycleRadio(), 11);
-            radioLabel = radioBtn.GetComponentInChildren<Text>();
-            doorBtn = UIKit.RoundButton(tr, null, "ВЫЙТИ", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-98, -152), new Vector2(56, 56), () => app.ToggleFoot(), 11);
-            doorLabel = doorBtn.GetComponentInChildren<Text>();
-            taxiBtn = UIKit.RoundButton(tr, null, "ТАКСИ", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-164, -152), new Vector2(56, 56), () => app.mode?.OnTaxi(), 11);
+            radioBtn = UIKit.RoundButton(tr, "radio", null, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-32, -152), new Vector2(56, 56), () => app.CycleRadio());
+            radioLabel = UIKit.LabelAt(tr, "", 13, Color.white, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-70, -194), new Vector2(190, 20), TextAnchor.MiddleRight);
+            radioLabel.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(1.5f, -1.5f);
+            doorBtn = UIKit.RoundButton(tr, "door", null, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-98, -152), new Vector2(56, 56), () => app.ToggleFoot());
+            doorIcon = doorBtn.GetComponentsInChildren<Image>(true)[2];
+            taxiBtn = UIKit.RoundButton(tr, "taxi", null, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-164, -152), new Vector2(56, 56), () => app.mode?.OnTaxi());
             taxiImg = (Image)taxiBtn.targetGraphic;
             taxiBtn.gameObject.SetActive(false);
             // онлайн: фразы и список игроков
-            chatBtn = UIKit.RoundButton(tr, "people", null, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-230, -152), new Vector2(56, 56), () => chatPanel.gameObject.SetActive(!chatPanel.gameObject.activeSelf));
+            chatBtn = UIKit.RoundButton(tr, "chat", null, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-230, -152), new Vector2(56, 56), () => chatPanel.gameObject.SetActive(!chatPanel.gameObject.activeSelf));
             chatBtn.gameObject.SetActive(false);
             chatPanel = UIKit.Rect(root, "Chat", new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-160, 10), new Vector2(270, 4 * 58 + 12));
             UIKit.Img(chatPanel, UIKit.Bg2);
@@ -79,18 +81,18 @@ namespace CaucasusDrive
             for (int i = 0; i < 3; i++)
             {
                 int k = i;
-                actBtns[i] = UIKit.Button(root, "", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 150), new Vector2(250, 58), i == 0 ? UIKit.Gold * 0.85f : i == 1 ? new Color(0.85f, 0.45f, 0.2f) : new Color(0.35f, 0.7f, 0.9f), () => app.mode?.OnAction(k), 19);
-                actLabels[i] = actBtns[i].GetComponentInChildren<Text>(); actLabels[i].color = Color.black;
+                actBtns[i] = UIKit.Button(root, "", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 150), new Vector2(250, 58), UIKit.Light, () => app.mode?.OnAction(k), 19);
+                actLabels[i] = actBtns[i].GetComponentInChildren<Text>(); actLabels[i].color = UIKit.Ink;
                 actBtns[i].gameObject.SetActive(false);
             }
             damageText = UIKit.LabelAt(root, "", 16, UIKit.Gold, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-170, 112), new Vector2(150, 24), TextAnchor.MiddleCenter, true);
 
             // знак «60»
             limit = UIKit.Rect(root, "Limit", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-170, 60), new Vector2(64, 64));
-            var ring = limit.gameObject.AddComponent<Image>(); ring.sprite = UIKit.Circle; ring.color = new Color(0.85f, 0.1f, 0.1f);
+            var ring = limit.gameObject.AddComponent<Image>(); ring.sprite = UIKit.Circle; ring.color = UIKit.Light;
             var inner = UIKit.Rect(limit, "In", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(50, 50));
-            var ii = inner.gameObject.AddComponent<Image>(); ii.sprite = UIKit.Circle; ii.color = Color.white; ii.raycastTarget = false;
-            UIKit.Label(inner, "60", 24, Color.black);
+            var ii = inner.gameObject.AddComponent<Image>(); ii.sprite = UIKit.Circle; ii.color = UIKit.Ink; ii.raycastTarget = false;
+            UIKit.Label(inner, "60", 24, Color.white);
             ring.raycastTarget = false;
             limit.gameObject.SetActive(false);
 
@@ -112,14 +114,22 @@ namespace CaucasusDrive
             var kn = UIKit.Rect(jr, "Knob", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(96, 96));
             var ki = kn.gameObject.AddComponent<Image>(); ki.sprite = UIKit.Circle; ki.color = new Color(1, 1, 1, 0.55f); ki.raycastTarget = false;
             joy = jr.gameObject.AddComponent<Joystick>(); joy.knob = kn;
-            UIKit.Button(foot, "ПРЫЖОК", new Vector2(1, 0), new Vector2(1, 0), new Vector2(-90, 110), new Vector2(130, 110), UIKit.Bg2, () => app.walker.Jump(), 18);
-            UIKit.Button(foot, "СЕСТЬ", new Vector2(1, 0), new Vector2(1, 0), new Vector2(-230, 80), new Vector2(120, 80), UIKit.Bg2, () => app.walker.ToggleSit(), 18);
-            var sb = UIKit.Button(foot, "КУРИТЬ", new Vector2(1, 0), new Vector2(1, 0), new Vector2(-230, 175), new Vector2(120, 80), UIKit.Bg2, () => app.walker.ToggleSmoking(), 18);
-            smokeImg = sb.GetComponent<Image>();
-            UIKit.Button(foot, "СВИСТ", new Vector2(1, 0), new Vector2(1, 0), new Vector2(-90, 230), new Vector2(130, 80), UIKit.Bg2, () => app.walker.WhistleNow(), 18);
-            shopBtn = UIKit.Button(foot, "МАГАЗИН", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 150), new Vector2(360, 60), UIKit.Green, () => OpenShop(), 20);
+            System.Func<string, string, Vector2, System.Action, Button> fb = (icon, cap, pos, act) =>
+            {
+                var bt = UIKit.RoundButton(foot, icon, null, new Vector2(1, 0), new Vector2(1, 0), pos, new Vector2(92, 92), act);
+                UIKit.LabelAt(foot, cap, 13, Color.white, new Vector2(1, 0), new Vector2(1, 0), pos + new Vector2(0, -56), new Vector2(110, 20)).gameObject.AddComponent<Shadow>().effectDistance = new Vector2(1.5f, -1.5f);
+                return bt;
+            };
+            fb("up", "ПРЫЖОК", new Vector2(-84, 120), () => app.walker.Jump());
+            fb("sit", "СЕСТЬ", new Vector2(-196, 90), () => app.walker.ToggleSit());
+            var sb = fb("smoke", "КУРИТЬ", new Vector2(-196, 215), () => app.walker.ToggleSmoking());
+            smokeImg = (Image)sb.targetGraphic;
+            fb("note", "СВИСТ", new Vector2(-84, 245), () => app.walker.WhistleNow());
+            shopBtn = UIKit.Button(foot, "МАГАЗИН", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 150), new Vector2(360, 60), UIKit.Light, () => OpenShop(), 20);
             shopLabel = shopBtn.GetComponentInChildren<Text>();
-            carBtn = UIKit.Button(foot, "СЕСТЬ В МАШИНУ", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 220), new Vector2(300, 56), UIKit.Accent, () => app.ToggleFoot(), 20);
+            UIKit.IconAt(shopBtn.transform, "bag", new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(36, 0), new Vector2(34, 34), UIKit.Ink);
+            carBtn = UIKit.Button(foot, "СЕСТЬ В МАШИНУ", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 220), new Vector2(300, 56), UIKit.Light, () => app.ToggleFoot(), 20);
+            UIKit.IconAt(carBtn.transform, "car", new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(32, 0), new Vector2(34, 34), UIKit.Ink);
             foot.SetAsFirstSibling();   // свайп-пад под всеми кнопками HUD
             foot.gameObject.SetActive(false);
 
@@ -165,10 +175,10 @@ namespace CaucasusDrive
             System.Func<float, string> f = d => d >= 2.95f ? "—" : d.ToString("0.0") + " м";
             sensorText.text = "П: " + f(front) + "\nЗ: " + f(rear);
             float m = Mathf.Min(front, rear);
-            sensorText.color = m < 0.4f ? new Color(1f, 0.3f, 0.25f) : m < 1f ? UIKit.Gold : Color.white;
+            sensorText.color = m < 0.4f ? Color.white : m < 1f ? new Color(0.8f, 0.8f, 0.8f) : new Color(0.55f, 0.55f, 0.55f);
         }
 
-        public void SetRadioLabel(string name) { radioLabel.text = string.IsNullOrEmpty(name) ? "РАДИО" : name; ((Image)radioBtn.targetGraphic).color = string.IsNullOrEmpty(name) ? UIKit.Light : new Color(0.55f, 0.8f, 0.95f, 0.95f); }
+        public void SetRadioLabel(string name) { radioLabel.text = string.IsNullOrEmpty(name) ? "" : name; ((Image)radioBtn.targetGraphic).color = string.IsNullOrEmpty(name) ? UIKit.Light : Color.white; }
 
         public void SetDoor(bool allowWalk) { doorBtn.gameObject.SetActive(allowWalk); }
 
@@ -186,7 +196,7 @@ namespace CaucasusDrive
             {
                 string k = items[i]; var it = Shops.Items[k];
                 bool ok = app.save.Money >= it.price;
-                UIKit.Button(shopPanel, it.name + "   " + it.price + " ₽", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -115 - i * 56), new Vector2(470, 50), ok ? UIKit.Bg : new Color(0.1f, 0.1f, 0.12f, 0.9f), () => Buy(k), 19);
+                UIKit.Button(shopPanel, it.name + "   " + it.price + " ₽", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -115 - i * 56), new Vector2(470, 50), ok ? UIKit.Bg : new Color(0.1f, 0.1f, 0.1f, 0.9f), () => Buy(k), 19);
             }
         }
 
@@ -210,7 +220,7 @@ namespace CaucasusDrive
             if (foot.gameObject.activeSelf != onFoot) foot.gameObject.SetActive(onFoot);
             bool lim = limitOn && !onFoot;
             if (limit.gameObject.activeSelf != lim) limit.gameObject.SetActive(lim);
-            doorLabel.text = onFoot ? "В МАШ." : "ВЫЙТИ";
+            { var want = UIKit.Icon(onFoot ? "car" : "door"); if (doorIcon != null && doorIcon.sprite != want) doorIcon.sprite = want; }
             if (taxiBtn.gameObject.activeSelf != (taxiVisible && !onFoot)) taxiBtn.gameObject.SetActive(taxiVisible && !onFoot);
             if (onFoot)
             {
@@ -220,13 +230,13 @@ namespace CaucasusDrive
                 if (shopBtn.gameObject.activeSelf != (near != null)) shopBtn.gameObject.SetActive(near != null);
                 bool nearCar = Vector2.Distance(new Vector2(w.Pos.x, w.Pos.z), new Vector2(app.player.Position.x, app.player.Position.z)) < 3.4f && !w.Sitting;
                 if (carBtn.gameObject.activeSelf != nearCar) carBtn.gameObject.SetActive(nearCar);
-                smokeImg.color = w.smoking ? new Color(0.6f, 0.35f, 0.1f, 0.95f) : UIKit.Bg2;
+                smokeImg.color = w.smoking ? Color.white : UIKit.Light;
                 if (shopPanel.gameObject.activeSelf && near == null) shopPanel.gameObject.SetActive(false);
             }
             else if (shopPanel.gameObject.activeSelf) shopPanel.gameObject.SetActive(false);
             var tn = app.player.tune;
             string dmg = !onFoot && tn != null && tn.damage > 0.05f ? "КУЗОВ " + Mathf.RoundToInt((1f - tn.damage) * 100f) + "%" : "";
-            if (damageText.text != dmg) { damageText.text = dmg; damageText.color = tn != null && tn.damage > 0.4f ? new Color(1f, 0.35f, 0.25f) : UIKit.Gold; }
+            if (damageText.text != dmg) { damageText.text = dmg; damageText.color = tn != null && tn.damage > 0.4f ? Color.white : new Color(0.7f, 0.7f, 0.7f); }
             if (flashT > 0f) { flashT -= dt; flashImg.color = new Color(1, 1, 1, Mathf.Clamp01(flashT / 0.35f) * 0.85f); }
         }
 

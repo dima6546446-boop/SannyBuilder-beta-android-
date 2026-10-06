@@ -26,7 +26,7 @@ namespace CaucasusDrive
             TopBar(s, "Онлайн", "main");
             var nick = Nick();
             var m = UIKit.Panel(s, "Nick", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -150), new Vector2(760, 76), UIKit.Bg);
-            UIKit.LabelAt(m.transform, "Твой ник:  <color=#ffc94a>" + nick + "</color>", 28, Color.white, new Vector2(0, 0), new Vector2(1, 1), new Vector2(-110, 0), new Vector2(-260, 0), TextAnchor.MiddleLeft).supportRichText = true;
+            UIKit.LabelAt(m.transform, "Твой ник:  <color=#ffffff>" + nick + "</color>", 28, Color.white, new Vector2(0, 0), new Vector2(1, 1), new Vector2(-110, 0), new Vector2(-260, 0), TextAnchor.MiddleLeft).supportRichText = true;
             UIKit.Button(m.transform, "ДРУГОЙ", new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-110, 0), new Vector2(190, 54), UIKit.Bg2, () =>
             {
                 app.save.d.settings.nick = NickA[Random.Range(0, NickA.Length)] + NickB[Random.Range(0, NickB.Length)]; app.save.Commit(); Show("online");
@@ -34,14 +34,14 @@ namespace CaucasusDrive
             string[] titles = { "СОЗДАТЬ КОМНАТУ", "НАЙТИ В WI-FI", "ПО IP-АДРЕСУ" };
             string[] subs = { "Ты хост: друзья заходят к тебе", "Друзья в той же сети · авто-поиск", "Свой сервер или адрес хоста" };
             System.Action[] acts = { () => app.StartOnline(true, ""), () => Show("lan"), () => { ipText = app.save.d.settings.lastIp ?? ""; Show("ip"); } };
-            Color[] cols = { UIKit.Green, M.Hex(0x1a5f9a), M.Hex(0x6d2f86) };
+            Color[] cols = { UIKit.Light, UIKit.Bg2, UIKit.Bg2 };
             for (int i = 0; i < 3; i++)
             {
                 int k = i;
                 var b = UIKit.Button(s, "", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-270 + i * 270, 10), new Vector2(255, 130), cols[i], acts[k]);
-                UIKit.IconAt(b.transform, i == 0 ? "play" : "people", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -30), new Vector2(38, 38), new Color(1, 1, 1, 0.9f));
-                UIKit.LabelAt(b.transform, titles[i], 22, Color.white, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 84), new Vector2(-20, 36), TextAnchor.MiddleLeft);
-                UIKit.LabelAt(b.transform, subs[i], 14, new Color(1, 1, 1, 0.78f), new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 42), new Vector2(-20, 44), TextAnchor.MiddleLeft, false);
+                UIKit.IconAt(b.transform, i == 0 ? "play" : "people", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -30), new Vector2(38, 38), i == 0 ? UIKit.Ink : new Color(1, 1, 1, 0.9f));
+                UIKit.LabelAt(b.transform, titles[i], 22, i == 0 ? UIKit.Ink : Color.white, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 84), new Vector2(-20, 36), TextAnchor.MiddleLeft);
+                UIKit.LabelAt(b.transform, subs[i], 14, i == 0 ? new Color(0, 0, 0, 0.65f) : new Color(1, 1, 1, 0.78f), new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 42), new Vector2(-20, 44), TextAnchor.MiddleLeft, false);
             }
             UIKit.LabelAt(s, "Как играть вместе: один включает «Точку доступа» (хотспот) на телефоне или все подключаются к одному Wi-Fi,\nпотом один жмёт «Создать комнату», остальные — «Найти в Wi-Fi». До " + NetP.Max + " игроков. В игре есть фразы (кнопка ЧАТ),\nобщая погода и время суток и заезды на время (кнопка ГОНКА). Через интернет — свой сервер: Server/relay.js (см. README).", 17, UIKit.Muted, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 110), new Vector2(1100, 100), TextAnchor.MiddleCenter, false);
         }

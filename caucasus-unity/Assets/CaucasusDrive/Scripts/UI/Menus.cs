@@ -113,8 +113,8 @@ namespace CaucasusDrive
         public void Toast(string text, int kind = 0, float sec = 2f)
         {
             var rt = UIKit.Rect(canvas.transform, "Toast", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -110), new Vector2(620, 54));
-            UIKit.Img(rt, kind == HUD.Bad ? new Color(0.45f, 0.1f, 0.08f, 0.95f) : new Color(0.1f, 0.35f, 0.18f, 0.95f));
-            UIKit.Label(rt, text, 22, Color.white);
+            UIKit.Img(rt, kind == HUD.Bad ? UIKit.Light : new Color(0.2f, 0.2f, 0.2f, 0.95f));
+            UIKit.Label(rt, text, 22, kind == HUD.Bad ? UIKit.Ink : Color.white);
             Object.Destroy(rt.gameObject, sec);
         }
 
@@ -141,7 +141,7 @@ namespace CaucasusDrive
 
         void TopBar(RectTransform s, string title, string back)
         {
-            if (back != null) UIKit.Button(s, "‹", new Vector2(0, 1), new Vector2(0, 1), new Vector2(50, -46), new Vector2(64, 60), UIKit.Bg, () => Show(back), 40);
+            if (back != null) UIKit.RoundButton(s, "back", null, new Vector2(0, 1), new Vector2(0, 1), new Vector2(50, -46), new Vector2(62, 62), () => Show(back));
             UIKit.LabelAt(s, title, 34, Color.white, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -46), new Vector2(700, 60));
             var m = UIKit.Panel(s, "Money", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-130, -46), new Vector2(220, 52), UIKit.Bg);
             UIKit.Label(m.transform, M.Rub(app.save.Money), 26, UIKit.Gold);
@@ -154,7 +154,7 @@ namespace CaucasusDrive
             app.garageOffset = 0f;
             var cur = Cars.Get(app.save.d.current);
             app.garage.SetCar(cur, app.save.Tune(cur.id), app.save.ColorOf(cur.id), app.quality.carLod);
-            var logo = UIKit.LabelAt(s, "<color=#ff6a1a>CAUCASUS</color> DRIVE", 64, Color.white, new Vector2(0, 1), new Vector2(0, 1), new Vector2(330, -70), new Vector2(620, 90), TextAnchor.MiddleLeft);
+            var logo = UIKit.LabelAt(s, "CAUCASUS <color=#8c8c8c>DRIVE</color>", 64, Color.white, new Vector2(0, 1), new Vector2(0, 1), new Vector2(330, -70), new Vector2(620, 90), TextAnchor.MiddleLeft);
             logo.supportRichText = true;
             logo.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(3, -3);
             UIKit.LabelAt(s, "ГАРАЖ · ШАШКИ · ПАРКОВКА · ДРИФТ · ГОНКИ · ОНЛАЙН", 18, UIKit.Muted, new Vector2(0, 1), new Vector2(0, 1), new Vector2(330, -122), new Vector2(620, 30), TextAnchor.MiddleLeft);
@@ -166,21 +166,21 @@ namespace CaucasusDrive
             int ready = app.daily.ReadyCount;
             string[] titles = { "ПАРКОВКА", "СВОБОДНАЯ ЕЗДА", "ЭКЗАМЕН ГИБДД", "ДРИФТ-ЗОНА", "ГОНКА", "ОНЛАЙН", "ГАРАЖ", "НАСТРОЙКИ" };
             string[] subs = { "30 уровней · ★ " + app.save.StarsTotal, "Город · такси · штрафы · пешком", app.save.d.license ? "Права получены · пересдать" : "Площадка + город · права", "ДОСААФ · 90 с · рекорд " + app.save.d.drift.best, app.save.d.race.best > 0 ? "Кольцо · рекорд " + RaceRun.Fmt(app.save.d.race.best) : "Кольцо по кварталам", "С друзьями · Wi-Fi · IP", Cars.Get(app.save.d.current).name + " · тюнинг", "Графика · управление · звук" };
-            Color[] cols = { UIKit.Accent, M.Hex(0x1f6a8a), M.Hex(0x2b5d3a), M.Hex(0x6d2f86), M.Hex(0xa8321f), M.Hex(0x1a5f9a), UIKit.Bg2, UIKit.Bg2 };
+            Color[] cols = { UIKit.Bg2, UIKit.Light, UIKit.Bg2, UIKit.Bg2, UIKit.Bg2, UIKit.Bg2, UIKit.Bg2, UIKit.Bg2 };
             System.Action[] acts = { () => Show("levels"), () => { if (app.save.d.settings.askFines) Show("freeask"); else app.StartFree(app.save.d.settings.fines); }, () => app.StartExam(), () => app.StartDrift(), () => app.StartRace(), () => Show("online"), () => Show("garage"), () => Show("settings") };
             for (int i = 0; i < 8; i++)
             {
                 int k = i;
                 var b = UIKit.Button(s, "", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-393 + (i % 4) * 262, 255 - (i / 4) * 135), new Vector2(250, 122), cols[i], acts[k]);
                 string[] tic = { "brake", "play", "wheel", "pedal", "speedo", "people", "gear", "settings" };
-                UIKit.IconAt(b.transform, tic[i], new Vector2(1, 1), new Vector2(1, 1), new Vector2(-34, -34), new Vector2(44, 44), new Color(1, 1, 1, 0.92f));
-                UIKit.LabelAt(b.transform, titles[i], 24, Color.white, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 76), new Vector2(-24, 36), TextAnchor.MiddleLeft);
-                UIKit.LabelAt(b.transform, subs[i], 15, new Color(1, 1, 1, 0.75f), new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 38), new Vector2(-24, 30), TextAnchor.MiddleLeft, false);
+                UIKit.IconAt(b.transform, tic[i], new Vector2(1, 1), new Vector2(1, 1), new Vector2(-34, -34), new Vector2(44, 44), i == 1 ? UIKit.Ink : new Color(1, 1, 1, 0.92f));
+                UIKit.LabelAt(b.transform, titles[i], 24, i == 1 ? UIKit.Ink : Color.white, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 76), new Vector2(-24, 36), TextAnchor.MiddleLeft);
+                UIKit.LabelAt(b.transform, subs[i], 15, i == 1 ? new Color(0, 0, 0, 0.65f) : new Color(1, 1, 1, 0.75f), new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 38), new Vector2(-24, 30), TextAnchor.MiddleLeft, false);
             }
             UIKit.Button(s, ready > 0 ? "ЗАДАНИЯ · забрать " + ready : "ЗАДАНИЯ ДНЯ", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-110, 40), new Vector2(260, 50), ready > 0 ? UIKit.Green : UIKit.Bg, () => Show("daily"), 18);
             UIKit.Button(s, "ДОСТИЖЕНИЯ " + Achievements.Count(app.save.d) + "/" + Achievements.All.Length, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(170, 40), new Vector2(260, 50), UIKit.Bg, () => Show("ach"), 18);
             Achievements.Check(app);
-            var tg = UIKit.Button(s, "      Telegram: t.me/caucasusdrive", new Vector2(0, 0), new Vector2(0, 0), new Vector2(190, 40), new Vector2(340, 50), M.Hex(0x229ed9), () => Application.OpenURL("https://t.me/caucasusdrive"), 20);
+            var tg = UIKit.Button(s, "      Telegram: t.me/caucasusdrive", new Vector2(0, 0), new Vector2(0, 0), new Vector2(190, 40), new Vector2(340, 50), UIKit.Bg2, () => Application.OpenURL("https://t.me/caucasusdrive"), 20);
             UIKit.Button(s, "Как играть", new Vector2(1, 0), new Vector2(1, 0), new Vector2(-120, 40), new Vector2(200, 50), UIKit.Bg, () => Show("help"), 20);
             tg.name = "Telegram";
             UIKit.IconAt(tg.transform, "telegram", new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(34, 0), new Vector2(30, 30), Color.white);
@@ -200,7 +200,7 @@ namespace CaucasusDrive
                 app.save.Commit();
                 app.StartFree(f);
             };
-            UIKit.Button(m.transform, "СО ШТРАФАМИ", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-145, 150), new Vector2(270, 70), M.Hex(0x8a2a1f), () => go(true), 22);
+            UIKit.Button(m.transform, "СО ШТРАФАМИ", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-145, 150), new Vector2(270, 70), UIKit.Bg2, () => go(true), 22);
             UIKit.Button(m.transform, "БЕЗ ШТРАФОВ", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(145, 150), new Vector2(270, 70), UIKit.Green, () => go(false), 22);
             UIKit.Button(m.transform, (dontAsk ? "[x]" : "[  ]") + " больше не спрашивать", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-60, 60), new Vector2(320, 46), UIKit.Bg2, () => { dontAsk = !dontAsk; Show("freeask"); }, 17);
             UIKit.Button(m.transform, "Назад", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(200, 60), new Vector2(140, 46), UIKit.Bg2, () => Show("main"), 17);
@@ -242,7 +242,7 @@ namespace CaucasusDrive
                 bool done = Achievements.Has(d, a.id);
                 float v = Mathf.Min(a.value(d), a.goal);
                 int col = i % 3, row = i / 3;
-                var p = UIKit.Panel(s, "Ach", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-400 + col * 400, 190 - row * 92), new Vector2(388, 84), done ? new Color(0.1f, 0.3f, 0.16f, 0.92f) : UIKit.Bg);
+                var p = UIKit.Panel(s, "Ach", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-400 + col * 400, 190 - row * 92), new Vector2(388, 84), done ? new Color(0.24f, 0.24f, 0.24f, 0.94f) : UIKit.Bg);
                 UIKit.LabelAt(p.transform, (done ? "★ " : "") + a.title, 19, done ? UIKit.Gold : Color.white, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -20), new Vector2(-20, 26), TextAnchor.MiddleLeft);
                 UIKit.LabelAt(p.transform, a.desc + " · +" + M.Rub(a.reward), 14, UIKit.Muted, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -44), new Vector2(-20, 22), TextAnchor.MiddleLeft, false);
                 var bar = UIKit.Panel(p.transform, "Bar", new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 12), new Vector2(-24, 6), new Color(1, 1, 1, 0.12f));
@@ -263,7 +263,7 @@ namespace CaucasusDrive
                 bool open = i == 0 || app.save.d.stars[i - 1] > 0 || st > 0;
                 int col = i % 10, row = i / 10;
                 var b = UIKit.Button(s, "", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-540 + col * 120, 150 - row * 135), new Vector2(108, 120),
-                    open ? (st > 0 ? M.Hex(0x234a2c) : UIKit.Bg2) : new Color(0.1f, 0.1f, 0.12f, 0.9f), () => { if (open) app.StartParking(k); else Toast("Сначала пройдите предыдущий уровень", HUD.Bad); }, 20);
+                    open ? (st > 0 ? new Color(0.3f, 0.3f, 0.3f, 0.95f) : UIKit.Bg2) : new Color(0.08f, 0.08f, 0.08f, 0.9f), () => { if (open) app.StartParking(k); else Toast("Сначала пройдите предыдущий уровень", HUD.Bad); }, 20);
                 UIKit.LabelAt(b.transform, open ? (i + 1).ToString() : "×", 34, open ? Color.white : UIKit.Muted, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -42), new Vector2(0, 50));
                 UIKit.LabelAt(b.transform, new string('★', st) + new string('☆', 3 - st), 20, UIKit.Gold, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 22), new Vector2(0, 30));
             }
@@ -289,10 +289,10 @@ namespace CaucasusDrive
             UIKit.LabelAt(info.transform, stats, 18, new Color(1, 1, 1, 0.85f), new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -190), new Vector2(-24, 200), TextAnchor.UpperLeft, false);
             if (owned)
             {
-                UIKit.LabelAt(info.transform, "Кузов: " + Mathf.RoundToInt((1f - t.damage) * 100f) + "% · грязь: " + Mathf.RoundToInt(t.dirt * 100f) + "%", 17, t.damage > 0.4f ? M.Hex(0xff7a6a) : UIKit.Gold, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 120), new Vector2(-24, 26), TextAnchor.MiddleLeft, false);
+                UIKit.LabelAt(info.transform, "Кузов: " + Mathf.RoundToInt((1f - t.damage) * 100f) + "% · грязь: " + Mathf.RoundToInt(t.dirt * 100f) + "%", 17, t.damage > 0.4f ? Color.white : UIKit.Muted, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 120), new Vector2(-24, 26), TextAnchor.MiddleLeft, false);
                 int rep = CarCare.RepairPrice(t);
-                UIKit.Button(info.transform, rep > 0 ? "РЕМОНТ · " + M.Rub(rep) : "ЦЕЛАЯ", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 76), new Vector2(260, 44), rep > 0 ? new Color(0.85f, 0.45f, 0.2f) : UIKit.Bg2, () => { if (CarCare.Repair(app, t)) { app.RefreshCar(); Show("garage"); } }, 17);
-                UIKit.Button(info.transform, t.dirt > 0.02f ? "МОЙКА · " + M.Rub(CarCare.WashPrice) : "ЧИСТАЯ", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 28), new Vector2(260, 44), t.dirt > 0.02f ? new Color(0.25f, 0.55f, 0.75f) : UIKit.Bg2, () => { if (CarCare.Wash(app, t)) { app.RefreshCar(); Show("garage"); } }, 17);
+                UIKit.Button(info.transform, rep > 0 ? "РЕМОНТ · " + M.Rub(rep) : "ЦЕЛАЯ", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 76), new Vector2(260, 44), rep > 0 ? UIKit.Light : UIKit.Bg2, () => { if (CarCare.Repair(app, t)) { app.RefreshCar(); Show("garage"); } }, 17);
+                UIKit.Button(info.transform, t.dirt > 0.02f ? "МОЙКА · " + M.Rub(CarCare.WashPrice) : "ЧИСТАЯ", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 28), new Vector2(260, 44), t.dirt > 0.02f ? UIKit.Light : UIKit.Bg2, () => { if (CarCare.Wash(app, t)) { app.RefreshCar(); Show("garage"); } }, 17);
             }
 
             UIKit.Button(s, "<", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-330, 60), new Vector2(70, 70), UIKit.Bg, () => { garageIndex = (garageIndex + Cars.All.Length - 1) % Cars.All.Length; Show("garage"); }, 34);
@@ -323,7 +323,7 @@ namespace CaucasusDrive
                         if (app.save.ColorOf(def.id) == c) return;
                         if (!app.save.Spend(Tuning.PaintPrice)) { Toast("Не хватает денег", HUD.Bad); return; }
                         t.color = c; app.save.Commit(); app.audio.Coin(); Show("garage");
-                    });
+                    }, 26, true);
                     if (app.save.ColorOf(def.id) == c) b.GetComponent<Image>().color = Color.Lerp(M.Hex(c), Color.white, 0.25f);
                 }
                 UIKit.LabelAt(list, "Покраска — " + M.Rub(Tuning.PaintPrice), 18, UIKit.Muted, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 20), new Vector2(0, 30));
@@ -487,7 +487,7 @@ namespace CaucasusDrive
             row("Показывать FPS", new[] { "Да", "Нет" }, st.showFps ? 0 : 1, (k) => st.showFps = k == 0);
             row("Парктроник", new[] { "Вкл", "Выкл" }, st.sensors ? 0 : 1, (k) => st.sensors = k == 0);
             row("Штрафы в городе", new[] { "Спрашивать", "Всегда", "Никогда" }, st.askFines ? 0 : st.fines ? 1 : 2, (k) => { st.askFines = k == 0; if (k > 0) st.fines = k == 1; });
-            UIKit.Button(s, "Сбросить прогресс", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 50), new Vector2(300, 52), new Color(0.45f, 0.1f, 0.08f, 0.9f), () => { app.save.Reset(); Show("settings"); }, 18);
+            UIKit.Button(s, "Сбросить прогресс", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 50), new Vector2(300, 52), UIKit.Bg2, () => { app.save.Reset(); Show("settings"); }, 18);
         }
 
         void Help()
@@ -528,7 +528,7 @@ namespace CaucasusDrive
             var s = Screen(true);
             if (r.exam || r.drift || r.race) { SpecialResult(s, r); return; }
             var m = UIKit.Panel(s, "Modal", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(600, 420), UIKit.Bg);
-            UIKit.LabelAt(m.transform, r.ok ? "Припарковано!" : "Провал", 42, r.ok ? Color.white : M.Hex(0xff7a6a), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -56), new Vector2(500, 60));
+            UIKit.LabelAt(m.transform, r.ok ? "Припарковано!" : "Провал", 42, r.ok ? Color.white : UIKit.Muted, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -56), new Vector2(500, 60));
             if (r.ok)
             {
                 UIKit.LabelAt(m.transform, new string('★', r.stars) + new string('☆', 3 - r.stars), 56, UIKit.Gold, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -130), new Vector2(400, 70));
@@ -545,7 +545,7 @@ namespace CaucasusDrive
         {
             var m = UIKit.Panel(s, "Modal", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(640, 470), UIKit.Bg);
             string title = r.exam ? (r.ok ? "Права получены!" : "Экзамен не сдан") : r.race ? (r.record ? "Новый рекорд трассы!" : "Финиш!") : r.record ? "Новый рекорд!" : "Заезд окончен";
-            UIKit.LabelAt(m.transform, title, 40, r.ok ? Color.white : M.Hex(0xff7a6a), new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -56), new Vector2(560, 60));
+            UIKit.LabelAt(m.transform, title, 40, r.ok ? Color.white : UIKit.Muted, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -56), new Vector2(560, 60));
             string body;
             if (r.exam)
             {
@@ -564,7 +564,7 @@ namespace CaucasusDrive
         {
             var s = Screen(false);
             UIKit.Img(s, Color.black, false);
-            var t = UIKit.LabelAt(s, "<color=#ff6a1a>CAUCASUS</color> DRIVE", 72, Color.white, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 30), new Vector2(900, 100));
+            var t = UIKit.LabelAt(s, "CAUCASUS <color=#8c8c8c>DRIVE</color>", 72, Color.white, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 30), new Vector2(900, 100));
             t.supportRichText = true;
             var sub = UIKit.LabelAt(s, "АВТОВАЗ · КАВКАЗ · ДРИФТ", 20, UIKit.Muted, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -40), new Vector2(900, 40));
             var cg = t.gameObject.AddComponent<CanvasGroup>(); cg.alpha = 0;
@@ -588,7 +588,7 @@ namespace CaucasusDrive
         {
             var s = Screen(false);
             UIKit.Img(s, Color.black, false);
-            var t = UIKit.LabelAt(s, "<color=#ff6a1a>CAUCASUS</color> DRIVE", 72, Color.white, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 30), new Vector2(900, 100));
+            var t = UIKit.LabelAt(s, "CAUCASUS <color=#8c8c8c>DRIVE</color>", 72, Color.white, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 30), new Vector2(900, 100));
             t.supportRichText = true;
             UIKit.LabelAt(s, text, 22, UIKit.Muted, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -50), new Vector2(900, 40));
         }
