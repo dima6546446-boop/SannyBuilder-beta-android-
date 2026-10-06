@@ -110,7 +110,9 @@ namespace CaucasusDrive
             busy = true;
             canvas.gameObject.SetActive(false);
             yield return new WaitForEndOfFrame();
-            var tex = ScreenCapture.CaptureScreenshotAsTexture();
+            var tex = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);     // без модуля ScreenCapture: читаем экран напрямую
+            tex.ReadPixels(new Rect(0, 0, Screen.width, Screen.height), 0, 0);
+            tex.Apply();
             var png = tex.EncodeToPNG();
             Object.Destroy(tex);
             string name = "CaucasusDrive_" + System.DateTime.Now.ToString("yyyyMMdd_HHmmss") + ".png";
