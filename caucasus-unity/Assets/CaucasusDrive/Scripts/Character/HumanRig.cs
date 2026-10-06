@@ -149,8 +149,7 @@ namespace CaucasusDrive
             mouthT = new GameObject("Mouth").transform; mouthT.SetParent(B["head"], false);
             mouthT.position = B["head"].position + root.forward * 0.08f + root.up * 0.06f;
             foreach (var tr in root.GetComponentsInChildren<Transform>(true)) tr.gameObject.layer = root.gameObject.layer;
-            AddShoes();
-            if (tracksuit) Tracksuit.Apply(this);
+            if (tracksuit) Tracksuit.Apply(this); else AddShoes();
         }
 
         /// <summary>Сглаживание «гранёности»: нормали вершин в одной точке усредняются (меш копируется, исходный не трогаем).</summary>
