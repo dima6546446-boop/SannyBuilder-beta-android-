@@ -33,7 +33,6 @@ namespace CaucasusDrive
         public System.Action<float, string, Collider> onCrash; // сила 0..1, тип препятствия
         public System.Action onBlink;
         SkidMarks skids;
-        ParticleSystem smoke;
         readonly Transform parent;
         string lod;
 
@@ -58,36 +57,6 @@ namespace CaucasusDrive
 #endif
             go.AddComponent<CarCollisionRelay>().onHit = OnHit;
             skids = new SkidMarks(parent);
-            smoke = MakeSmoke(parent);
-        }
-
-        static ParticleSystem MakeSmoke(Transform parent)
-        {
-            var g = new GameObject("TireSmoke");
-            g.transform.SetParent(parent, false);
-            var ps = g.AddComponent<ParticleSystem>();
-            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            var main = ps.main;
-            main.loop = true; main.playOnAwake = false; main.maxParticles = 220;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(1.6f, 2.6f);
-            main.startSpeed = new ParticleSystem.MinMaxCurve(0.2f, 0.8f);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.9f, 1.6f);
-            main.startColor = new Color(0.92f, 0.92f, 0.92f, 0.5f);
-            main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.gravityModifier = -0.03f;
-            var em = ps.emission; em.rateOverTime = 0f;
-            var sh = ps.shape; sh.enabled = false;
-            var sz = ps.sizeOverLifetime; sz.enabled = true; sz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0, 0.5f, 1, 2.6f));
-            var col = ps.colorOverLifetime; col.enabled = true;
-            var grad = new Gradient();
-            grad.SetKeys(new[] { new GradientColorKey(Color.white, 0), new GradientColorKey(Color.white, 1) },
-                new[] { new GradientAlphaKey(0.6f, 0), new GradientAlphaKey(0f, 1) });
-            col.color = grad;
-            var r = g.GetComponent<ParticleSystemRenderer>();
-            r.sharedMaterial = Mats.Particles().Tex(Mats.Smoke);
-            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            ps.Play();
-            return ps;
         }
 
         /// <summary>Поставить машину и тюнинг. lodName: LOD_ultra (высокое качество) или LOD_hi.</summary>
@@ -228,16 +197,9 @@ namespace CaucasusDrive
                 wp.y = y;
                 skids.Add(i, wp, t.right, skid && surface.type != 2, markK);
                 bool grass = surface.type == 2 && p.speed > 4f;
-                if ((smokeK > 0f && surface.type != 2 && Random.value < 0.2f + smokeK * 0.75f) || (grass && Random.value < 0.3f))
-                {
-                    var ep = new ParticleSystem.EmitParams
-                    {
-                        position = wp + Vector3.up * 0.3f,
-                        velocity = GetVel() * 0.25f + new Vector3(Random.Range(-0.6f, 0.6f), 0.4f, Random.Range(-0.6f, 0.6f)),
-                        startColor = grass ? new Color(0.55f, 0.45f, 0.3f, 0.45f) : new Color(0.93f, 0.93f, 0.93f, 0.25f + 0.4f * Mathf.Min(1f, smokeK)),
-                    };
-                    smoke.Emit(ep, 1);
-                }
+                // дым — реже и только при заметном заносе; пыль на траве — изредка
+                if ((smokeK > 0.05f && surface.type != 2 && Random.value < 0.12f + smokeK * 0.5f) || (grass && Random.value < 0.18f))
+                    SmokeFx.I?.Emit(wp, GetVel(), grass, Mathf.Min(1f, smokeK), 1f - night * 0.7f);
             }
             skids.Flush();
         }

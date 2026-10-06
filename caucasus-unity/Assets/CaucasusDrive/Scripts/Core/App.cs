@@ -117,6 +117,7 @@ namespace CaucasusDrive
                 if (d.magnitude < 50f) hud.Toast("Би-би! Не стой на дороге", 0, 1.2f);
             };
             glow = new Glow(worldRoot, 3000);
+            new SmokeFx(worldRoot, quality.level == 0 ? 90 : 180);
             player = new PlayerCar(worldRoot);
             player.go.layer = 2; // Ignore Raycast — камера и датчики не видят собственную машину
             player.onCrash = (s, kind, col) => mode?.OnCrash(s, kind, col);

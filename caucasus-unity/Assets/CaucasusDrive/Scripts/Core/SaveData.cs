@@ -9,10 +9,10 @@ namespace CaucasusDrive
     {
         public string id;
         public int color = -1;     // -1 — заводской цвет
-        public int wheels, height, tint, engine, tires, neon;
+        public int wheels, height, tint, engine, tires, neon, horn, exhaust;
         public string plateText = "Е213КХ", plateRegion = "26";
         // купленные позиции тюнинга (битовые маски по индексу варианта)
-        public int ownWheels = 1, ownHeight = 1, ownTint = 1, ownEngine = 1, ownTires = 1, ownNeon = 1;
+        public int ownWheels = 1, ownHeight = 1, ownTint = 1, ownEngine = 1, ownTires = 1, ownNeon = 1, ownHorn = 1, ownExhaust = 1;
     }
 
     [Serializable]
@@ -26,7 +26,22 @@ namespace CaucasusDrive
         public bool fines = true;
         public int camera;
         public bool showFps;
+        public int radio;
+        public bool askFines = true;   // спрашивать «со штрафами или без» при входе в город
+        public bool sensors = true;    // парктроник в городе
     }
+
+    [Serializable]
+    public class DailyTask { public string kind; public int goal; public float progress; public bool done, claimed; }
+
+    [Serializable]
+    public class DailyState { public string date = ""; public List<DailyTask> tasks = new List<DailyTask>(); }
+
+    [Serializable]
+    public class Stats { public float km; public int fines, taxi, bestCombo, crashes; }
+
+    [Serializable]
+    public class DriftStats { public int best, bestSeries, runs; }
 
     [Serializable]
     public class SaveState
@@ -39,6 +54,10 @@ namespace CaucasusDrive
         public Settings settings = new Settings();
         public int driftBest, freeBest;
         public float km;
+        public bool license;
+        public Stats stats = new Stats();
+        public DriftStats drift = new DriftStats();
+        public DailyState daily = new DailyState();
     }
 
     /// <summary>Прогресс в PlayerPrefs (JSON): деньги, гараж, тюнинг, звёзды, настройки.</summary>
@@ -54,6 +73,10 @@ namespace CaucasusDrive
             if (d == null) d = new SaveState();
             if (d.owned == null || d.owned.Count == 0) d.owned = new List<string> { "vaz2107" };
             if (d.settings == null) d.settings = new Settings();
+            if (d.stats == null) d.stats = new Stats();
+            if (d.drift == null) d.drift = new DriftStats();
+            if (d.daily == null) d.daily = new DailyState();
+            if (d.daily.tasks == null) d.daily.tasks = new List<DailyTask>();
             while (d.stars.Count < Levels.Count) d.stars.Add(0);
         }
 

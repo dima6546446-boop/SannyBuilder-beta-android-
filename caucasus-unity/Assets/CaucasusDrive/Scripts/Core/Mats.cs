@@ -181,13 +181,16 @@ namespace CaucasusDrive
             return new Color32(255, 255, 255, (byte)(a * 255));
         }, false);
 
-        public static Texture2D Smoke => Make("smoke", 64, 64, (x, y) =>
+        /// <summary>Мягкий клуб дыма: гауссов спад к краю и лёгкая «вата» из шума, без резкой границы.</summary>
+        public static Texture2D Smoke => Make("smoke2", 128, 128, (x, y) =>
         {
-            float dx = (x - 31.5f) / 32f, dy = (y - 31.5f) / 32f;
-            float r = Mathf.Sqrt(dx * dx + dy * dy);
-            float n = Noise(x / 8f, y / 8f, 8, 3);
-            float a = Mathf.Clamp01((1f - r) * (0.6f + n * 0.6f));
-            return new Color32(235, 235, 235, (byte)(a * a * 200));
+            float dx = (x - 63.5f) / 64f, dy = (y - 63.5f) / 64f;
+            float r2 = dx * dx + dy * dy;
+            float n = Fbm(x, y, 128, 3);
+            float a = Mathf.Exp(-r2 * 4.2f) * (0.55f + 0.75f * n) - 0.06f;
+            a = Mathf.Clamp01(a) * Mathf.Clamp01((1f - Mathf.Sqrt(r2)) * 3f);
+            byte v = (byte)(215 + n * 40);
+            return new Color32(v, v, v, (byte)(Mathf.Clamp01(a) * 230));
         }, false);
 
         public static Texture2D Skid => Make("skid", 32, 32, (x, y) =>
