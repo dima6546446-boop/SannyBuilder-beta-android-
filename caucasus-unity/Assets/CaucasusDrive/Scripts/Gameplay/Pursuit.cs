@@ -91,18 +91,23 @@ namespace CaucasusDrive
                 if (path.Count == 1 && dp < 55f) { path.RemoveAt(0); break; }
                 tx = n.x; tz = n.z; break;
             }
+            Drive(dt, tx, tz, path.Count > 1 ? (float?)g.nodes[path[1]].x : null, path.Count > 1 ? (float?)g.nodes[path[1]].z : null, VMax, dp, pSpeed);
+        }
+
+        /// <summary>Один шаг движения к точке (tx,tz): поворот ограничен боковым ускорением, перед поворотом на следующую точку — торможение.</summary>
+        public void Drive(float dt, float tx, float tz, float? nx, float? nz, float vmax, float dp, float pSpeed)
+        {
             float want = Mathf.Atan2(tx - x, tz - z);
             float e = M.WrapAngle(want - h);
             float rate = Mathf.Min(2.6f, LatAcc / Mathf.Max(v, 4f));
             h += Mathf.Clamp(e, -rate * dt, rate * dt);
-            float vt = VMax * Mathf.Clamp(1f - Mathf.Abs(e) / 1.1f, 0.3f, 1f);
+            float vt = vmax * Mathf.Clamp(1f - Mathf.Abs(e) / 1.1f, 0.3f, 1f);
             // торможение перед поворотом: на узле нужна скорость vc, тормозной путь (v²−vc²)/2B
-            if (path.Count > 1)
+            if (nx.HasValue)
             {
-                var p0 = g.nodes[path[0]]; var p1 = g.nodes[path[1]];
-                float dn = Mathf.Sqrt((p0.x - x) * (p0.x - x) + (p0.z - z) * (p0.z - z));
-                float turn = Mathf.Abs(M.WrapAngle(Mathf.Atan2(p1.x - p0.x, p1.z - p0.z) - Mathf.Atan2(p0.x - x, p0.z - z)));
-                float vc = Mathf.Lerp(VMax, 11f, Mathf.Clamp01(turn / 1.1f));
+                float dn = Mathf.Sqrt((tx - x) * (tx - x) + (tz - z) * (tz - z));
+                float turn = Mathf.Abs(M.WrapAngle(Mathf.Atan2(nx.Value - tx, nz.Value - tz) - Mathf.Atan2(tx - x, tz - z)));
+                float vc = Mathf.Lerp(vmax, 11f, Mathf.Clamp01(turn / 1.1f));
                 vt = Mathf.Min(vt, Mathf.Sqrt(vc * vc + 2f * Brake * 0.8f * Mathf.Max(dn - 4f, 0f)));
             }
             if (dp < 14f) vt = Mathf.Min(vt, Mathf.Max(pSpeed * 0.9f, 0f));            // рядом — подстраивается под игрока и прижимает

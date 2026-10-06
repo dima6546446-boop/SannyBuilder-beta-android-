@@ -7,7 +7,7 @@ namespace CaucasusDrive
     public static class RaceCourse
     {
         public const int Laps = 2;
-        public const float Radius = 17f, Par = 150f;       // радиус КП; «эталонное» время, с
+        public const float Radius = 17f, Par = 85f;       // радиус КП; «эталонное» время, с
         public static readonly List<Vector3> Points = Build();
 
         static List<Vector3> Build()
@@ -40,7 +40,9 @@ namespace CaucasusDrive
         public bool running, finished;
         public System.Action<float> onFinish;
         int lastBeep = 99;
-        float penalty;
+        float penalty, recT;
+        public readonly List<int> rec = new List<int>();
+        public const float RecStep = 0.2f;
 
         public RaceRun(App a) { app = a; }
         public int Total => RaceCourse.Points.Count * RaceCourse.Laps;
@@ -52,12 +54,20 @@ namespace CaucasusDrive
             app.player.Place(s.x, s.z, RaceCourse.StartHeading);
             app.player.phys.fuel = app.player.phys.spec.tank;
             app.cameraRig.Snap();
-            count = 3.99f; time = 0; idx = 0; lap = 0; running = false; finished = false; penalty = 0; lastBeep = 99;
+            count = 3.99f; time = 0; idx = 0; lap = 0; running = false; finished = false; penalty = 0; lastBeep = 99; rec.Clear(); recT = 0;
             app.inputLocked = true;
             ShowTarget();
         }
 
         public void Hit() { penalty += 1.5f; }
+
+        /// <summary>Сколько «контрольных точек» проехано, с дробной частью по расстоянию до следующей (для мест в гонке).</summary>
+        public float Progress(Vector3 p)
+        {
+            var t = RaceCourse.Points[idx % RaceCourse.Points.Count];
+            float d = Vector2.Distance(new Vector2(p.x, p.z), new Vector2(t.x, t.z));
+            return idx + 1f - Mathf.Clamp01(d / CityC.SPACING);
+        }
 
         void ShowTarget()
         {
@@ -83,6 +93,8 @@ namespace CaucasusDrive
                 return;
             }
             time += dt;
+            recT -= dt;
+            if (recT <= 0f) { recT = RecStep; var q = app.player.Position; rec.Add(Mathf.RoundToInt(q.x * 10f)); rec.Add(Mathf.RoundToInt(q.z * 10f)); rec.Add(Mathf.RoundToInt(app.player.Heading * 100f)); }
             var tgt = RaceCourse.Points[idx % RaceCourse.Points.Count];
             app.hud.Nav(tgt);
             var pp = app.player.Position;
@@ -98,29 +110,153 @@ namespace CaucasusDrive
         }
     }
 
+    /// <summary>Соперник в гонке: едет по контрольным точкам трассы по правой полосе, скорость зависит от «класса» и подтягивается к игроку.</summary>
+    public class RaceBot
+    {
+        public Chaser ch; public GameObject go; public string name; public float vmax;
+        public int idx; public bool done; public float time;
+
+        public void Step(float dt, float rubber)
+        {
+            var P = RaceCourse.Points; int n = P.Count;
+            var t = P[idx % n]; var pr = P[(idx + n - 1) % n]; var nx = P[(idx + 1) % n];
+            float dx = t.x - pr.x, dz = t.z - pr.z, l = Mathf.Max(0.01f, Mathf.Sqrt(dx * dx + dz * dz));
+            float rx = dz / l * 3.6f, rz = -dx / l * 3.6f;                     // смещение на правую полосу
+            float tx = t.x + rx, tz = t.z + rz;
+            if (Vector2.Distance(new Vector2(ch.x, ch.z), new Vector2(t.x, t.z)) < 15f) { idx++; if (idx >= n * RaceCourse.Laps) { done = true; return; } }
+            ch.Drive(dt, tx, tz, nx.x + rx, nx.z + rz, vmax * rubber, 999f, 0f);
+            go.transform.SetPositionAndRotation(new Vector3(ch.x, 0, ch.z), M.Yaw(ch.h));
+        }
+
+        public float Progress()
+        {
+            var P = RaceCourse.Points; var t = P[idx % P.Count];
+            float d = Vector2.Distance(new Vector2(ch.x, ch.z), new Vector2(t.x, t.z));
+            return idx + 1f - Mathf.Clamp01(d / CityC.SPACING);
+        }
+    }
+
+    /// <summary>Поле гонки: три бота разного класса + «призрак» лучшего заезда.</summary>
+    public class RaceField
+    {
+        readonly App app; readonly RaceRun run;
+        public readonly List<RaceBot> bots = new List<RaceBot>();
+        GameObject ghost; List<int> ghostData;
+        static readonly string[] Names = { "Лёха", "Дима", "Кирилл", "Сергей", "Артём" };
+        static readonly string[] CarIds = { "vaz2106", "vaz2109", "priora", "granta", "vesta", "oka", "niva" };
+        public int Total => bots.Count + 1;
+
+        public RaceField(App a, RaceRun r) { app = a; run = r; }
+
+        public void Spawn(int seed)
+        {
+            Clear();
+            var rnd = new Rng(seed);
+            float[] speeds = { 24.5f, 27f, 29f };
+            for (int i = 0; i < 3; i++)
+            {
+                var def = Cars.Get(CarIds[rnd.Range(CarIds.Length)]);
+                int color = def.colors[rnd.Range(def.colors.Length)];
+                var b = new RaceBot { ch = new Chaser(app.graph), name = Names[(seed + i * 2) % Names.Length], vmax = speeds[i] };
+                var sl = RaceCourse.Slot(i + 1);
+                var t0 = RaceCourse.Points[0];
+                b.ch.Place(sl.x, sl.z, t0.x, t0.z); b.ch.v = 0f; b.ch.h = RaceCourse.StartHeading;
+                b.go = TrafficManager.MakeCarObject(def, color, app.worldRoot, true, false);
+                b.go.GetComponent<Obstacle>().kind = "car";
+                b.go.transform.SetPositionAndRotation(new Vector3(b.ch.x, 0, b.ch.z), M.Yaw(b.ch.h));
+                bots.Add(b);
+            }
+            // призрак — лучший прошлый заезд (серый, без столкновений)
+            ghostData = app.save.d.race.ghost;
+            if (ghostData != null && ghostData.Count >= 9)
+            {
+                ghost = TrafficManager.MakeCarObject(app.player.def, 0xb8bcc0, app.worldRoot, true, false);
+                foreach (var c in ghost.GetComponentsInChildren<Collider>()) Object.Destroy(c);
+                var o = ghost.GetComponent<Obstacle>(); if (o) Object.Destroy(o);
+                ghost.SetActive(false);
+            }
+        }
+
+        public void Clear()
+        {
+            foreach (var b in bots) if (b.go) Object.Destroy(b.go);
+            bots.Clear();
+            if (ghost) Object.Destroy(ghost); ghost = null;
+        }
+
+        public void Update(float dt)
+        {
+            if (run.running && !run.finished)
+            {
+                float mine = run.Progress(app.player.Position);
+                foreach (var b in bots)
+                {
+                    if (b.done) continue;
+                    b.time += dt;
+                    float diff = b.Progress() - mine;
+                    float rubber = diff > 1.3f ? 0.88f : diff < -1.6f ? 1.06f : 1f;
+                    b.Step(dt, rubber);
+                }
+                UpdateGhost(run.time);
+            }
+            else if (ghost) ghost.SetActive(false);
+        }
+
+        void UpdateGhost(float t)
+        {
+            if (ghost == null) return;
+            int n = ghostData.Count / 3;
+            float f = t / RaceRun.RecStep;
+            int i = Mathf.FloorToInt(f);
+            if (i >= n - 1) { ghost.SetActive(false); return; }
+            float k = f - i;
+            float x0 = ghostData[i * 3] / 10f, z0 = ghostData[i * 3 + 1] / 10f, h0 = ghostData[i * 3 + 2] / 100f;
+            float x1 = ghostData[i * 3 + 3] / 10f, z1 = ghostData[i * 3 + 4] / 10f, h1 = ghostData[i * 3 + 5] / 100f;
+            ghost.SetActive(true);
+            ghost.transform.SetPositionAndRotation(new Vector3(Mathf.Lerp(x0, x1, k), 0, Mathf.Lerp(z0, z1, k)), M.Yaw(h0 + M.WrapAngle(h1 - h0) * k));
+        }
+
+        /// <summary>Место игрока (1…Total): у финишировавших — по времени, у остальных — по пройденному пути.</summary>
+        public int Place()
+        {
+            float mine = run.finished ? RaceCourse.Points.Count * RaceCourse.Laps + 1000f - run.Time : run.Progress(app.player.Position);
+            int place = 1;
+            foreach (var b in bots)
+            {
+                float p = b.done ? RaceCourse.Points.Count * RaceCourse.Laps + 1000f - b.time : b.Progress();
+                if (p > mine) place++;
+            }
+            return place;
+        }
+    }
+
     /// <summary>Одиночная гонка на время: рекорд сохраняется, награда зависит от времени.</summary>
     public class RaceMode : GameMode
     {
         public override string Name => "race";
         readonly RaceRun run;
+        RaceField field;
         bool done;
+        int finishPlace;
 
         public RaceMode(App a) : base(a) { run = new RaceRun(a); }
 
         public override void Enter()
         {
-            app.traffic.enabled = true; app.traffic.target = Mathf.Max(3, app.quality.traffic / 2); app.traffic.Clear();
+            app.traffic.enabled = true; app.traffic.target = 4; app.traffic.Clear();
             app.player.Place(RaceCourse.Slot(0).x, RaceCourse.Slot(0).z, RaceCourse.StartHeading);
             app.traffic.center = app.player.Position; app.traffic.Prefill(app.cam);
             app.crowd.Start();
             app.SetWeather(0f, false);
             run.onFinish = Finish;
             run.Begin(0);
+            field = new RaceField(app, run);
+            field.Spawn(System.Environment.TickCount & 0xffff);
             float best = app.save.d.race.best;
-            app.hud.Toast("Кольцевая гонка: " + RaceCourse.Laps + " круга по кварталам" + (best > 0 ? ". Рекорд " + RaceRun.Fmt(best) : ""), HUD.Good, 4f);
+            app.hud.Toast("Кольцевая гонка: " + RaceCourse.Laps + " круга, " + field.Total + " участника" + (best > 0 ? ". Рекорд " + RaceRun.Fmt(best) + " (серая машина — твой призрак)" : ""), HUD.Good, 4.5f);
         }
 
-        public override void Exit() { run.Stop(); app.crowd.Stop(); app.hud.Drift(false, 0, 1, 0); }
+        public override void Exit() { run.Stop(); field?.Clear(); app.crowd.Stop(); app.hud.Drift(false, 0, 1, 0); }
 
         public override void OnCrash(float strength, string kind, Collider col)
         {
@@ -129,21 +265,29 @@ namespace CaucasusDrive
             if (run.running) { run.Hit(); app.hud.DriftTag("+1.5 с", 0.8f); }
         }
 
-        public override void Update(float dt) { if (!done) run.Update(dt, "Кольцевая гонка"); }
+        public override void Update(float dt)
+        {
+            if (done) { field.Update(dt); return; }
+            run.Update(dt, "Кольцевая гонка · место " + field.Place() + "/" + field.Total);
+            field.Update(dt);
+        }
 
         void Finish(float t)
         {
             done = true;
+            int place = field.Place();
+            finishPlace = place;
             var d = app.save.d.race;
             bool record = d.best <= 0f || t < d.best;
-            if (record) d.best = t;
+            if (record) { d.best = t; d.ghost = new List<int>(run.rec); }
             d.runs++;
-            int reward = Mathf.Clamp(Mathf.RoundToInt((RaceCourse.Par * 1.35f - t) * 45f), 300, 7000) + (record ? 1000 : 0);
+            float mult = place == 1 ? 1.5f : place == 2 ? 1.15f : place == 3 ? 1f : 0.7f;
+            int reward = Mathf.RoundToInt(Mathf.Clamp(Mathf.RoundToInt((RaceCourse.Par * 1.35f - t) * 45f), 300, 7000) * mult) + (record ? 1000 : 0) + (place == 1 ? 1000 : 0);
             app.save.AddMoney(reward);
             app.inputLocked = true;
             app.audio.Success();
-            float best = d.best;
-            app.Delay(1.0f, () => app.ShowResult(new Result { race = true, ok = true, time = t, best = Mathf.RoundToInt(best * 10f), record = record, reward = reward }));
+            float best = d.best; int f = field.Total;
+            app.Delay(1.0f, () => app.ShowResult(new Result { race = true, ok = true, time = t, best = Mathf.RoundToInt(best * 10f), record = record, reward = reward, place = place, field = f }));
         }
     }
 

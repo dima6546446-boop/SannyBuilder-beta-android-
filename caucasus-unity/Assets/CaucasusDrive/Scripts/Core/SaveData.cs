@@ -49,7 +49,7 @@ namespace CaucasusDrive
     public class DriftStats { public int best, bestSeries, runs; }
 
     [Serializable]
-    public class RaceStats { public float best; public int runs; }
+    public class RaceStats { public float best; public int runs; public List<int> ghost = new List<int>(); }   // ghost: x·10, z·10, курс·100 каждые 0,2 с лучшего заезда
 
     [Serializable]
     public class SaveState
@@ -63,6 +63,7 @@ namespace CaucasusDrive
         public int driftBest, freeBest;
         public float km;
         public bool license;
+        public int level;
         public Stats stats = new Stats();
         public DriftStats drift = new DriftStats();
         public RaceStats race = new RaceStats();

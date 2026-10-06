@@ -52,6 +52,20 @@ namespace CaucasusDrive
             return false;
         }
 
+        /// <summary>Расстояние между двумя пальцами (щипок), если нажаты ровно два.</summary>
+        public static bool Pinch(out float dist)
+        {
+            dist = 0f;
+            var ts = Touchscreen.current;
+            if (ts == null) return false;
+            Vector2 a = Vector2.zero, b = Vector2.zero; int n = 0;
+            foreach (var t in ts.touches) if (t.press.isPressed) { if (n == 0) a = t.position.ReadValue(); else if (n == 1) b = t.position.ReadValue(); n++; }
+            if (n != 2) return false;
+            dist = Vector2.Distance(a, b); return true;
+        }
+
+        public static float Scroll { get { var m = Mouse.current; return m != null ? m.scroll.ReadValue().y : 0f; } }
+
         public static int TouchCount
         {
             get
@@ -100,6 +114,13 @@ namespace CaucasusDrive
             return Input.GetMouseButton(0);
         }
 
+        public static bool Pinch(out float dist)
+        {
+            dist = 0f;
+            if (Input.touchCount != 2) return false;
+            dist = Vector2.Distance(Input.GetTouch(0).position, Input.GetTouch(1).position); return true;
+        }
+        public static float Scroll => Input.mouseScrollDelta.y;
         public static int TouchCount => Input.touchCount;
         public static Vector3 Acceleration => Input.acceleration;
         public static void AddUIModule(GameObject go) { go.AddComponent<StandaloneInputModule>(); }

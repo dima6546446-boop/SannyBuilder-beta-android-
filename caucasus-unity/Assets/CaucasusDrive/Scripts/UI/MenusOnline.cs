@@ -46,6 +46,45 @@ namespace CaucasusDrive
             UIKit.LabelAt(s, "Как играть вместе: один включает «Точку доступа» (хотспот) на телефоне или все подключаются к одному Wi-Fi,\nпотом один жмёт «Создать комнату», остальные — «Найти в Wi-Fi». До " + NetP.Max + " игроков. В игре есть фразы (кнопка ЧАТ),\nобщая погода и время суток и заезды на время (кнопка ГОНКА). Через интернет — свой сервер: Server/relay.js (см. README).", 17, UIKit.Muted, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 110), new Vector2(1100, 100), TextAnchor.MiddleCenter, false);
         }
 
+        // ------------------------------------------------------------------ профиль
+        void ProfileScreen()
+        {
+            var s = Screen(true);
+            var d = app.save.d;
+            TopBar(s, "Профиль · " + Nick(), "main");
+            int lvl = Progress.Level(d);
+            var hero = UIKit.Panel(s, "Hero", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -165), new Vector2(940, 100), UIKit.Bg);
+            UIKit.LabelAt(hero.transform, "Уровень " + lvl, 40, Color.white, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(150, 18), new Vector2(260, 50), TextAnchor.MiddleLeft);
+            UIKit.LabelAt(hero.transform, Progress.Title(lvl) + " · опыт " + Mathf.RoundToInt(Progress.Xp(d)) + " / " + Mathf.RoundToInt(Progress.XpFor(lvl + 1)), 18, UIKit.Muted, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(255, -22), new Vector2(460, 28), TextAnchor.MiddleLeft, false);
+            var bar = UIKit.Panel(hero.transform, "Bar", new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-250, 0), new Vector2(420, 14), new Color(1, 1, 1, 0.15f));
+            var fill = UIKit.Img(UIKit.Fill(bar.transform, "Fill"), Color.white, false);
+            fill.type = Image.Type.Filled; fill.fillMethod = Image.FillMethod.Horizontal; fill.sprite = UIKit.Rounded; fill.fillAmount = Progress.Fraction(d);
+            float stars = 0; foreach (var v in d.stars) stars += v;
+            string[][] rows = {
+                new[] { "Пробег", d.stats.km.ToString("0.0") + " км" },
+                new[] { "Пешком", Mathf.RoundToInt(d.stats.walk) + " м" },
+                new[] { "Заказов такси", d.stats.taxi.ToString() },
+                new[] { "Штрафов оплачено", M.Rub(d.stats.fines) },
+                new[] { "Аварий", d.stats.crashes.ToString() },
+                new[] { "Уходов от погони", d.stats.escapes.ToString() },
+                new[] { "Лучший дрифт-заезд", d.drift.best.ToString("#,0").Replace(",", " ") },
+                new[] { "Лучшая серия", d.drift.bestSeries.ToString("#,0").Replace(",", " ") },
+                new[] { "Гонок", d.race.runs + (d.race.best > 0 ? " · рекорд " + RaceRun.Fmt(d.race.best) : "") },
+                new[] { "Онлайн-сессий", d.stats.online.ToString() },
+                new[] { "Звёзд в парковке", stars + " из " + Levels.Count * 3 },
+                new[] { "Достижений", Achievements.Count(d) + " из " + Achievements.All.Length },
+                new[] { "Права", d.license ? "есть" : "нет" },
+                new[] { "Машин в гараже", d.owned.Count + " из " + Cars.All.Length },
+            };
+            for (int i = 0; i < rows.Length; i++)
+            {
+                int col = i % 2, row = i / 2;
+                var p = UIKit.Panel(s, "Row", new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(-235 + col * 470, -270 - row * 56), new Vector2(460, 50), UIKit.Bg);
+                UIKit.LabelAt(p.transform, rows[i][0], 18, UIKit.Muted, new Vector2(0, 0), new Vector2(0.55f, 1), new Vector2(0, 0), new Vector2(-20, 0), TextAnchor.MiddleLeft, false);
+                UIKit.LabelAt(p.transform, rows[i][1], 20, Color.white, new Vector2(0.45f, 0), new Vector2(1, 1), new Vector2(0, 0), new Vector2(-24, 0), TextAnchor.MiddleRight);
+            }
+        }
+
         // ------------------------------------------------------------------ поиск комнат
         void StopLan() { if (disc != null) { disc.Stop(); disc = null; } lanSig = ""; }
 

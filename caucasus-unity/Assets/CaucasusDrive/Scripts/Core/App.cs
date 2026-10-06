@@ -51,6 +51,7 @@ namespace CaucasusDrive
         public Beacon beacon;
         public Rain rain;
         public Radio radio;
+        public Photo photo;
         public bool onFoot;
         public const int GroundLayer = 11;
         float achT, lookDirt;
@@ -86,7 +87,7 @@ namespace CaucasusDrive
         static readonly System.Collections.Generic.List<RaycastResult> uiHits = new System.Collections.Generic.List<RaycastResult>();
 
         /// <summary>Есть ли элемент интерфейса под точкой экрана (чтобы свайп по кнопке не крутил машину).</summary>
-        static bool UiUnder(Vector2 p)
+        public static bool UiUnder(Vector2 p)
         {
             var es = EventSystem.current;
             if (es == null) return false;
@@ -122,6 +123,7 @@ namespace CaucasusDrive
             audio.SetVolume(save.d.settings.volume);
 
             menus = new Menus(this);
+            photo = new Photo(this);
             menus.Intro();
             yield return new WaitForSeconds(1.8f);
             menus.Loading("СТРОИМ АВТОЗАВОДСКИЙ РАЙОН…");
@@ -242,7 +244,7 @@ namespace CaucasusDrive
 
         public void OnMenu(string name)
         {
-            if (name == "main" || name == "levels" || name == "garage" || (name == "settings" && !paused) || name == "help" || name == "online" || name == "lan" || name == "ip" || name == "cf" || name == "daily" || name == "ach" || name == "freeask")
+            if (name == "main" || name == "levels" || name == "garage" || (name == "settings" && !paused) || name == "help" || name == "online" || name == "lan" || name == "ip" || name == "cf" || name == "profile" || name == "daily" || name == "ach" || name == "freeask")
             {
                 state = State.Menu;
                 hud.Show(false);
@@ -295,6 +297,8 @@ namespace CaucasusDrive
             menus.Show("pause");
         }
 
+        public void OpenPhoto() { if (state == State.Play && !paused) photo.Open(); }
+
         public void Resume() { menus.Hide(); paused = false; }
 
         public void ShowResult(Result r) { paused = true; menus.ShowResult(r); }
@@ -345,7 +349,8 @@ namespace CaucasusDrive
             if (state == State.Loading) return;
             if (In.Pressed(In.K.Escape))
             {
-                if (state == State.Play && !paused) Pause();
+                if (photo != null && photo.active) photo.Close();
+                else if (state == State.Play && !paused) Pause();
                 else if (state == State.Play && paused && menus.current == "pause") Resume();
                 else if (state == State.Menu && menus.current != "main") menus.Show("main");
             }
@@ -367,6 +372,7 @@ namespace CaucasusDrive
                 return;
             }
 
+            if (photo != null && photo.active) { photo.Update(dt); Weather(dt); rain.Update(dt, cam.transform, rainLevel, 1f - dayNight.night * 0.8f, false); RenderWorld(0f); return; }
             if (paused) { mode?.IdleUpdate(dt); RenderWorld(0f); return; }
 
             input = hud.ReadInput(save.d.settings);
@@ -410,7 +416,7 @@ namespace CaucasusDrive
                 if (Mathf.Abs(player.tune.dirt - lookDirt) > 0.01f) RefreshLook();
             }
             achT -= dt;
-            if (achT <= 0f) { achT = 2f; Achievements.Check(this); }
+            if (achT <= 0f) { achT = 2f; Achievements.Check(this); Progress.Check(this); }
             hud.Update(dt);
             RenderWorld(dt);
         }

@@ -52,9 +52,9 @@ namespace CaucasusDrive
             mb.rectTransform.pivot = new Vector2(1, 1); mb.rectTransform.anchoredPosition = Vector2.zero;
             money = UIKit.Label(mb.transform, "0 ₽", 28, UIKit.Gold);
             fpsText = UIKit.LabelAt(tr, "", 18, new Color(0.5f, 0.9f, 0.5f), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-55, -205), new Vector2(110, 26), TextAnchor.MiddleRight, false); // под кнопками, не налезает на деньги
-            string[] icons = { "pause", "camera", "lights" };
-            System.Action[] acts = { () => app.Pause(), () => app.NextCamera(), () => { app.player.CycleLights(); } };
-            for (int i = 0; i < 3; i++)
+            string[] icons = { "pause", "camera", "lights", "photo" };
+            System.Action[] acts = { () => app.Pause(), () => app.NextCamera(), () => { app.player.CycleLights(); }, () => app.OpenPhoto() };
+            for (int i = 0; i < 4; i++)
             {
                 int k = i;
                 var b = UIKit.RoundButton(tr, icons[i], null, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-32 - i * 66, -88), new Vector2(56, 56), acts[k]);

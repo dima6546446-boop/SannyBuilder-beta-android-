@@ -134,6 +134,7 @@ namespace CaucasusDrive
                 case "daily": DailyScreen(); break;
                 case "ach": AchScreen(); break;
                 case "online": OnlineScreen(); break;
+                case "profile": ProfileScreen(); break;
                 case "lan": LanScreen(); break;
                 case "ip": IpScreen(); break;
                 case "cf": CloudScreen(); break;
@@ -161,8 +162,11 @@ namespace CaucasusDrive
             UIKit.LabelAt(s, "ГАРАЖ · ШАШКИ · ПАРКОВКА · ДРИФТ · ГОНКИ · ОНЛАЙН", 18, UIKit.Muted, new Vector2(0, 1), new Vector2(0, 1), new Vector2(330, -122), new Vector2(620, 30), TextAnchor.MiddleLeft);
             var m = UIKit.Panel(s, "Money", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-130, -46), new Vector2(220, 52), UIKit.Bg);
             UIKit.Label(m.transform, M.Rub(app.save.Money), 26, UIKit.Gold);
-            var stars = UIKit.Panel(s, "Stars", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-350, -46), new Vector2(190, 52), UIKit.Bg);
-            UIKit.Label(stars.transform, "★ " + app.save.StarsTotal + "/" + Levels.Count * 3, 24, Color.white);
+            int lvl = Progress.Level(app.save.d);
+            var stars = UIKit.Button(s, "УР. " + lvl + " · " + Progress.Title(lvl), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-440, -46), new Vector2(330, 52), UIKit.Bg, () => Show("profile"), 20);
+            var xpBar = UIKit.Panel(stars.transform, "Xp", new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 6), new Vector2(-24, 4), new Color(1, 1, 1, 0.18f));
+            var xpFill = UIKit.Img(UIKit.Fill(xpBar.transform, "Fill"), Color.white, false);
+            xpFill.type = Image.Type.Filled; xpFill.fillMethod = Image.FillMethod.Horizontal; xpFill.sprite = UIKit.Rounded; xpFill.fillAmount = Progress.Fraction(app.save.d);
 
             int ready = app.daily.ReadyCount;
             string[] titles = { "ПАРКОВКА", "СВОБОДНАЯ ЕЗДА", "ЭКЗАМЕН ГИБДД", "ДРИФТ-ЗОНА", "ГОНКА", "ОНЛАЙН", "ГАРАЖ", "НАСТРОЙКИ" };
@@ -546,7 +550,7 @@ namespace CaucasusDrive
         void SpecialResult(RectTransform s, Result r)
         {
             var m = UIKit.Panel(s, "Modal", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(640, 470), UIKit.Bg);
-            string title = r.exam ? (r.ok ? "Права получены!" : "Экзамен не сдан") : r.race ? (r.record ? "Новый рекорд трассы!" : "Финиш!") : r.record ? "Новый рекорд!" : "Заезд окончен";
+            string title = r.exam ? (r.ok ? "Права получены!" : "Экзамен не сдан") : r.race ? (r.place == 1 ? "Победа!" : r.record ? "Новый рекорд трассы!" : "Финиш!") : r.record ? "Новый рекорд!" : "Заезд окончен";
             UIKit.LabelAt(m.transform, title, 40, r.ok ? Color.white : UIKit.Muted, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -56), new Vector2(560, 60));
             string body;
             if (r.exam)
@@ -554,7 +558,7 @@ namespace CaucasusDrive
                 body = (r.ok ? "+" + M.Rub(r.reward) + "\n" : r.why + "\n") + "Штрафные баллы: " + r.pts + " из 5";
                 if (r.log != null && r.log.Count > 0) body += "\n\n" + string.Join("\n", r.log.ToArray());
             }
-            else if (r.race) body = "Время: " + RaceRun.Fmt(r.time) + "\nРекорд: " + RaceRun.Fmt(r.best / 10f) + "\n+" + M.Rub(r.reward) + "\n\nЭталон трассы — " + RaceRun.Fmt(RaceCourse.Par);
+            else if (r.race) body = "Место: " + r.place + " из " + r.field + "\nВремя: " + RaceRun.Fmt(r.time) + "\nРекорд: " + RaceRun.Fmt(r.best / 10f) + "\n+" + M.Rub(r.reward) + "\n\nЭталон трассы — " + RaceRun.Fmt(RaceCourse.Par);
             else body = "Очки: " + r.score + "\nСерий: " + r.series + "\nРекорд: " + r.best + (r.reward > 0 ? "\n+" + M.Rub(r.reward) : "");
             UIKit.LabelAt(m.transform, body, 21, Color.white, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -210), new Vector2(560, 230), TextAnchor.UpperCenter, false);
             UIKit.Button(m.transform, "Заново", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-100, 60), new Vector2(180, 64), UIKit.Accent, () => { if (r.exam) app.StartExam(); else if (r.race) app.StartRace(); else app.StartDrift(); }, 24);

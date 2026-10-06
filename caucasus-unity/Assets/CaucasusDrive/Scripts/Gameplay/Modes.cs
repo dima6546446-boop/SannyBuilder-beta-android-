@@ -224,7 +224,7 @@ namespace CaucasusDrive
     public class Result
     {
         public bool ok, first, exam, drift, race, record;
-        public int stars, reward, level, score, best, series, pts;
+        public int stars, reward, level, score, best, series, pts, place, field;
         public float time;
         public string why;
         public List<string> log;
