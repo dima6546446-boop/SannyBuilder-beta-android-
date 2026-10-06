@@ -32,6 +32,7 @@ namespace CaucasusDrive
         public bool sensors = true;    // парктроник в городе
         public string nick = "";       // ник в онлайне
         public string lastIp = "";     // последний адрес комнаты
+        public string cfUrl = "", cfRoom = "";   // сервер на Cloudflare (wss://…workers.dev) и код комнаты
     }
 
     [Serializable]

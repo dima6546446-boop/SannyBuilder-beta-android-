@@ -191,6 +191,19 @@ namespace CaucasusDrive
             cli.Connect(host, port, MakeProfile());
         }
 
+        public void JoinWs(string url)
+        {
+            parent = new GameObject("Remotes").transform; parent.SetParent(app.worldRoot, false);
+            cli = new NetClient();
+            cli.OnWelcome += () => { foreach (var kv in cli.players) Joined(kv.Key, kv.Value, true); };
+            cli.OnJoin += (id, p) => Joined(id, p);
+            cli.OnLeave += id => Left(id);
+            cli.OnState += (id, s) => GotState(id, s);
+            cli.OnEvt += (id, k, a, b) => GotEvt(id, k, a, b);
+            cli.OnClosed += why => onClosed?.Invoke(why);
+            cli.ConnectWs(url, MakeProfile());
+        }
+
         void Joined(byte id, NetProfile p, bool silent = false)
         {
             if (remotes.ContainsKey(id)) return;

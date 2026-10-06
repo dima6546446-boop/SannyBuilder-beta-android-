@@ -30,8 +30,48 @@ class T
         Console.WriteLine(fails == 0 ? "RELAY OK" : fails + " FAILED"); return fails;
     }
 
+    static int WsTest(string url)
+    {
+        var a = new NetClient(); var b = new NetClient();
+        var aJoin = new List<string>(); var bState = new List<string>(); var aEvt = new List<string>(); var aLeft = new List<byte>();
+        a.OnJoin += (id, p) => aJoin.Add(id + ":" + p.name + ":" + p.car);
+        a.OnLeave += id => aLeft.Add(id);
+        a.OnEvt += (id, k, x, y) => aEvt.Add(id + ":" + k + ":" + x);
+        b.OnState += (id, s) => bState.Add(id + ":" + s.x + ":" + s.wx);
+        a.ConnectWs(url, new NetProfile { name = "A", car = "niva", color = 3, plate = "Н1" });
+        for (int i = 0; i < 200 && !a.connected; i++) { a.Update(0.02f); Thread.Sleep(20); }
+        Check(a.connected && a.myId == 1, "ws: A connected id=1 (" + a.myId + ", fail=" + a.failReason + ")");
+        b.ConnectWs(url, new NetProfile { name = "Боб", car = "oka", color = -1, plate = "Б2" });
+        for (int i = 0; i < 200 && !b.connected; i++) { a.Update(0.02f); b.Update(0.02f); Thread.Sleep(20); }
+        Check(b.connected && b.myId == 2 && b.players.Count == 1 && b.players[1].car == "niva", "ws: B welcome has A");
+        for (int i = 0; i < 20; i++) { a.Update(0.02f); b.Update(0.02f); Thread.Sleep(10); }
+        Check(aJoin.Count == 1 && aJoin[0] == "2:Боб:oka", "ws: JOIN delivered (" + string.Join(",", aJoin) + ")");
+        a.SendState(new NetState { x = 7.25f, flags = NetP.FFoot, wx = 3 });
+        b.SendEvt(NetP.EvSay, 4, 0); b.SendEvt(NetP.EvEnv, 1, 1);
+        for (int i = 0; i < 40; i++) { a.Update(0.02f); b.Update(0.02f); Thread.Sleep(10); }
+        Check(bState.Contains("1:7.25:3"), "ws: state forwarded");
+        Check(aEvt.Contains("2:1:4") && aEvt.Count == 1, "ws: evt forwarded, ENV blocked");
+        // keepalive: ждём >1 с — оба живы
+        for (int i = 0; i < 120; i++) { a.Update(0.02f); b.Update(0.02f); Thread.Sleep(20); }
+        Check(a.connected && b.connected && !a.failed && !b.failed, "ws: keepalive holds connection");
+        b.Close();
+        for (int i = 0; i < 60; i++) { a.Update(0.02f); Thread.Sleep(20); }
+        Check(aLeft.Contains(2), "ws: LEAVE after close");
+        // 9-й игрок
+        var extra = new List<NetClient>();
+        for (int i = 0; i < 9; i++) { var c = new NetClient(); c.ConnectWs(url.Replace("/", "/").TrimEnd('/') + "X", new NetProfile { name = "E" + i }); extra.Add(c); }
+        for (int t = 0; t < 250; t++) { foreach (var c in extra) c.Update(0.02f); Thread.Sleep(20); }
+        int ok = 0, full = 0; foreach (var c in extra) { if (c.connected) ok++; if (c.failed && (c.failReason ?? "").Contains("заполнена")) full++; }
+        Check(ok == 8 && full == 1, "ws: room limit ok=" + ok + " full=" + full);
+        var bad = new NetClient(); bad.ConnectWs("ws://127.0.0.1:1/x", new NetProfile());
+        for (int i = 0; i < 100 && !bad.failed; i++) { bad.Update(0.05f); Thread.Sleep(20); }
+        Check(bad.failed, "ws: failure reported: " + bad.failReason);
+        Console.WriteLine(fails == 0 ? "WS OK" : fails + " FAILED"); return fails;
+    }
+
     static int Main(string[] args)
     {
+        if (args.Length > 1 && args[0] == "ws") return WsTest(args[1]);
         if (args.Length > 0 && args[0] == "relay") return RelayTest();
         int port = 17777;
         var srv = new NetServer { roomName = "Тест", local = new NetProfile { name = "Хост", car = "vaz2107", color = 0xff0000, plate = "А001АА" } };

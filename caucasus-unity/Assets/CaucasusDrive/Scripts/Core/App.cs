@@ -242,7 +242,7 @@ namespace CaucasusDrive
 
         public void OnMenu(string name)
         {
-            if (name == "main" || name == "levels" || name == "garage" || (name == "settings" && !paused) || name == "help" || name == "online" || name == "lan" || name == "ip" || name == "daily" || name == "ach" || name == "freeask")
+            if (name == "main" || name == "levels" || name == "garage" || (name == "settings" && !paused) || name == "help" || name == "online" || name == "lan" || name == "ip" || name == "cf" || name == "daily" || name == "ach" || name == "freeask")
             {
                 state = State.Menu;
                 hud.Show(false);

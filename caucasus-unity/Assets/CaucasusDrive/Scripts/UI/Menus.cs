@@ -136,6 +136,7 @@ namespace CaucasusDrive
                 case "online": OnlineScreen(); break;
                 case "lan": LanScreen(); break;
                 case "ip": IpScreen(); break;
+                case "cf": CloudScreen(); break;
             }
         }
 

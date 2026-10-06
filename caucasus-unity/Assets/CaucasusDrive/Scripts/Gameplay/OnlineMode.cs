@@ -11,7 +11,7 @@ namespace CaucasusDrive
         readonly bool host; readonly string ip;
         Online net;
         OnlineRace race;
-        float listT; string error;
+        float listT; string error, roomCode = "";
 
         public OnlineMode(App a, bool host, string ip) : base(a, false) { this.host = host; this.ip = ip; }
 
@@ -27,6 +27,13 @@ namespace CaucasusDrive
             try
             {
                 if (host) net.Host(string.IsNullOrEmpty(app.save.d.settings.nick) ? "Комната" : app.save.d.settings.nick);
+                else if (ip.StartsWith("ws://") || ip.StartsWith("wss://"))
+                {
+                    int sl = ip.LastIndexOf('/');
+                    roomCode = sl > 7 ? ip.Substring(sl + 1).ToUpper() : "";
+                    net.JoinWs(ip);
+                    app.hud.Toast("Подключаюсь к серверу…", HUD.Good, 4f);
+                }
                 else
                 {
                     string h = ip; int port = NetP.Port;
@@ -92,7 +99,7 @@ namespace CaucasusDrive
             {
                 listT = 0.5f;
                 var sb = new System.Text.StringBuilder();
-                sb.Append(host ? "Хост · " : "Онлайн · ").Append(net.Count).Append(" из ").Append(NetP.Max);
+                sb.Append(host ? "Хост · " : roomCode.Length > 0 ? "Комната " + roomCode + " · " : "Онлайн · ").Append(net.Count).Append(" из ").Append(NetP.Max);
                 if (!net.Connected) sb.Append(" · подключение…");
                 foreach (var r in net.remotes.Values)
                 {

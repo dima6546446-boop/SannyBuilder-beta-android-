@@ -266,8 +266,8 @@ namespace CaucasusDrive
     // ===================================================================== клиент
     public class NetClient
     {
-        UdpClient udp;
-        IPEndPoint server;
+        ITransport tr;
+        bool ws;
         float clock, helloT, pingT, lastRx;
         public bool connected, failed;
         public string failReason;
@@ -282,8 +282,9 @@ namespace CaucasusDrive
         public event Action<byte, byte, float, float> OnEvt;
         public event Action<string> OnClosed;
 
-        public bool Running => udp != null;
+        public bool Running => tr != null;
 
+        /// <summary>UDP: хост в телефоне или свой сервер (host — IP или имя, например play.site.ru).</summary>
         public void Connect(string host, int port, NetProfile p)
         {
             profile = p;
@@ -294,50 +295,59 @@ namespace CaucasusDrive
                 ip = null; foreach (var a in he) if (a.AddressFamily == AddressFamily.InterNetwork) { ip = a; break; }
                 if (ip == null) throw new Exception("адрес не найден");
             }
-            server = new IPEndPoint(ip, port);
-            udp = new UdpClient(0);
-            lastRx = 0; clock = 0; helloT = 0;
+            tr = new UdpTransport(new IPEndPoint(ip, port));
+            ws = false; clock = 0; helloT = 0; lastRx = 0;
         }
 
-        void Send(byte[] d) { try { udp.Send(d, d.Length, server); } catch (Exception) { } }
+        /// <summary>WebSocket: wss://имя.workers.dev/КОД (Cloudflare Worker).</summary>
+        public void ConnectWs(string url, NetProfile p)
+        {
+            profile = p;
+            tr = new WsTransport(url);
+            ws = true; clock = 0; helloT = 0; lastRx = 0;
+        }
+
+        void Send(byte[] d) { tr?.Send(d); }
 
         public void SendState(NetState s) { if (!connected) return; Send(NetP.Pack(NetP.State, w => s.Write(w))); }
         public void SendEvt(byte kind, float a, float b) { if (!connected) return; Send(NetP.Pack(NetP.Evt, w => { w.Write(kind); w.Write(a); w.Write(b); })); }
 
         public void Close()
         {
-            if (udp == null) return;
+            if (tr == null) return;
             if (connected) Send(NetP.Pack(NetP.Bye));
-            try { udp.Close(); } catch (Exception) { }
-            udp = null; connected = false; players.Clear();
+            tr.Close(); tr = null; connected = false; players.Clear();
         }
 
-        void Fail(string why) { failed = true; failReason = why; try { udp?.Close(); } catch (Exception) { } udp = null; connected = false; OnClosed?.Invoke(why); }
+        void Fail(string why) { failed = true; failReason = why; try { tr?.Close(); } catch (Exception) { } tr = null; connected = false; OnClosed?.Invoke(why); }
 
         public void Update(float dt)
         {
-            if (udp == null) return;
+            if (tr == null) return;
             clock += dt;
+            // сначала разбираем уже пришедшие пакеты (например, «комната заполнена» перед закрытием сокета), потом смотрим на ошибку
+            byte[] data;
+            for (int n = 0; n < 128 && tr != null && tr.Poll(out data); n++)
+            {
+                if (data.Length == 0) { lastRx = clock; continue; }
+                Handle(data);
+            }
+            if (tr == null) return;
+            if (tr.Error != null) { Fail(tr.Error); return; }
             if (!connected)
             {
-                helloT -= dt;
-                if (helloT <= 0) { helloT = 0.5f; Send(NetP.Pack(NetP.Hello, w => profile.Write(w))); }
-                if (clock > 5f) { Fail("Хост не отвечает"); return; }
+                if (tr.Open)
+                {
+                    helloT -= dt;
+                    if (helloT <= 0) { helloT = 0.5f; Send(NetP.Pack(NetP.Hello, w => profile.Write(w))); }
+                }
+                if (clock > (ws ? 12f : 5f)) { Fail(ws ? "Сервер не отвечает" : "Хост не отвечает"); return; }
             }
             else
             {
                 pingT -= dt;
-                if (pingT <= 0) { pingT = 1f; Send(NetP.Pack(NetP.Ping)); }
+                if (pingT <= 0) { pingT = 1f; tr.Keepalive(); }
                 if (clock - lastRx > 6f) { Fail("Связь потеряна"); return; }
-            }
-            for (int n = 0; n < 128 && udp != null; n++)
-            {
-                byte[] data; IPEndPoint ep = new IPEndPoint(IPAddress.Any, 0);
-                try { if (udp.Available <= 0) break; data = udp.Receive(ref ep); }
-                catch (SocketException) { continue; }
-                catch (Exception) { break; }
-                if (!ep.Address.Equals(server.Address) || ep.Port != server.Port) continue;
-                Handle(data);
             }
         }
 
@@ -365,7 +375,7 @@ namespace CaucasusDrive
                     case NetP.Leave:
                         {
                             byte id = r.ReadByte();
-                            if (id == 0) { Fail("Хост закрыл комнату"); break; }       // id 0 — сам сервер
+                            if (id == 0 && !ws) { Fail("Хост закрыл комнату"); break; }       // UDP: id 0 — сам сервер
                             players.Remove(id); OnLeave?.Invoke(id);
                             break;
                         }
