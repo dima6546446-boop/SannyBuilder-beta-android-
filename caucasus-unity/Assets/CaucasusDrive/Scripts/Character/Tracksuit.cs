@@ -36,7 +36,8 @@ namespace CaucasusDrive
             Limb("foreL", "handL", 0.04f, 0.8f, false); Limb("foreR", "handR", 0.04f, 0.8f, false);
             Cuff("shinL", "footL", 0.86f); Cuff("shinR", "footR", 0.86f);
             Cuff("foreL", "handL", 0.84f); Cuff("foreR", "handR", 0.84f);
-            Collar(); Zip(); Cap(); Shoes();
+            Collar(); Zip(); Cap(); Shoes(); Hands();
+            RemoveBodyParts("Foot", "Toe");           // стопы целиком закрыты кроссовками
             verts = null; rig = null; owner = null; skinBones = null;
         }
 
@@ -163,6 +164,66 @@ namespace CaucasusDrive
         }
 
         /// <summary>
+        /// Кисти: исходная «доска» вместо ладони убирается из сетки, вместо неё — ладонь и пять пальцев с фалангами
+        /// (Limbs.Hand). Ориентация: пальцы вдоль предплечья, тыл наружу, большой палец вперёд.
+        /// </summary>
+        static void Hands()
+        {
+            var hips = rig.root.InverseTransformPoint(rig.B["hips"].position);
+            foreach (var sd in new[] { "L", "R" })
+            {
+                var fore = rig.B["fore" + sd]; var hand = rig.B["hand" + sd];
+                var hp = rig.root.InverseTransformPoint(hand.position);
+                var F = (hp - rig.root.InverseTransformPoint(fore.position)).normalized;
+                float side = hp.x >= hips.x ? 1f : -1f;
+                var outward = new Vector3(side, 0, 0); outward = (outward - F * Vector3.Dot(outward, F)).normalized;
+                var q = Quaternion.LookRotation(F, outward);                              // локально: Z — пальцы, Y — тыл кисти
+                var rightV = q * Vector3.right;
+                float thumbSide = Vector3.Dot(rightV, Vector3.forward) >= 0f ? 1f : -1f;
+                // размер по реальной кисти: от запястья до кончиков пальцев
+                float maxF = 0.1f;
+                for (int vi = 0; vi < verts.Count; vi++)
+                {
+                    int o = owner[vi]; if (o < 0 || o >= skinBones.Length) continue;
+                    var nm = skinBones[o].name;
+                    if (nm.Contains("Hand") && (sd == "L" ? nm.StartsWith("Left") : nm.StartsWith("Right")))
+                        maxF = Mathf.Max(maxF, Vector3.Dot(verts[vi] - hp, F));
+                }
+                float scale = Mathf.Clamp(maxF / 0.185f, 0.9f, 1.25f);
+                var go = Anchor(hand, hp, q, "Hand_" + sd);
+                Limbs.Hand(0xe2b48f, thumbSide, scale).ToObject("H", go.transform);
+            }
+            RemoveBodyParts("Hand");
+        }
+
+        /// <summary>Убирает из копии меша треугольники, большей частью принадлежащие костям с именами, содержащими любую из частей.</summary>
+        static void RemoveBodyParts(params string[] parts)
+        {
+            var mesh = rig.smr.sharedMesh;
+            if (mesh == null || !mesh.isReadable) return;
+            var bw = mesh.boneWeights; var bones = rig.smr.bones;
+            if (bw.Length != mesh.vertexCount) return;
+            var dead = new bool[mesh.vertexCount];
+            for (int i = 0; i < dead.Length; i++)
+            {
+                int b = bw[i].boneIndex0;
+                if (b < 0 || b >= bones.Length) continue;
+                foreach (var p in parts) if (bones[b].name.Contains(p)) { dead[i] = true; break; }
+            }
+            for (int sm = 0; sm < mesh.subMeshCount; sm++)
+            {
+                var tri = mesh.GetTriangles(sm); var keep = new List<int>(tri.Length);
+                for (int i = 0; i + 2 < tri.Length; i += 3)
+                {
+                    int c = (dead[tri[i]] ? 1 : 0) + (dead[tri[i + 1]] ? 1 : 0) + (dead[tri[i + 2]] ? 1 : 0);
+                    if (c >= 2) continue;
+                    keep.Add(tri[i]); keep.Add(tri[i + 1]); keep.Add(tri[i + 2]);
+                }
+                mesh.SetTriangles(keep, sm);
+            }
+        }
+
+        /// <summary>
         /// Кепка: купол-эллипсоид подбирается так, чтобы накрывать ВСЕ вершины головы выше линии бровей
         /// (волосы не торчат сквозь ткань), козырёк вперёд, белая кромка, пуговка.
         /// </summary>
@@ -233,41 +294,22 @@ namespace CaucasusDrive
                     if (Vector3.Dot(f, Vector3.forward) < 0f) f = -f;                  // носок смотрит вперёд
                 }
                 var rt = new Vector3(f.z, 0, -f.x);
-                float minF = 9, maxF = -9, minR = 9, maxR = -9; int n = 0;
+                float minF = 9, maxF = -9, minR = 9, maxR = -9, minY = 9; int n = 0;
                 for (int vi = 0; vi < verts.Count; vi++)
                 {
                     if (!Owns(vi, foot, toe)) continue;
                     var v = verts[vi];
                     float pf = (v.x - fp.x) * f.x + (v.z - fp.z) * f.z, pr = (v.x - fp.x) * rt.x + (v.z - fp.z) * rt.z;
-                    minF = Mathf.Min(minF, pf); maxF = Mathf.Max(maxF, pf); minR = Mathf.Min(minR, pr); maxR = Mathf.Max(maxR, pr); n++;
+                    minF = Mathf.Min(minF, pf); maxF = Mathf.Max(maxF, pf); minR = Mathf.Min(minR, pr); maxR = Mathf.Max(maxR, pr); minY = Mathf.Min(minY, v.y); n++;
                 }
                 if (n < 4) { minF = -0.07f; maxF = 0.17f; minR = -0.04f; maxR = 0.04f; }
                 float w = Mathf.Clamp(maxR - minR, 0.07f, 0.12f) + 0.014f;
                 float z0 = minF - 0.012f, z1 = maxF + 0.02f, len = Mathf.Clamp(z1 - z0, 0.2f, 0.34f);
                 float ankleY = Mathf.Max(fp.y + 0.03f, 0.1f);
-                var origin = new Vector3(fp.x, 0, fp.z) + f * z0 + rt * ((minR + maxR) * 0.5f);     // пятка на полу
+                float floorY = n >= 4 ? Mathf.Min(0f, minY) - 0.004f : 0f;                              // подошва ниже самой нижней точки стопы
+                var origin = new Vector3(fp.x, floorY, fp.z) + f * z0 + rt * ((minR + maxR) * 0.5f);     // пятка на полу
                 var go = Anchor(foot, origin, Quaternion.LookRotation(f, Vector3.up), "Sneaker_" + sd);
-                var pm = new PaletteMesh();
-                float soleH = 0.03f;
-                pm.RBox(new Vector3(0, soleH * 0.5f, len * 0.5f), new Vector3(w + 0.008f, soleH, len), 0.012f, 0xe9e9e9);               // подошва
-                pm.Box(new Vector3(0, soleH * 0.5f, len * 0.5f), new Vector3(w + 0.012f, 0.006f, len + 0.004f), 0xb8b8b8);                // полоска-ребро подошвы
-                // задник (до щиколотки) и средняя часть
-                float heelLen = len * 0.38f;
-                pm.RBox(new Vector3(0, soleH + (ankleY - soleH) * 0.5f, heelLen * 0.5f), new Vector3(w, ankleY - soleH, heelLen), 0.014f, White);
-                pm.RBox(new Vector3(0, soleH + 0.03f, len * 0.5f), new Vector3(w - 0.004f, 0.06f, len * 0.5f), 0.016f, White);
-                // носок: округлый мысок
-                pm.RBox(new Vector3(0, soleH + 0.022f, len - 0.04f), new Vector3(w - 0.002f, 0.044f, 0.09f), 0.02f, White);
-                pm.RBox(new Vector3(0, soleH + 0.01f, len - 0.025f), new Vector3(w + 0.004f, 0.02f, 0.07f), 0.008f, 0xf0f0f0);        // резиновый мысок
-                // ворот и язычок
-                pm.Box(new Vector3(0, ankleY + 0.002f, heelLen * 0.5f - 0.01f), new Vector3(w * 0.92f, 0.012f, heelLen * 0.8f), 0x1d1f26);
-                pm.RBox(new Vector3(0, ankleY - 0.005f, heelLen + 0.025f), new Vector3(w * 0.5f, 0.05f, 0.03f), 0.01f, White);        // язычок
-                // шнурки
-                for (int i = 0; i < 4; i++)
-                    pm.Box(new Vector3(0, soleH + 0.063f - i * 0.004f, heelLen + 0.045f + i * 0.026f), new Vector3(w * 0.62f, 0.004f, 0.009f), 0x2a2d36);
-                // боковые полоски кроссовка
-                foreach (float sx in new[] { -1f, 1f })
-                    for (int i = 0; i < 3; i++)
-                        pm.Box(new Vector3(sx * (w * 0.5f + 0.0005f), soleH + 0.032f + i * 0.007f, len * 0.46f), new Vector3(0.003f, 0.003f, len * 0.34f), 0x2a2d36);
+                var pm = Limbs.Shoe(len, w, ankleY);
                 pm.ToObject("Sh", go.transform);
             }
         }

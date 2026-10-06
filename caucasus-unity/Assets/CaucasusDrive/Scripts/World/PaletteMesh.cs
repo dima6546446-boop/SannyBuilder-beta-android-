@@ -276,6 +276,64 @@ namespace CaucasusDrive
             Tri(i0, i1, i2); Tri(i0, i2, i3);
         }
 
+        /// <summary>Поверхность по сечениям: rings — замкнутые контуры одинакового размера; нормали сглаженные; торцы закрываются.</summary>
+        public void Loft(List<Vector3[]> rings, int hex, bool capStart = true, bool capEnd = true)
+        {
+            var col = UV(hex);
+            int R = rings.Count, M = rings[0].Length;
+            var idx = new int[R][];
+            var centers = new Vector3[R];
+            for (int i = 0; i < R; i++) { var c = Vector3.zero; foreach (var q in rings[i]) c += q; centers[i] = c / M; }
+            for (int i = 0; i < R; i++)
+            {
+                idx[i] = new int[M];
+                for (int j = 0; j < M; j++)
+                {
+                    var p = rings[i][j];
+                    var tj = rings[i][(j + 1) % M] - rings[i][(j + M - 1) % M];
+                    var ti = rings[Mathf.Min(i + 1, R - 1)][j] - rings[Mathf.Max(i - 1, 0)][j];
+                    var nn = Vector3.Cross(tj, ti);
+                    if (nn.sqrMagnitude < 1e-12f) nn = p - centers[i];
+                    nn.Normalize();
+                    if (Vector3.Dot(nn, p - centers[i]) < 0f) nn = -nn;
+                    idx[i][j] = V(p, nn, col);
+                }
+            }
+            for (int i = 0; i < R - 1; i++)
+                for (int j = 0; j < M; j++)
+                {
+                    int a0 = idx[i][j], b0 = idx[i][(j + 1) % M], c0 = idx[i + 1][(j + 1) % M], d0 = idx[i + 1][j];
+                    Tri(a0, b0, c0); Tri(a0, c0, d0);
+                }
+            for (int e = 0; e < 2; e++)
+            {
+                if ((e == 0 && !capStart) || (e == 1 && !capEnd)) continue;
+                int i = e == 0 ? 0 : R - 1;
+                var axis = (e == 0 ? centers[0] - centers[Mathf.Min(1, R - 1)] : centers[R - 1] - centers[Mathf.Max(R - 2, 0)]).normalized;
+                int cv = V(centers[i], axis, col);
+                for (int j = 0; j < M; j++)
+                {
+                    int p0 = V(rings[i][j], axis, col), p1 = V(rings[i][(j + 1) % M], axis, col);
+                    Tri(cv, p0, p1);
+                }
+            }
+        }
+
+        /// <summary>Wavefront OBJ с цветами вершин (для проверки геометрии вне Unity).</summary>
+        public string ToObj()
+        {
+            var inv = new Dictionary<Vector2, int>();
+            foreach (var kv in slots) inv[UV(kv.Key)] = kv.Key;
+            var sb = new System.Text.StringBuilder();
+            for (int i = 0; i < v.Count; i++)
+            {
+                int hex; if (!inv.TryGetValue(uv[i], out hex)) hex = 0x808080;
+                sb.AppendFormat(System.Globalization.CultureInfo.InvariantCulture, "v {0} {1} {2} {3} {4} {5}\n", v[i].x, v[i].y, v[i].z, ((hex >> 16) & 255) / 255f, ((hex >> 8) & 255) / 255f, (hex & 255) / 255f);
+            }
+            for (int i = 0; i + 2 < t.Count; i += 3) sb.AppendFormat("f {0} {1} {2}\n", t[i] + 1, t[i + 1] + 1, t[i + 2] + 1);
+            return sb.ToString();
+        }
+
         // ------------------------------------------------------------------ сборка
         public Mesh ToMesh(string name)
         {
