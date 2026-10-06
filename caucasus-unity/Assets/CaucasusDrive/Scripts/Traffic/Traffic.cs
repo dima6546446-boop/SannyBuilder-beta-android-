@@ -5,6 +5,7 @@ namespace CaucasusDrive
 {
     /// <summary>Положение игрока для ИИ (машина или пешеход).</summary>
     public class PlayerProbe { public float x, z, heading, speed; }
+    public class PedProbe { public bool active; public float x, z; }
 
     /// <summary>
     /// Машина трафика (порт TrafficCar.js, координаты Unity): движение по полосе, повороты по кривой Безье,
@@ -161,6 +162,18 @@ namespace CaucasusDrive
                 }
                 var p = ctx.player;
                 if (Scan(p.x, p.z, Mathf.Sin(p.heading), Mathf.Cos(p.heading), p.speed, fx, fz, rgx, rgz, ref gap, ref leadV)) { leader = null; leaderIsPlayer = true; }
+                // игрок пешком на проезжей части: стоим перед ним (через пару секунд — гудок)
+                var ped = ctx.ped;
+                if (ped.active)
+                {
+                    float pdx = ped.x - x, pdz = ped.z - z;
+                    float along = pdx * fx + pdz * fz, side = pdx * rgx + pdz * rgz;
+                    if (along > 0.5f && along < 30f && Mathf.Abs(side) < 1.6f)
+                    {
+                        float gp = along - HalfLen - 1.2f;
+                        if (gp < gap) { gap = Mathf.Max(gp, 0.01f); leadV = 0f; leader = null; leaderIsPlayer = true; }
+                    }
+                }
             }
 
             waitingLight = false;
@@ -294,6 +307,7 @@ namespace CaucasusDrive
         public readonly List<TrafficCar> cars = new List<TrafficCar>();
         readonly Stack<TrafficCar> free = new Stack<TrafficCar>();
         public readonly PlayerProbe player = new PlayerProbe();
+        public readonly PedProbe ped = new PedProbe();
         public Vector3 center;
         public int target;
         public float density = 1f;

@@ -170,9 +170,31 @@ namespace CaucasusDrive
             RenderSettings.ambientEquatorColor = Color.Lerp(new Color(0.05f, 0.05f, 0.07f), new Color(0.55f, 0.55f, 0.52f), day);
             RenderSettings.ambientGroundColor = Color.Lerp(new Color(0.02f, 0.02f, 0.03f), new Color(0.3f, 0.28f, 0.25f), day);
             RenderSettings.fogColor = Color.Lerp(new Color(0.04f, 0.05f, 0.08f), new Color(0.72f, 0.78f, 0.86f), day);
+            baseSun = sun.intensity; baseFog = RenderSettings.fogColor; baseAmb = RenderSettings.ambientSkyColor; baseExp = sky.GetFloat("_Exposure");
+            overcast = -1f;
+            Overcast(lastOvercast);
             probe.RenderProbe();
         }
 
-        public void SetFog(float far) { RenderSettings.fogStartDistance = far * 0.35f; RenderSettings.fogEndDistance = far; }
+        public void SetFog(float far) { fogFar = far; RenderSettings.fogStartDistance = far * 0.35f; RenderSettings.fogEndDistance = far; overcast = -1f; Overcast(lastOvercast); }
+
+        float baseSun = 1f, baseExp = 1f, fogFar = 400f, overcast = -1f, lastOvercast;
+        Color baseFog, baseAmb;
+
+        /// <summary>Пасмурно/дождь 0..1: солнце тусклее, небо и туман серые, туман ближе (порт Game._weather).</summary>
+        public void Overcast(float r)
+        {
+            lastOvercast = r;
+            if (Mathf.Abs(r - overcast) < 0.004f) return;
+            overcast = r;
+            float day = 1f - night;
+            var grey = new Color(0.42f, 0.45f, 0.5f) * (0.25f + 0.75f * day);
+            sun.intensity = baseSun * (1f - 0.7f * r);
+            RenderSettings.fogColor = Color.Lerp(baseFog, grey, 0.75f * r);
+            RenderSettings.ambientSkyColor = Color.Lerp(baseAmb, grey, 0.5f * r);
+            sky.SetFloat("_Exposure", baseExp * (1f - 0.45f * r));
+            RenderSettings.fogStartDistance = fogFar * 0.35f * (1f - 0.6f * r);
+            RenderSettings.fogEndDistance = fogFar * (1f - 0.35f * r);
+        }
     }
 }

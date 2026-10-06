@@ -14,6 +14,11 @@ namespace CaucasusDrive
         public abstract void Update(float dt);
         public virtual void OnCrash(float strength, string kind, Collider col) { }
         public virtual bool Restartable => true;
+        public virtual bool AllowWalk => false;
+        public virtual void OnPedHit(float speed) { }
+        public virtual void OnAction() { }
+        public virtual void OnTaxi() { }
+        public virtual void RenderGlow(Glow glow, bool blink) { }
     }
 
     // ===================================================================== парковка
@@ -205,6 +210,7 @@ namespace CaucasusDrive
             bool first = app.save.d.stars[index] == 0;
             int reward = Mathf.RoundToInt(L.reward * (stars / 3f) * (first ? 2 : 1));
             app.save.SetStars(index, stars);
+            app.daily.Progress("park", 1);
             app.save.AddMoney(reward);
             app.audio.Success();
             app.inputLocked = true;
@@ -212,98 +218,12 @@ namespace CaucasusDrive
         }
     }
 
-    // ===================================================================== свободная езда
-    public class FreeRideMode : GameMode
-    {
-        public override string Name => "free";
-        public override bool Restartable => false;
-        readonly DriftScore drift = new DriftScore();
-        float nearT, near = 99f, comboCool, fuelWarn, payout;
-
-        public FreeRideMode(App a) : base(a) { }
-
-        public override void Enter()
-        {
-            app.traffic.enabled = true;
-            app.traffic.Clear();
-            float x = CityC.Coord(3) + CityC.LANES[1], z = CityC.Coord(2) + CityC.HALF + 20f;
-            app.player.Place(x, z, 0f);
-            app.cameraRig.Snap();
-            app.traffic.center = new Vector3(x, 0, z);
-            app.traffic.Prefill(app.cam);
-            drift.onEvent = (t) => { app.hud.DriftTag(t, 1.2f); app.audio.Beep(1100 + drift.mult * 120, 0.07f); };
-            drift.onBank = (total, mult) =>
-            {
-                int money = Mathf.RoundToInt(total / 25f);
-                bool record = total > app.save.d.freeBest;
-                if (record) app.save.d.freeBest = total;
-                if (money > 0) app.save.AddMoney(money); else app.save.Commit();
-                app.hud.DriftTag((record ? "РЕКОРД! " : "ИТОГ ") + total.ToString("#,0").Replace(",", " ") + (money > 0 ? " · +" + M.Rub(money) : ""), record ? 3.5f : 2.5f);
-                if (record) app.audio.Success(); else app.audio.Coin();
-            };
-            drift.onLost = (reason, pts) => { app.hud.DriftTag(reason.ToUpper() + ": −" + pts, 2f); app.audio.Beep(300, 0.18f); };
-            app.hud.Toast("Свободная езда: дрифт и обгоны впритирку приносят рубли", HUD.Good, 3.5f);
-        }
-
-        public override void Exit() { drift.Bank(); app.hud.Drift(false, 0, 1, 0); }
-
-        public override void OnCrash(float strength, string kind, Collider col)
-        {
-            if (strength < 0.08f) return;
-            app.Crash(strength);
-            if (strength > 0.12f) drift.Lose("Удар");
-        }
-
-        public override void Update(float dt)
-        {
-            var p = app.player.phys;
-            if (drift.active) { nearT -= dt; if (nearT <= 0) { nearT = 0.1f; near = DriftScore.NearestObstacle(app.player); } } else near = 99f;
-            drift.Update(dt, p, app.player.surface.type == 2, near);
-            app.hud.Drift(drift.InSeries, drift.Total, drift.mult, drift.active ? drift.angle : 0);
-
-            // «шашки»: обгон машины трафика впритирку на скорости
-            comboCool -= dt;
-            if (p.speed > 16f && comboCool <= 0f)
-            {
-                var pos = app.player.Position; var f = M.Fwd(app.player.Heading);
-                foreach (var c in app.traffic.cars)
-                {
-                    float dx = c.x - pos.x, dz = c.z - pos.z;
-                    float along = dx * f.x + dz * f.z, side = Mathf.Abs(dx * f.z - dz * f.x);
-                    if (along < -1.5f && along > -4.5f && side < 2.6f && c.speed < p.speed - 4f)
-                    {
-                        comboCool = 1.2f;
-                        drift.Bonus(150f + p.speed * 6f, "ШАШКИ!");
-                        break;
-                    }
-                }
-            }
-
-            // АЗС: заправка в зоне навеса (на ходу ≤ 5 км/ч)
-            var az = app.city.azs;
-            if (az != Vector3.zero && Vector3.Distance(app.player.Position, az) < app.city.azsR && p.speed < 1.5f && p.fuel < p.spec.tank - 0.5f)
-            {
-                float liters = Mathf.Min(p.spec.tank - p.fuel, 20f * dt);
-                payout += liters * 56f;
-                p.fuel += liters;
-                if (payout >= 100f) { int pay = (int)payout; payout -= pay; if (!app.save.Spend(pay)) p.fuel -= liters; }
-                app.hud.Mission("АЗС", "Заправка… " + Mathf.RoundToInt(p.fuel) + " / " + p.spec.tank + " л", p.fuel / p.spec.tank);
-            }
-            else if (p.fuel < p.spec.tank * 0.12f)
-            {
-                fuelWarn -= dt;
-                if (fuelWarn <= 0f) { fuelWarn = 20f; app.hud.Toast("Мало бензина — заправка на АЗС (жёлтая точка на карте)", HUD.Bad, 3f); }
-                app.hud.Nav(az);
-            }
-            else app.hud.Mission(null, null, 0);
-        }
-    }
-
     public class Result
     {
-        public bool ok, first;
-        public int stars, reward, level;
+        public bool ok, first, exam, drift, record;
+        public int stars, reward, level, score, best, series, pts;
         public float time;
         public string why;
+        public List<string> log;
     }
 }

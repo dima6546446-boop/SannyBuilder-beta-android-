@@ -12,7 +12,7 @@ namespace CaucasusDrive
     /// </summary>
     public static class In
     {
-        public enum K { W, A, S, D, Up, Down, Left, Right, Space, H, C, Escape }
+        public enum K { W, A, S, D, Up, Down, Left, Right, Space, H, C, Escape, F, E, T, R, X, G, Z, B, Q, LeftShift, Comma, Period, Slash }
 
 #if ENABLE_INPUT_SYSTEM
         static Key Map(K k)
@@ -21,7 +21,11 @@ namespace CaucasusDrive
             {
                 case K.W: return Key.W; case K.A: return Key.A; case K.S: return Key.S; case K.D: return Key.D;
                 case K.Up: return Key.UpArrow; case K.Down: return Key.DownArrow; case K.Left: return Key.LeftArrow; case K.Right: return Key.RightArrow;
-                case K.Space: return Key.Space; case K.H: return Key.H; case K.C: return Key.C; default: return Key.Escape;
+                case K.Space: return Key.Space; case K.H: return Key.H; case K.C: return Key.C;
+                case K.F: return Key.F; case K.E: return Key.E; case K.T: return Key.T; case K.R: return Key.R; case K.X: return Key.X;
+                case K.G: return Key.G; case K.Z: return Key.Z; case K.B: return Key.B; case K.Q: return Key.Q; case K.LeftShift: return Key.LeftShift;
+                case K.Comma: return Key.Comma; case K.Period: return Key.Period; case K.Slash: return Key.Slash;
+                default: return Key.Escape;
             }
         }
         public static bool Held(K k) { var kb = Keyboard.current; return kb != null && kb[Map(k)].isPressed; }
@@ -79,7 +83,11 @@ namespace CaucasusDrive
             {
                 case K.W: return KeyCode.W; case K.A: return KeyCode.A; case K.S: return KeyCode.S; case K.D: return KeyCode.D;
                 case K.Up: return KeyCode.UpArrow; case K.Down: return KeyCode.DownArrow; case K.Left: return KeyCode.LeftArrow; case K.Right: return KeyCode.RightArrow;
-                case K.Space: return KeyCode.Space; case K.H: return KeyCode.H; case K.C: return KeyCode.C; default: return KeyCode.Escape;
+                case K.Space: return KeyCode.Space; case K.H: return KeyCode.H; case K.C: return KeyCode.C;
+                case K.F: return KeyCode.F; case K.E: return KeyCode.E; case K.T: return KeyCode.T; case K.R: return KeyCode.R; case K.X: return KeyCode.X;
+                case K.G: return KeyCode.G; case K.Z: return KeyCode.Z; case K.B: return KeyCode.B; case K.Q: return KeyCode.Q; case K.LeftShift: return KeyCode.LeftShift;
+                case K.Comma: return KeyCode.Comma; case K.Period: return KeyCode.Period; case K.Slash: return KeyCode.Slash;
+                default: return KeyCode.Escape;
             }
         }
         public static bool Held(K k) { return Input.GetKey(Map(k)); }

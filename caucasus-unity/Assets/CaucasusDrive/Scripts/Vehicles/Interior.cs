@@ -407,6 +407,7 @@ namespace CaucasusDrive
         }
 
         /// <summary>В виде из салона камера в голове водителя — голову прячем.</summary>
+        public bool FirstPerson => firstPerson;
         public void SetFirstPerson(bool v) { firstPerson = v; driver.B["neck"].localScale = Vector3.one * (v ? 0.001f : 1f); }
 
         public void SetDriverVisible(bool v) { driver.SetVisible(v); }

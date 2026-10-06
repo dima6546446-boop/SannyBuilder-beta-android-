@@ -78,7 +78,7 @@ namespace CaucasusDrive
             return l;
         }
 
-        static Level Parallel(float k, int seed, bool police = false)
+        public static Level Parallel(float k, int seed, bool police = false)
         {
             var b = new B(seed);
             float gap = 7.6f - 1.5f * k, lane = 3.6f;
@@ -98,7 +98,7 @@ namespace CaucasusDrive
             return l;
         }
 
-        static Level Garage(float k, bool reverse, int seed)
+        public static Level Garage(float k, bool reverse, int seed)
         {
             var b = new B(seed);
             float iw = 3.25f - 0.45f * k, depth = 6.4f, z0 = 5f, t = 0.2f;
@@ -120,7 +120,7 @@ namespace CaucasusDrive
             return l;
         }
 
-        static Level Slalom(float k, int seed)
+        public static Level Slalom(float k, int seed)
         {
             var b = new B(seed);
             float step = 8 - 2 * k, half = 5 - k;

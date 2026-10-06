@@ -9,13 +9,13 @@ namespace CaucasusDrive
     /// навигации, панель дрифта, всплывающие сообщения и сенсорное управление
     /// (руль/стрелки/наклон, газ, тормоз, ручник, R·N·D или механика, гудок, поворотники, фары, камера).
     /// </summary>
-    public class HUD
+    public partial class HUD
     {
         public const int Good = 1, Bad = 2;
         readonly App app;
         public readonly Canvas canvas;
         readonly RectTransform root, controls;
-        Text speed, gear, money, missionTitle, missionText, driftPts, driftMult, driftTag, fpsText;
+        Text speed, gear, money, missionTitle, missionText, driftPts, driftMult, driftTag, fpsText, driftBest;
         Image rpmFill, fuelFill, missionBar, navArrow, mapImg, mapDot;
         RectTransform toasts, drift, mission, nav, map;
         public HoldButton gas, brake, handbrake, horn, left, right;
@@ -37,6 +37,7 @@ namespace CaucasusDrive
             BuildMission();
             controls = UIKit.Fill(root, "Controls");
             BuildControls();
+            BuildExtra();
             Show(false);
         }
 
@@ -49,7 +50,7 @@ namespace CaucasusDrive
             var mb = UIKit.Panel(tr, "Money", new Vector2(1, 1), new Vector2(1, 1), new Vector2(0, 0), new Vector2(200, 48), UIKit.Bg);
             mb.rectTransform.pivot = new Vector2(1, 1); mb.rectTransform.anchoredPosition = Vector2.zero;
             money = UIKit.Label(mb.transform, "0 ₽", 28, UIKit.Gold);
-            fpsText = UIKit.LabelAt(tr, "", 18, new Color(0.5f, 0.9f, 0.5f), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-55, -140), new Vector2(110, 26), TextAnchor.MiddleRight, false); // под кнопками, не налезает на деньги
+            fpsText = UIKit.LabelAt(tr, "", 18, new Color(0.5f, 0.9f, 0.5f), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-55, -205), new Vector2(110, 26), TextAnchor.MiddleRight, false); // под кнопками, не налезает на деньги
             string[] icons = { "II", "КАМ", "ФАРЫ" };
             System.Action[] acts = { () => app.Pause(), () => app.NextCamera(), () => { app.player.CycleLights(); } };
             for (int i = 0; i < 3; i++)
@@ -137,6 +138,7 @@ namespace CaucasusDrive
             UIKit.Img(drift, UIKit.Bg);
             driftPts = UIKit.LabelAt(drift, "0", 40, Color.white, new Vector2(0, 1), new Vector2(0.7f, 1), new Vector2(0, -28), new Vector2(0, 48));
             driftMult = UIKit.LabelAt(drift, "×1", 34, UIKit.Accent, new Vector2(0.7f, 1), new Vector2(1, 1), new Vector2(0, -28), new Vector2(0, 48));
+            driftBest = UIKit.LabelAt(drift, "", 15, UIKit.Muted, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 12), new Vector2(0, 22), TextAnchor.MiddleCenter, false);
             drift.gameObject.SetActive(false);
             driftTag = UIKit.LabelAt(root, "", 30, UIKit.Gold, new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2(0, -200), new Vector2(700, 40));
             var sh = driftTag.gameObject.AddComponent<Shadow>(); sh.effectDistance = new Vector2(2, -2);
@@ -189,12 +191,14 @@ namespace CaucasusDrive
         Vector3? navTarget;
         public void Nav(Vector3 target) { navTarget = target; }
 
-        public void Drift(bool show, int pts, float mult, float angle)
+        public void Drift(bool show, int pts, float mult, float angle, int best = 0)
         {
-            if (drift.gameObject.activeSelf != show) drift.gameObject.SetActive(show);
-            if (!show) return;
-            driftPts.text = pts.ToString("#,0").Replace(",", " ");
-            driftMult.text = "×" + mult.ToString("0.#");
+            bool vis = show || driftTagT > 0f;
+            if (drift.gameObject.activeSelf != vis) drift.gameObject.SetActive(vis);
+            if (!vis) return;
+            driftPts.text = show ? pts.ToString("#,0").Replace(",", " ") : "";
+            driftMult.text = show ? "×" + mult.ToString("0.#") : "";
+            driftBest.text = best > 0 ? "рекорд " + best.ToString("#,0").Replace(",", " ") : "";
         }
 
         public void DriftTag(string text, float sec) { driftTag.text = text; driftTagT = sec; }
@@ -261,6 +265,7 @@ namespace CaucasusDrive
         public CarInput ReadInput(Settings s)
         {
             var i = new CarInput();
+            if (app.onFoot) { i.brake = 1f; i.handbrake = true; return i; }
             float steer = s.controls == 0 ? wheel.value : s.controls == 1 ? (right.held ? 1f : 0f) - (left.held ? 1f : 0f) : Mathf.Clamp(In.Acceleration.x * 2.2f, -1f, 1f);
             float kb = (In.Held(In.K.D) || In.Held(In.K.Right) ? 1f : 0f) - (In.Held(In.K.A) || In.Held(In.K.Left) ? 1f : 0f);
             if (kb != 0f) steer = kb;
@@ -272,7 +277,7 @@ namespace CaucasusDrive
             return i;
         }
 
-        public bool Horn => horn.held || In.Held(In.K.H);
+        public bool Horn => !app.onFoot && (horn.held || In.Held(In.K.H));
 
         // ------------------------------------------------------------------ кадр
         public void Update(float dt)
@@ -291,17 +296,18 @@ namespace CaucasusDrive
                 for (int i = 0; i < 3; i++) selBtns[i].color = "RND"[i] == p.selector ? UIKit.Accent : UIKit.Bg2;
 
             // карта: вращается так, что курс машины — вверх
-            var pos = app.player.Position;
+            var pos = app.onFoot ? app.walker.Pos : app.player.Position;
+            float headingMap = app.onFoot ? app.cameraRig.footYaw : app.player.Heading;
             float world = 1400f, k = 1200f / world;
             var mrt = mapImg.rectTransform;
-            mrt.localRotation = Quaternion.Euler(0, 0, app.player.Heading * Mathf.Rad2Deg);
+            mrt.localRotation = Quaternion.Euler(0, 0, headingMap * Mathf.Rad2Deg);
             var off = new Vector2(-(pos.x + 140f) * k, -pos.z * k);
-            mrt.anchoredPosition = (Vector2)(Quaternion.Euler(0, 0, app.player.Heading * Mathf.Rad2Deg) * off);
+            mrt.anchoredPosition = (Vector2)(Quaternion.Euler(0, 0, headingMap * Mathf.Rad2Deg) * off);
 
             if (navTarget.HasValue)
             {
                 var d = navTarget.Value - pos;
-                float ang = Mathf.Atan2(d.x, d.z) - app.player.Heading;
+                float ang = Mathf.Atan2(d.x, d.z) - headingMap;
                 nav.gameObject.SetActive(d.magnitude > 4f);
                 nav.localRotation = Quaternion.Euler(0, 0, -ang * Mathf.Rad2Deg);
                 navTarget = null;
@@ -309,6 +315,7 @@ namespace CaucasusDrive
             else if (nav.gameObject.activeSelf) nav.gameObject.SetActive(false);
 
             if (driftTagT > 0f) { driftTagT -= dt; if (driftTagT <= 0f) driftTag.text = ""; }
+            UpdateExtra(dt);
         }
     }
 }
