@@ -92,6 +92,18 @@ namespace CaucasusDrive
                 dims = D(1.75f, 1.93f, -2.54f, 1.15f, -1.755f, 1.47f, 0.31f, 0.185f, 0.33f), colors = Modern, traffic = 1f,
                 spec = S(1260, 102, 145, 3750, 6000, new[] { 3.55f, 3.73f, 2.05f, 1.32f, 0.97f, 0.76f }, 4.5f, Drive.FWD, 0.62f, 11000, 0.55f, 1.05f, 0.58f, 50),
                 headY = 0.8f, headX = 0.58f, tailY = 0.86f, tailX = 0.72f },
+            new CarDef { id = "vaz2108", name = "ВАЗ-2108", nick = "«Спутник»", years = "1984–2003", price = 60000, wheelStyle = "steel",
+                dims = D(1.65f, 1.71f, -2.30f, 0.98f, -1.48f, 1.40f, 0.28f, 0.165f, 0.29f), colors = new[] { 0xecebe4, 0xb0161b, 0x2e5f8a, 0x1c1c1c, 0x4a7a3a, 0xd8c23a, 0x8a8f94 }, traffic = 1.5f,
+                spec = S(915, 64, 94, 3400, 6000, new[] { 3.53f, 3.64f, 1.95f, 1.36f, 0.94f, 0.78f }, 4.13f, Drive.FWD, 0.52f, 8800, 0.46f, 1.04f, 0.62f, 43),
+                headY = 0.62f, headX = 0.56f, tailY = 0.78f, tailX = 0.55f },
+            new CarDef { id = "vaz2110", name = "ВАЗ-2110", nick = "«Десятка»", years = "1996–2014", price = 120000, wheelStyle = "star",
+                dims = D(1.68f, 1.83f, -2.46f, 1.0f, -1.49f, 1.42f, 0.295f, 0.175f, 0.30f), colors = Modern, traffic = 1.5f,
+                spec = S(1070, 81, 120, 3800, 6200, new[] { 3.53f, 3.64f, 1.95f, 1.36f, 0.94f, 0.78f }, 3.9f, Drive.FWD, 0.53f, 10000, 0.43f, 1.08f, 0.62f, 43),
+                headY = 0.66f, headX = 0.57f, tailY = 0.88f, tailX = 0.56f },
+            new CarDef { id = "kalina", name = "Lada Kalina", nick = "«Калина»", years = "2004–2018", price = 160000, wheelStyle = "steel",
+                dims = D(1.70f, 1.78f, -2.07f, 1.0f, -1.47f, 1.43f, 0.285f, 0.175f, 0.31f), colors = Modern, traffic = 1.5f,
+                spec = S(1010, 87, 128, 3800, 6200, new[] { 3.5f, 3.7f, 2.0f, 1.36f, 0.97f, 0.8f }, 3.9f, Drive.FWD, 0.53f, 10000, 0.42f, 1.1f, 0.62f, 50),
+                headY = 0.70f, headX = 0.57f, tailY = 0.88f, tailX = 0.58f },
         };
 
         static Dictionary<string, CarDef> _byId;

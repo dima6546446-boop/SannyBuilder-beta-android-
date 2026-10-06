@@ -46,7 +46,7 @@ def build_car_object(cid, lod='hi'):
     ob = bpy.context.view_layer.objects.active
     ob.name = NAMES[lod]
     ob.data.name = NAMES[lod]
-    bpy.ops.object.shade_smooth_by_angle(angle=math.radians(38))
+    bpy.ops.object.shade_smooth_by_angle(angle=math.radians(30))
     if lod in ('lod0', 'lod1'):
         m = ob.modifiers.new('dec', 'DECIMATE')
         m.ratio = 0.6 if lod == 'lod0' else 0.5

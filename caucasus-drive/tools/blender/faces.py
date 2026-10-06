@@ -65,7 +65,7 @@ def front_vesta(Dc, P, d):
         Dc.poly_strip('front', [(0.40, 0.762), (0.60, 0.785), (0.82, 0.81)], 0.012, 'headLamp', thick=0.024, mirror=s)
         Dc.region('front', 0.76, 0.84, [(0.76, 0.82), (0.84, 0.83)], [(0.76, 0.845), (0.84, 0.855)], 'indL' if s > 0 else 'indR', nu=2, nv=1, thick=0.022, mirror=s)
         # X: верхняя и нижняя «ветви» хрома
-        Dc.poly_strip('front', [(0.37, 0.74), (0.20, 0.60), (0.30, 0.48), (0.54, 0.385)], 0.075, 'chrome', thick=0.024, mirror=s)
+        Dc.poly_strip('front', [(0.37, 0.74), (0.20, 0.60), (0.30, 0.48), (0.54, 0.385)], 0.06, 'chrome', thick=0.024, mirror=s)
         # противотуманки в нишах снаружи от нижних ветвей
         Dc.region('front', 0.50, 0.78, [(0.50, 0.38), (0.78, 0.42)], [(0.50, 0.44), (0.78, 0.52)], 'black', nu=4, nv=1, thick=0.008, mirror=s)
         Dc.disc('front', 0.66, 0.44, 0.038, 'headLamp', thick=0.018, mirror=s)
@@ -93,6 +93,37 @@ def front_largus(Dc, P, d):
         Dc.region('front', -0.28, 0.28, [(-0.3, y)], [(-0.3, y + 0.014)], 'chrome', nu=6, nv=1, thick=0.024)
     Dc.disc('front', 0, 0.79, 0.055, 'chrome', thick=0.032, ry=0.04)
     Dc.region('front', -0.46, 0.46, [(-0.46, 0.40), (0.46, 0.40)], [(-0.46, 0.52), (0.46, 0.52)], 'grille', nu=6, nv=1, thick=0.01)
+
+
+def front_vaz2110(Dc, P, d):
+    for s in (1, -1):
+        bot, top = [(0.30, 0.625), (0.56, 0.61), (0.84, 0.65)], [(0.30, 0.735), (0.84, 0.745)]
+        lamp(Dc, 'front', s, 0.29, 0.85, bot, top)
+        Dc.region('front', 0.42, 0.82, [(0.42, 0.665), (0.82, 0.685)], [(0.42, 0.705), (0.82, 0.72)], 'headLamp', nu=3, nv=1, thick=0.02, mirror=s)
+        Dc.region('front', 0.76, 0.84, [(0.76, 0.665), (0.84, 0.675)], [(0.76, 0.725), (0.84, 0.735)], 'indL' if s > 0 else 'indR', nu=2, nv=1, thick=0.02, mirror=s)
+        Dc.region('front', 0.46, 0.74, [(0.46, 0.39), (0.74, 0.42)], [(0.46, 0.50), (0.74, 0.50)], 'black', nu=4, nv=1, thick=0.01, mirror=s)
+        Dc.disc('front', 0.60, 0.45, 0.04, 'headLamp', thick=0.02, mirror=s)
+    Dc.region('front', -0.26, 0.26, [(-0.26, 0.625), (0.26, 0.625)], [(-0.26, 0.705), (0.26, 0.705)], 'chrome', nu=6, nv=1, thick=0.01)
+    Dc.region('front', -0.235, 0.235, [(-0.235, 0.638), (0.235, 0.638)], [(-0.235, 0.692), (0.235, 0.692)], 'grille', nu=6, nv=1, thick=0.014)
+    Dc.disc('front', 0, 0.665, 0.04, 'chrome', thick=0.024, ry=0.028)
+    Dc.region('front', -0.46, 0.46, [(-0.46, 0.39), (0.46, 0.39)], [(-0.46, 0.50), (-0.30, 0.52), (0.30, 0.52), (0.46, 0.50)], 'grille', nu=6, nv=1, thick=0.01)
+
+
+def front_kalina(Dc, P, d):
+    for s in (1, -1):
+        bot, top = [(0.30, 0.62), (0.56, 0.60), (0.84, 0.66)], [(0.30, 0.775), (0.62, 0.79), (0.84, 0.80)]
+        lamp(Dc, 'front', s, 0.29, 0.85, bot, top)
+        Dc.disc('front', 0.46, 0.70, 0.05, 'headLamp', thick=0.02, mirror=s)
+        Dc.ring('front', 0.46, 0.70, 0.055, 0.012, 'chrome', thick=0.022, mirror=s)
+        Dc.region('front', 0.60, 0.80, [(0.60, 0.665), (0.80, 0.69)], [(0.60, 0.735), (0.80, 0.76)], 'headLamp', nu=3, nv=1, thick=0.02, mirror=s)
+        Dc.region('front', 0.74, 0.84, [(0.74, 0.70), (0.84, 0.72)], [(0.74, 0.77), (0.84, 0.78)], 'indL' if s > 0 else 'indR', nu=2, nv=1, thick=0.02, mirror=s)
+        Dc.region('front', 0.50, 0.74, [(0.50, 0.40), (0.74, 0.43)], [(0.50, 0.51), (0.74, 0.52)], 'black', nu=4, nv=1, thick=0.01, mirror=s)
+        Dc.disc('front', 0.62, 0.46, 0.04, 'headLamp', thick=0.02, mirror=s)
+    Dc.region('front', -0.30, 0.30, [(-0.30, 0.62), (0.30, 0.62)], [(-0.30, 0.75), (0.30, 0.75)], 'chrome', nu=6, nv=1, thick=0.01)
+    Dc.region('front', -0.275, 0.275, [(-0.275, 0.635), (0.275, 0.635)], [(-0.275, 0.735), (0.275, 0.735)], 'grille', nu=6, nv=1, thick=0.014)
+    Dc.disc('front', 0, 0.685, 0.045, 'chrome', thick=0.026, ry=0.03)
+    Dc.region('front', -0.44, 0.44, [(-0.44, 0.40), (0.44, 0.40)], [(-0.44, 0.52), (-0.28, 0.55), (0.28, 0.55), (0.44, 0.52)], 'grille', nu=6, nv=1, thick=0.01)
+
 
 
 def front_niva(Dc, P, d):
@@ -188,6 +219,24 @@ def rear_vaz2109(Dc, P, d):
     Dc.region('rear', -0.40, 0.40, [(-0.4, 0.72)], [(-0.4, 0.855)], 'black', nu=6, nv=1, thick=0.008)
 
 
+def rear_vaz2110(Dc, P, d):
+    for s in (1, -1):
+        _tail(Dc, s, 0.34, 0.93, [(0.34, 0.80), (0.65, 0.78), (0.93, 0.82)], [(0.34, 0.935), (0.93, 0.945)],
+              [(0.46, 'reverseLamp'), (0.58, 'ind'), (0.93, 'tailLamp')])
+    Dc.region('rear', -0.28, 0.28, [(-0.28, 0.885)], [(-0.28, 0.9)], 'chrome', nu=6, nv=1, thick=0.012)
+    Dc.region('rear', -0.55, 0.55, [(-0.55, 0.31)], [(-0.55, 0.36)], 'black', nu=6, nv=1, thick=0.01)
+
+
+def rear_kalina(Dc, P, d):
+    for s in (1, -1):
+        Dc.region('rear', 0.62, 0.84, [(0.62, 0.78)], [(0.62, 1.00)], 'black', nu=2, nv=3, thick=0.01, mirror=s)
+        Dc.region('rear', 0.635, 0.825, [(0.635, 0.90)], [(0.635, 0.99)], 'tailLamp', nu=2, nv=2, thick=0.018, mirror=s)
+        Dc.region('rear', 0.635, 0.825, [(0.635, 0.84)], [(0.635, 0.895)], 'indL' if s > 0 else 'indR', nu=2, nv=1, thick=0.018, mirror=s)
+        Dc.region('rear', 0.635, 0.825, [(0.635, 0.785)], [(0.635, 0.835)], 'reverseLamp', nu=2, nv=1, thick=0.018, mirror=s)
+    Dc.region('rear', -0.50, 0.50, [(-0.5, 0.33)], [(-0.5, 0.39)], 'black', nu=6, nv=1, thick=0.01)
+
+
+
 def rear_niva(Dc, P, d):
     for s in (1, -1):
         Dc.region('rear', 0.66, 0.80, [(0.66, 0.78)], [(0.66, 1.06)], 'black', nu=2, nv=3, thick=0.01, mirror=s)
@@ -196,9 +245,9 @@ def rear_niva(Dc, P, d):
         Dc.region('rear', 0.675, 0.785, [(0.675, 0.79)], [(0.675, 0.86)], 'reverseLamp' if s < 0 else 'tailLamp', nu=2, nv=1, thick=0.018, mirror=s)
 
 
-FRONT = {'vaz2109': front_vaz2109, 'oka': front_oka, 'priora': front_priora, 'granta': front_granta, 'vesta': front_vesta, 'largus': front_largus, 'niva': front_niva}
+FRONT = {'vaz2109': front_vaz2109, 'oka': front_oka, 'priora': front_priora, 'granta': front_granta, 'vesta': front_vesta, 'largus': front_largus, 'niva': front_niva, 'vaz2110': front_vaz2110, 'kalina': front_kalina}
 REAR = {'priora': rear_priora, 'granta': rear_granta, 'vesta': rear_vesta, 'largus': rear_largus,
-        'vaz2109': rear_vaz2109, 'niva': rear_niva}
+        'vaz2109': rear_vaz2109, 'niva': rear_niva, 'vaz2110': rear_vaz2110, 'kalina': rear_kalina}
 
 
 # ======================================================================== бока
@@ -214,6 +263,8 @@ SIDE = {
     'vaz2101': dict(lip=(0.018, 0.008, 'paint')),
     'vaz2106': dict(lip=(0.018, 0.008, 'paint'), vent=True),
     'vaz2107': dict(lip=(0.018, 0.008, 'paint')),
+    'vaz2110': dict(lip=(0.022, 0.008, 'paint')),
+    'kalina': dict(lip=(0.025, 0.01, 'paint'), mold=(0.50, 0.55, 'paint')),
 }
 
 

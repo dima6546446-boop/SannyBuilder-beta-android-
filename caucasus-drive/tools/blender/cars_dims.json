@@ -634,5 +634,162 @@
   "police": false,
   "taxi": true,
   "rails": false
+ },
+ "vaz2108": {
+  "id": "vaz2108",
+  "base": "vaz2109",
+  "name": "ВАЗ-2108",
+  "dims": {
+   "W": 1.65,
+   "cabinW": 1.44,
+   "front": 1.71,
+   "rear": -2.3,
+   "axleF": 0.98,
+   "axleR": -1.48,
+   "track": 1.4,
+   "wheelR": 0.28,
+   "wheelW": 0.165,
+   "sill": 0.29,
+   "archR": 0.36
+  },
+  "head": {
+   "style": "wedge",
+   "y": 0.62,
+   "h": 0.12,
+   "w": 0.44,
+   "x": 0.56
+  },
+  "tail": {
+   "style": "hatch",
+   "y": 0.78,
+   "h": 0.16,
+   "w": 0.44,
+   "x": 0.55
+  },
+  "grille": {
+   "style": "slot",
+   "w": 0.58,
+   "h": 0.08,
+   "y": 0.62
+  },
+  "bumper": {
+   "style": "black",
+   "y": 0.41,
+   "h": 0.2
+  },
+  "trim": null,
+  "pillars": [
+   -0.98
+  ],
+  "glassBottom": 1.0,
+  "fixedColor": null,
+  "police": false,
+  "taxi": false,
+  "rails": false
+ },
+ "vaz2110": {
+  "id": "vaz2110",
+  "base": "vaz2110",
+  "name": "ВАЗ-2110",
+  "dims": {
+   "W": 1.68,
+   "cabinW": 1.46,
+   "front": 1.83,
+   "rear": -2.46,
+   "axleF": 1.0,
+   "axleR": -1.49,
+   "track": 1.42,
+   "wheelR": 0.295,
+   "wheelW": 0.175,
+   "sill": 0.3,
+   "archR": 0.38
+  },
+  "head": {
+   "style": "wedge",
+   "y": 0.74,
+   "h": 0.12,
+   "w": 0.5,
+   "x": 0.55
+  },
+  "tail": {
+   "style": "modern",
+   "y": 0.86,
+   "h": 0.14,
+   "w": 0.44,
+   "x": 0.56
+  },
+  "grille": {
+   "style": "slot",
+   "w": 0.4,
+   "h": 0.08,
+   "y": 0.7
+  },
+  "bumper": {
+   "style": "body",
+   "y": 0.43,
+   "h": 0.26
+  },
+  "trim": null,
+  "pillars": [
+   -0.38
+  ],
+  "glassBottom": 1.0,
+  "fixedColor": null,
+  "police": false,
+  "taxi": false,
+  "rails": false
+ },
+ "kalina": {
+  "id": "kalina",
+  "base": "kalina",
+  "name": "Lada Kalina",
+  "dims": {
+   "W": 1.7,
+   "cabinW": 1.48,
+   "front": 1.78,
+   "rear": -2.07,
+   "axleF": 1.0,
+   "axleR": -1.47,
+   "track": 1.43,
+   "wheelR": 0.285,
+   "wheelW": 0.175,
+   "sill": 0.31,
+   "archR": 0.37
+  },
+  "head": {
+   "style": "modern",
+   "y": 0.75,
+   "h": 0.16,
+   "w": 0.46,
+   "x": 0.56
+  },
+  "tail": {
+   "style": "hatch",
+   "y": 0.88,
+   "h": 0.2,
+   "w": 0.4,
+   "x": 0.58
+  },
+  "grille": {
+   "style": "slot",
+   "w": 0.4,
+   "h": 0.1,
+   "y": 0.72
+  },
+  "bumper": {
+   "style": "body",
+   "y": 0.44,
+   "h": 0.28
+  },
+  "trim": null,
+  "pillars": [
+   -0.38,
+   -1.36
+  ],
+  "glassBottom": 1.0,
+  "fixedColor": null,
+  "police": false,
+  "taxi": false,
+  "rails": false
  }
 }

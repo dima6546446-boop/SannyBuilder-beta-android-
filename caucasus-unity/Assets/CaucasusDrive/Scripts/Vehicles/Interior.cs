@@ -121,7 +121,7 @@ namespace CaucasusDrive
         void Make(CarDef def, Transform body)
         {
             string key = def.id;
-            st = Style(key);
+            st = Style(key == "vaz2108" || key == "vaz2110" ? "vaz2109" : key == "kalina" ? "granta" : key);   // новые модели — салон по аналогии
             var A = InteriorAnchors.Get(key == "police" ? "vaz2107" : key);
             root = new GameObject("Interior");
             root.transform.SetParent(body, false);

@@ -60,7 +60,7 @@ def export_car(cid, out_dir, hi_level):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     obs = []
     # LOD_ultra — субдив hi_level (качество «Высокое»), LOD_hi — субдив 2 (как в веб-версии)
-    for lvl, name in ((hi_level, 'LOD_ultra'), (2, 'LOD_hi')):
+    for lvl, name in ((hi_level, 'LOD_ultra'), (1, 'LOD_hi')):
         B.LEVELS['hi'] = lvl
         ob = B.build_car_object(cid, 'hi')
         ob.name = name
@@ -97,7 +97,7 @@ def write_bytes(path, obs):
 
 if __name__ == '__main__':
     argv = sys.argv[sys.argv.index('--') + 1:] if '--' in sys.argv else []
-    level = 3
+    level = 2
     if '--hi-level' in argv:
         i = argv.index('--hi-level'); level = int(argv[i + 1]); del argv[i:i + 2]
     out = argv[0]
