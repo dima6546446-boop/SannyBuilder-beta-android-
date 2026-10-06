@@ -1,0 +1,32 @@
+namespace CaucasusDrive
+{
+    /// <summary>Габариты салона по форме кузова (сгенерировано из interiorAnchors.json веб-версии). Оси веб-версии: z — вперёд.</summary>
+    public class Anchor
+    {
+        public float W, tumble, zW0, zW1, zB1, zB0, floor;
+        public float[] belt, top; // пары (z, y), z убывает
+    }
+
+    public static class InteriorAnchors
+    {
+        public static Anchor Get(string id)
+        {
+            switch (id)
+            {
+                case "vaz2101": return new Anchor { W = 1.61f, tumble = 0.12f, zW0 = 0.84f, zW1 = 0.22f, zB1 = -0.91f, zB0 = -1.3f, floor = 0.2f, belt = new[] { 1.93f, 0.75f, 0.84f, 0.905f, -1.3f, 0.93f, -2.14f, 0.78f }, top = new[] { 1.93f, 0.77f, 1.89f, 0.835f, 1.5f, 0.865f, 0.88f, 0.905f, 0.84f, 0.92f, 0.22f, 1.4f, 0.06f, 1.425f, -0.7f, 1.425f, -0.91f, 1.405f, -1.3f, 0.965f, -1.38f, 0.95f, -2.0f, 0.93f, -2.11f, 0.905f, -2.14f, 0.8f } };
+                case "vaz2106": return new Anchor { W = 1.61f, tumble = 0.115f, zW0 = 0.84f, zW1 = 0.21f, zB1 = -0.93f, zB0 = -1.33f, floor = 0.2f, belt = new[] { 1.99f, 0.76f, 0.84f, 0.915f, -1.33f, 0.945f, -2.18f, 0.8f }, top = new[] { 1.99f, 0.78f, 1.95f, 0.845f, 1.55f, 0.875f, 0.88f, 0.915f, 0.84f, 0.93f, 0.21f, 1.41f, 0.05f, 1.435f, -0.72f, 1.435f, -0.93f, 1.415f, -1.33f, 0.975f, -1.41f, 0.96f, -2.06f, 0.94f, -2.15f, 0.915f, -2.18f, 0.82f } };
+                case "vaz2107": return new Anchor { W = 1.62f, tumble = 0.11f, zW0 = 0.84f, zW1 = 0.2f, zB1 = -0.93f, zB0 = -1.32f, floor = 0.2f, belt = new[] { 1.98f, 0.78f, 0.84f, 0.93f, -1.32f, 0.965f, -2.18f, 0.82f }, top = new[] { 1.98f, 0.8f, 1.94f, 0.86f, 1.6f, 0.89f, 1.2f, 0.915f, 0.88f, 0.935f, 0.84f, 0.95f, 0.2f, 1.42f, 0.04f, 1.44f, -0.72f, 1.44f, -0.93f, 1.42f, -1.32f, 0.99f, -1.4f, 0.975f, -2.02f, 0.955f, -2.14f, 0.93f, -2.18f, 0.84f } };
+                case "oka": return new Anchor { W = 1.42f, tumble = 0.12f, zW0 = 0.58f, zW1 = -0.12f, zB1 = -1.54f, zB0 = -1.76f, floor = 0.19f, belt = new[] { 1.4f, 0.64f, 0.58f, 0.855f, -1.5f, 0.94f, -1.8f, 0.9f }, top = new[] { 1.4f, 0.66f, 1.34f, 0.71f, 1.05f, 0.77f, 0.62f, 0.855f, 0.58f, 0.87f, -0.12f, 1.37f, -0.3f, 1.39f, -1.42f, 1.385f, -1.58f, 1.34f, -1.76f, 1.02f, -1.8f, 0.96f } };
+                case "vaz2109": return new Anchor { W = 1.65f, tumble = 0.14f, zW0 = 0.74f, zW1 = -0.16f, zB1 = -1.2f, zB0 = -2.08f, floor = 0.19f, belt = new[] { 1.71f, 0.64f, 0.74f, 0.87f, -1.9f, 0.985f, -2.3f, 0.9f }, top = new[] { 1.71f, 0.58f, 1.69f, 0.665f, 1.58f, 0.725f, 1.2f, 0.8f, 0.78f, 0.875f, 0.74f, 0.89f, -0.16f, 1.385f, -0.36f, 1.4f, -1.04f, 1.39f, -1.22f, 1.35f, -2.1f, 1.03f, -2.2f, 1.01f, -2.27f, 0.99f, -2.3f, 0.92f } };
+                case "niva": return new Anchor { W = 1.68f, tumble = 0.1f, zW0 = 0.66f, zW1 = 0.2f, zB1 = -1.85f, zB0 = -1.96f, floor = 0.3f, belt = new[] { 1.73f, 0.94f, 0.66f, 1.08f, -1.95f, 1.11f, -2.01f, 1.05f }, top = new[] { 1.73f, 0.96f, 1.69f, 1.03f, 1.2f, 1.06f, 0.7f, 1.08f, 0.66f, 1.09f, 0.2f, 1.6f, 0.02f, 1.625f, -1.76f, 1.62f, -1.88f, 1.59f, -1.97f, 1.13f, -2.01f, 1.08f } };
+                case "priora": return new Anchor { W = 1.68f, tumble = 0.15f, zW0 = 0.82f, zW1 = -0.12f, zB1 = -1.1f, zB0 = -1.74f, floor = 0.19f, belt = new[] { 1.83f, 0.72f, 0.82f, 0.92f, -1.6f, 0.99f, -2.52f, 0.89f }, top = new[] { 1.83f, 0.6f, 1.8f, 0.7f, 1.7f, 0.795f, 1.3f, 0.865f, 0.86f, 0.92f, 0.82f, 0.935f, -0.12f, 1.4f, -0.35f, 1.42f, -0.9f, 1.415f, -1.12f, 1.38f, -1.72f, 1.01f, -1.8f, 0.995f, -2.38f, 0.975f, -2.48f, 0.93f, -2.52f, 0.84f } };
+                case "granta": return new Anchor { W = 1.7f, tumble = 0.16f, zW0 = 0.74f, zW1 = -0.16f, zB1 = -1.08f, zB0 = -1.7f, floor = 0.2f, belt = new[] { 1.78f, 0.77f, 0.74f, 0.975f, -1.55f, 1.05f, -2.48f, 0.94f }, top = new[] { 1.78f, 0.64f, 1.75f, 0.76f, 1.64f, 0.865f, 1.25f, 0.925f, 0.78f, 0.975f, 0.74f, 0.99f, -0.16f, 1.48f, -0.36f, 1.5f, -0.88f, 1.495f, -1.1f, 1.46f, -1.68f, 1.06f, -1.76f, 1.045f, -2.36f, 1.03f, -2.45f, 0.975f, -2.48f, 0.87f } };
+                case "vesta": return new Anchor { W = 1.76f, tumble = 0.18f, zW0 = 0.76f, zW1 = -0.22f, zB1 = -1.18f, zB0 = -1.76f, floor = 0.2f, belt = new[] { 1.89f, 0.8f, 0.76f, 0.99f, -1.6f, 1.08f, -2.52f, 0.96f }, top = new[] { 1.89f, 0.62f, 1.86f, 0.76f, 1.74f, 0.875f, 1.3f, 0.945f, 0.8f, 0.99f, 0.76f, 1.005f, -0.22f, 1.475f, -0.45f, 1.495f, -0.98f, 1.49f, -1.22f, 1.45f, -1.74f, 1.07f, -1.82f, 1.065f, -2.4f, 1.06f, -2.48f, 1.02f, -2.52f, 0.9f } };
+                case "largus": return new Anchor { W = 1.75f, tumble = 0.14f, zW0 = 0.84f, zW1 = -0.1f, zB1 = -2.4f, zB0 = -2.5f, floor = 0.2f, belt = new[] { 1.93f, 0.86f, 0.84f, 1.01f, -2.3f, 1.07f, -2.54f, 1.0f }, top = new[] { 1.93f, 0.7f, 1.9f, 0.82f, 1.78f, 0.925f, 1.35f, 0.985f, 0.88f, 1.01f, 0.84f, 1.025f, -0.1f, 1.62f, -0.35f, 1.645f, -2.3f, 1.64f, -2.42f, 1.6f, -2.5f, 1.1f, -2.54f, 1.03f } };
+                case "police": return new Anchor { W = 1.62f, tumble = 0.11f, zW0 = 0.84f, zW1 = 0.2f, zB1 = -0.93f, zB0 = -1.32f, floor = 0.2f, belt = new[] { 1.98f, 0.78f, 0.84f, 0.93f, -1.32f, 0.965f, -2.18f, 0.82f }, top = new[] { 1.98f, 0.8f, 1.94f, 0.86f, 1.6f, 0.89f, 1.2f, 0.915f, 0.88f, 0.935f, 0.84f, 0.95f, 0.2f, 1.42f, 0.04f, 1.44f, -0.72f, 1.44f, -0.93f, 1.42f, -1.32f, 0.99f, -1.4f, 0.975f, -2.02f, 0.955f, -2.14f, 0.93f, -2.18f, 0.84f } };
+                case "taxi": return new Anchor { W = 1.7f, tumble = 0.16f, zW0 = 0.74f, zW1 = -0.16f, zB1 = -1.08f, zB0 = -1.7f, floor = 0.2f, belt = new[] { 1.78f, 0.77f, 0.74f, 0.975f, -1.55f, 1.05f, -2.48f, 0.94f }, top = new[] { 1.78f, 0.64f, 1.75f, 0.76f, 1.64f, 0.865f, 1.25f, 0.925f, 0.78f, 0.975f, 0.74f, 0.99f, -0.16f, 1.48f, -0.36f, 1.5f, -0.88f, 1.495f, -1.1f, 1.46f, -1.68f, 1.06f, -1.76f, 1.045f, -2.36f, 1.03f, -2.45f, 0.975f, -2.48f, 0.87f } };
+                default: return Get("vaz2107");
+            }
+        }
+    }
+}

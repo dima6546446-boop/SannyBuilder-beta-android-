@@ -39,6 +39,13 @@ namespace CaucasusDrive
         public float Speed => phys.speed;
         public float Heading => -phys.heading;                        // курс в Unity
         public Vector3 Position => go.transform.position;
+        public Vector3 Velocity => GetVel();
+        public float time, lastIndL = -99f, lastIndR = -99f;
+        public System.Action onPop;
+        public float flame;                      // вспышка из прямотока (для свечения)
+        int popQueue; float popT, prevThr;
+        GameObject taxiSign;
+        public Interior interior;
 
         public PlayerCar(Transform parent)
         {
@@ -83,6 +90,9 @@ namespace CaucasusDrive
             box.sharedMaterial = new PhysicMaterial("Car") { dynamicFriction = 0.05f, staticFriction = 0.05f, bounciness = 0.12f, frictionCombine = PhysicMaterialCombine.Minimum, bounceCombine = PhysicMaterialCombine.Average };
 #endif
             go.transform.SetPositionAndRotation(keepPos, keepRot);
+            interior?.Destroy();
+            interior = Interior.Build(d, vis.body);
+            SetTaxiSign(taxiOn);
         }
 
         public void Place(float x, float z, float h)
@@ -165,6 +175,18 @@ namespace CaucasusDrive
                 if (w.front) w.pivot.localRotation = Quaternion.Euler(0, p.steer * Mathf.Rad2Deg, 0); // steer > 0 — вправо
             }
 
+            time += dt;
+            if (indicator == 'L') lastIndL = time;
+            if (indicator == 'R') lastIndR = time;
+            // прямоток: резкий сброс газа на высоких оборотах — 2–5 «выстрелов»
+            if (tune != null && tune.exhaust > 0)
+            {
+                if (prevThr > 0.6f && input.throttle < 0.15f && p.rpm > 3200f && popQueue <= 0) { popQueue = 2 + Random.Range(0, 4); popT = 0.05f; }
+                prevThr = input.throttle;
+                if (popQueue > 0 && (popT -= dt) <= 0f) { popQueue--; popT = 0.08f + Random.value * 0.1f; flame = 0.07f; onPop?.Invoke(); }
+                if (flame > 0f) flame -= dt;
+            }
+            if (interior != null) interior.UpdateState(dt, p, lightsOn, night, App.I.dayNight.time, App.I.rainLevel > 0.15f);
             if (indicator != ' ')
             {
                 blinkT += dt;
@@ -211,6 +233,29 @@ namespace CaucasusDrive
         {
             var d = def.dims; var t = go.transform; float w = d.W / 2f;
             return new[] { t.TransformPoint(new Vector3(w, 0, d.front)), t.TransformPoint(new Vector3(-w, 0, d.front)), t.TransformPoint(new Vector3(-w, 0, d.rear)), t.TransformPoint(new Vector3(w, 0, d.rear)) };
+        }
+
+        /// <summary>Мир-координаты выхлопной трубы (слева сзади).</summary>
+        public Vector3 ExhaustPos => vis.body.TransformPoint(new Vector3(-0.42f, 0.3f, def.dims.rear - 0.14f));
+
+        /// <summary>Шашечки «ТАКСИ» на крыше.</summary>
+        public bool taxiOn;
+        public void SetTaxiSign(bool on)
+        {
+            taxiOn = on;
+            if (taxiSign) Object.Destroy(taxiSign);
+            taxiSign = null;
+            if (!on || vis == null) return;
+            var pm = new PaletteMesh();
+            pm.Box(new Vector3(0, 0, 0), new Vector3(0.5f, 0.15f, 0.2f), 0xffd000);
+            for (int s = -1; s <= 1; s += 2)
+                for (int k = 0; k < 4; k++)
+                    pm.Box(new Vector3(s * 0.253f, -0.03f + (k % 2) * 0.06f, -0.15f + k * 0.1f), new Vector3(0.005f, 0.06f, 0.1f), 0x111111);
+            taxiSign = pm.ToObject("TaxiSign", vis.body);
+            float roof = 0.9f;
+            foreach (var r in vis.body.GetComponentsInChildren<MeshRenderer>()) if (r.gameObject != taxiSign && r.transform.parent == vis.body) roof = Mathf.Max(roof, r.bounds.max.y - vis.body.position.y);
+            taxiSign.transform.localPosition = new Vector3(0, Mathf.Min(roof, 1.6f) + 0.07f, (def.dims.front + def.dims.rear) * 0.5f - 0.3f);
+            taxiSign.layer = 2;
         }
 
         public void CycleLights() { lightsMode = (lightsMode + 1) % 3; }

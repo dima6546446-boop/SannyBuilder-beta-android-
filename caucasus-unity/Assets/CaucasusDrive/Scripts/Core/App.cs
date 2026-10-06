@@ -47,6 +47,7 @@ namespace CaucasusDrive
         public bool paused, inputLocked;
         public float garageOffset;
         public int timePreset;
+        public float rainLevel;
         enum State { Loading, Menu, Play }
         State state = State.Loading;
         CarInput input;

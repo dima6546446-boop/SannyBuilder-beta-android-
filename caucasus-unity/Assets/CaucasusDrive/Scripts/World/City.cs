@@ -23,7 +23,7 @@ namespace CaucasusDrive
     /// гаражи, парк, АЗС), деревья, фонари, светофоры, билборды Telegram, забор, автодром ДОСААФ.
     /// Каждый квартал — 3–4 меша (здания, деревья) → немного draw calls; коллизии — BoxCollider.
     /// </summary>
-    public class City
+    public partial class City
     {
         public readonly Transform root;
         public readonly List<ParkedCar> parked = new List<ParkedCar>();
@@ -37,7 +37,8 @@ namespace CaucasusDrive
         readonly Rng rnd = new Rng(2107);
         readonly RoadGraph graph;
         readonly int quality; // 0..2
-        readonly Material asphalt, sidewalk, lawn, marking, roof, trunk, crown, fence, metal, brick, glass;
+        public readonly Material asphalt;
+        readonly Material sidewalk, lawn, marking, roof, trunk, crown, fence, metal, brick, glass;
 
         public City(Transform parent, RoadGraph g, int quality)
         {
@@ -69,6 +70,7 @@ namespace CaucasusDrive
             BuildFence();
             BuildAutodrome();
             BuildBillboards();
+            BuildExtras();
         }
 
         // ------------------------------------------------------------------ поверхность
