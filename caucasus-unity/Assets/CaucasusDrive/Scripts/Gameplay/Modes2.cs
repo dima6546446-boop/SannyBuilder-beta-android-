@@ -35,6 +35,7 @@ namespace CaucasusDrive
         public override void Enter()
         {
             app.traffic.enabled = true;
+            app.traffic.target = app.quality.traffic;
             app.traffic.Clear();
             float x = CityC.Coord(3) + CityC.LANES[1], z = CityC.Coord(2) + CityC.HALF + 20f;
             app.player.Place(x, z, 0f);
@@ -624,7 +625,7 @@ namespace CaucasusDrive
 
         void Cones()
         {
-            var corners = app.player.Corners(); var center = app.player.Position;
+            var center = app.player.Position;
             foreach (var c in cones)
             {
                 if (c.GetComponent<Rigidbody>() != null) continue;

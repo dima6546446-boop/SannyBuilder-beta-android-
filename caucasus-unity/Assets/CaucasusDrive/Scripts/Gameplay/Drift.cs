@@ -119,7 +119,7 @@ namespace CaucasusDrive
                 float lx = k == 4 ? 0 : ((k & 1) == 1 ? d.W / 2 : -d.W / 2);
                 float lz = k == 4 ? d.rear : (k < 2 ? d.front : d.rear);
                 var p = t.TransformPoint(new Vector3(lx, 0.6f, lz));
-                int n = Physics.OverlapSphereNonAlloc(p, maxD, hits, ~(1 << 2), QueryTriggerInteraction.Ignore);
+                int n = Physics.OverlapSphereNonAlloc(p, maxD, hits, ~((1 << 2) | (1 << App.GroundLayer)), QueryTriggerInteraction.Ignore);
                 for (int i = 0; i < n; i++)
                 {
                     if (hits[i].attachedRigidbody == car.rb) continue;

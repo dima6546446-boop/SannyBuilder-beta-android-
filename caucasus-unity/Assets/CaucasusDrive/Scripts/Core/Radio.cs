@@ -41,7 +41,7 @@ namespace CaucasusDrive
         public void Update(float mix, bool muffled)
         {
             bool on = index > 0;
-            a.SetRadio(on ? 0.3f * mix : 0f, muffled);
+            a.SetRadio(on ? 0.65f * mix : 0f, muffled);
             double t = a.Now;
             if (!on || mix <= 0.01f) { next = t + 0.05; return; }
             float sd = 60f / Bpm[index] / Sub[index];

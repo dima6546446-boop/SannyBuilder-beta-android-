@@ -247,8 +247,8 @@ namespace CaucasusDrive
             for (int i = 0; i < notes.Length; i += 2)
             {
                 float f = notes[i], d = notes[i + 1];
-                Play(new Voice { wave = Wave.Square, f0 = f, dur = d * 0.98f, vol = 0.085f, attack = 0.012f, perc = false, release = d * 0.13f, filter = Flt.Low, cutoff = 2600, delay = t });
-                if (type == 2) Play(new Voice { wave = Wave.Square, f0 = f * 1.26f, dur = d * 0.98f, vol = 0.085f, attack = 0.012f, perc = false, release = d * 0.13f, filter = Flt.Low, cutoff = 2600, delay = t });
+                Play(new Voice { wave = Wave.Square, f0 = f, dur = d * 0.98f, vol = 0.14f, attack = 0.012f, perc = false, release = d * 0.13f, filter = Flt.Low, cutoff = 2600, delay = t });
+                if (type == 2) Play(new Voice { wave = Wave.Square, f0 = f * 1.26f, dur = d * 0.98f, vol = 0.14f, attack = 0.012f, perc = false, release = d * 0.13f, filter = Flt.Low, cutoff = 2600, delay = t });
                 t += d;
             }
             tuneEnd = Now + t;

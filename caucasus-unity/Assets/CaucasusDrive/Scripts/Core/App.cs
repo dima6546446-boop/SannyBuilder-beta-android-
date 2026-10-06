@@ -52,6 +52,7 @@ namespace CaucasusDrive
         public Rain rain;
         public Radio radio;
         public bool onFoot;
+        public const int GroundLayer = 11;
         float weatherTarget, weatherTimer, beepT;
         bool weatherAuto;
         readonly System.Collections.Generic.List<GameObject> dpsCars = new System.Collections.Generic.List<GameObject>();
@@ -141,6 +142,11 @@ namespace CaucasusDrive
                 go.GetComponent<Obstacle>().kind = "parked";
                 dpsCars.Add(go);
             }
+            // невидимая земля: на неё падают сбитые конусы (машины и пешеход её не касаются — высота задаётся сами)
+            var ground = new GameObject("GroundCollider") { layer = GroundLayer };
+            ground.transform.SetParent(worldRoot, false);
+            ground.transform.position = new Vector3(0, -0.5f, 0);
+            ground.AddComponent<BoxCollider>().size = new Vector3(4000, 1, 4000);
             rules = new Rules(lights);
             daily = new Daily(save);
             daily.onDone = (t, text, reward) => { hud.Toast("Задание дня: " + text + " — забери " + M.Rub(reward) + " в меню «Задания»", HUD.Good, 4f); audio.Success(); };
@@ -479,7 +485,7 @@ namespace CaucasusDrive
             foreach (var s in spots)
             {
                 var wp = t.TransformPoint(s);
-                if (!Physics.CheckCapsule(wp + Vector3.up * 0.4f, wp + Vector3.up * 1.5f, 0.3f, ~((1 << 2) | (1 << City.StopLayer) | (1 << Walker.Layer)), QueryTriggerInteraction.Ignore)) { pick = wp; break; }
+                if (!Physics.CheckCapsule(wp + Vector3.up * 0.4f, wp + Vector3.up * 1.5f, 0.3f, ~((1 << 2) | (1 << City.StopLayer) | (1 << Walker.Layer) | (1 << GroundLayer)), QueryTriggerInteraction.Ignore)) { pick = wp; break; }
             }
             walker.Spawn(pick, Mathf.Atan2(pick.x - player.Position.x, pick.z - player.Position.z));
             player.interior?.SetDriverVisible(false);
@@ -526,7 +532,7 @@ namespace CaucasusDrive
             if (!on) { hud.Sensors(false, 9, 9); return; }
             var t = player.go.transform; var d = player.def.dims;
             float front = 3f, rear = 3f;
-            int mask = ~((1 << 2) | (1 << Walker.Layer));
+            int mask = ~((1 << 2) | (1 << Walker.Layer) | (1 << GroundLayer));
             foreach (float lx in new[] { -d.W / 2 + 0.1f, 0f, d.W / 2 - 0.1f })
             {
                 RaycastHit h;
