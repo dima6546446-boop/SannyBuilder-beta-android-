@@ -78,6 +78,9 @@ namespace CaucasusDrive
             new A { id = "walk2k", title = "Пешеход", desc = "Пройти пешком 2 км", value = d => d.stats.walk, goal = 2000, reward = 1500 },
             new A { id = "wash5", title = "Чистюля", desc = "Помыть машину 5 раз", value = d => d.stats.washes, goal = 5, reward = 1000 },
             new A { id = "crash100", title = "Каскадёр", desc = "Попасть в 100 аварий", value = d => d.stats.crashes, goal = 100, reward = 1000 },
+            new A { id = "race1", title = "На старт!", desc = "Финишировать в кольцевой гонке", value = d => d.race.runs, goal = 1, reward = 1500 },
+            new A { id = "race10", title = "Гонщик", desc = "Финишировать в 10 гонках", value = d => d.race.runs, goal = 10, reward = 6000 },
+            new A { id = "online3", title = "Компания", desc = "Сыграть онлайн с друзьями 3 раза", value = d => d.stats.online, goal = 3, reward = 3000 },
             new A { id = "fines20k", title = "Злостный нарушитель", desc = "Заплатить 20 000 ₽ штрафов", value = d => d.stats.fines, goal = 20000, reward = 500 },
         };
 

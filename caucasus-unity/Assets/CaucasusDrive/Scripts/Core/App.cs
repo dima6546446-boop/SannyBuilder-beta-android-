@@ -242,7 +242,7 @@ namespace CaucasusDrive
 
         public void OnMenu(string name)
         {
-            if (name == "main" || name == "levels" || name == "garage" || (name == "settings" && !paused) || name == "help")
+            if (name == "main" || name == "levels" || name == "garage" || (name == "settings" && !paused) || name == "help" || name == "online" || name == "lan" || name == "ip" || name == "daily" || name == "ach" || name == "freeask")
             {
                 state = State.Menu;
                 hud.Show(false);
@@ -276,6 +276,9 @@ namespace CaucasusDrive
 
         public void StartParking(int i) { SetTime(i % 5 == 4 ? 1 : i % 7 == 6 ? 3 : 0); restart = () => StartParking(i); Enter(new ParkingMode(this, i)); }
         public void StartFree(bool fines) { restart = null; SetTime(timePreset); Enter(new FreeRideMode(this, fines)); }
+        public void StartRace() { SetTime(0); restart = StartRace; Enter(new RaceMode(this)); }
+        public void StartOnline(bool host, string ip) { restart = null; SetTime(timePreset); Enter(new OnlineMode(this, host, ip)); }
+        public void SetTimeOfDay(float h) { dayNight.SetTime(h); }
         public void StartExam() { SetTime(0); restart = StartExam; Enter(new ExamMode(this)); }
         public void StartDrift() { SetTime(timePreset == 2 ? 2 : 0); restart = StartDrift; Enter(new DriftMode(this)); }
         System.Action restart;
@@ -357,10 +360,11 @@ namespace CaucasusDrive
                 }
                 else dragging = false;
                 garage.Update(dt, cam, garageOffset);
+                menus.Tick(dt);
                 return;
             }
 
-            if (paused) { RenderWorld(0f); return; }
+            if (paused) { mode?.IdleUpdate(dt); RenderWorld(0f); return; }
 
             input = hud.ReadInput(save.d.settings);
             Keys();

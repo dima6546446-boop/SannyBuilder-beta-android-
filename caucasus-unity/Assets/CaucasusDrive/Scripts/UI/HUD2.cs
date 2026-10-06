@@ -38,7 +38,9 @@ namespace CaucasusDrive
     public partial class HUD
     {
         Button radioBtn, taxiBtn, doorBtn, shopBtn, carBtn;
-        Text radioLabel, doorLabel, sensorText, shopLabel;
+        Text radioLabel, doorLabel, sensorText, shopLabel, netText;
+        Button chatBtn;
+        RectTransform chatPanel;
         Image taxiImg, flashImg, smokeImg;
         RectTransform limit, sensors, foot, shopPanel;
         public Joystick joy;
@@ -58,6 +60,20 @@ namespace CaucasusDrive
             taxiBtn = UIKit.Button(tr, "ТАКСИ", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-162, -146), new Vector2(58, 52), UIKit.Bg, () => app.mode?.OnTaxi(), 14);
             taxiImg = taxiBtn.GetComponent<Image>();
             taxiBtn.gameObject.SetActive(false);
+            // онлайн: фразы и список игроков
+            chatBtn = UIKit.Button(tr, "ЧАТ", new Vector2(1, 1), new Vector2(1, 1), new Vector2(-228, -146), new Vector2(58, 52), UIKit.Bg, () => chatPanel.gameObject.SetActive(!chatPanel.gameObject.activeSelf), 14);
+            chatBtn.gameObject.SetActive(false);
+            chatPanel = UIKit.Rect(root, "Chat", new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-160, 10), new Vector2(270, 4 * 58 + 12));
+            UIKit.Img(chatPanel, UIKit.Bg2);
+            for (int i = 0; i < OnlineMode.Phrases.Length; i++)
+            {
+                int k = i;
+                UIKit.Button(chatPanel, OnlineMode.Phrases[i], new Vector2(0.5f, 1), new Vector2(0.5f, 1), new Vector2((i % 2 == 0 ? -64 : 64), -35 - (i / 2) * 58), new Vector2(124, 52), UIKit.Bg, () => { app.mode?.OnSay(k); chatPanel.gameObject.SetActive(false); }, 15);
+            }
+            chatPanel.gameObject.SetActive(false);
+            netText = UIKit.LabelAt(root, "", 16, Color.white, new Vector2(0, 1), new Vector2(0, 1), new Vector2(160, -300), new Vector2(290, 220), TextAnchor.UpperLeft, false);
+            netText.gameObject.AddComponent<Shadow>().effectDistance = new Vector2(1.5f, -1.5f);
+            netText.raycastTarget = false;
 
             // кнопка действия (заправка)
             for (int i = 0; i < 3; i++)
@@ -117,6 +133,8 @@ namespace CaucasusDrive
         public void ShowTaxi(bool on) { taxiVisible = on; taxiBtn.gameObject.SetActive(on); TaxiOn(false); }
         public void TaxiOn(bool on) { taxiImg.color = on ? new Color(0.75f, 0.6f, 0.05f, 0.95f) : UIKit.Bg; }
         public void ShowLimit(bool on) { limitOn = on; }
+        public void ShowChat(bool on) { chatBtn.gameObject.SetActive(on); if (!on) chatPanel.gameObject.SetActive(false); }
+        public void NetList(string text) { if (netText == null) return; bool on = !string.IsNullOrEmpty(text); if (netText.gameObject.activeSelf != on) netText.gameObject.SetActive(on); if (on) netText.text = text; }
         public void Flash() { flashT = 0.35f; }
 
         readonly Button[] actBtns = new Button[3];

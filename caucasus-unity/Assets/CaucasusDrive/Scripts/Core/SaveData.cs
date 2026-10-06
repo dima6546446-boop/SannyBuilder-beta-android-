@@ -30,6 +30,8 @@ namespace CaucasusDrive
         public int radio;
         public bool askFines = true;   // спрашивать «со штрафами или без» при входе в город
         public bool sensors = true;    // парктроник в городе
+        public string nick = "";       // ник в онлайне
+        public string lastIp = "";     // последний адрес комнаты
     }
 
     [Serializable]
@@ -39,10 +41,13 @@ namespace CaucasusDrive
     public class DailyState { public string date = ""; public List<DailyTask> tasks = new List<DailyTask>(); }
 
     [Serializable]
-    public class Stats { public float km, walk; public int fines, taxi, bestCombo, crashes, food, washes; }
+    public class Stats { public float km, walk; public int fines, taxi, bestCombo, crashes, food, washes, online; }
 
     [Serializable]
     public class DriftStats { public int best, bestSeries, runs; }
+
+    [Serializable]
+    public class RaceStats { public float best; public int runs; }
 
     [Serializable]
     public class SaveState
@@ -58,6 +63,7 @@ namespace CaucasusDrive
         public bool license;
         public Stats stats = new Stats();
         public DriftStats drift = new DriftStats();
+        public RaceStats race = new RaceStats();
         public DailyState daily = new DailyState();
         public List<string> ach = new List<string>();
     }

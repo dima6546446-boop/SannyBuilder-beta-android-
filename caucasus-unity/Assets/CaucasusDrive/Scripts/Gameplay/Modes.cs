@@ -18,6 +18,9 @@ namespace CaucasusDrive
         public virtual void OnPedHit(float speed) { }
         public virtual void OnAction(int i) { }
         public virtual void OnTaxi() { }
+        public virtual void OnSay(int phrase) { }
+        public virtual void IdleUpdate(float dt) { }     // тик, пока игра на паузе (онлайн не должен отваливаться)
+        public virtual void OnRaceButton() { }
         public virtual void RenderGlow(Glow glow, bool blink) { }
     }
 
@@ -220,7 +223,7 @@ namespace CaucasusDrive
 
     public class Result
     {
-        public bool ok, first, exam, drift, record;
+        public bool ok, first, exam, drift, race, record;
         public int stars, reward, level, score, best, series, pts;
         public float time;
         public string why;

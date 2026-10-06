@@ -25,7 +25,8 @@ namespace CaucasusDrive
         readonly Dictionary<int, float> camCool = new Dictionary<int, float>();
         readonly Dictionary<TrafficCar, float> prevAlong = new Dictionary<TrafficCar, float>();
         float nearT, near = 99f, dpsCool, evacT = -1;
-        bool inZone, lowFuelWarned, atPump;
+        bool inZone, lowFuelWarned;
+        protected bool atPump;
         // такси
         string taxi = "off"; float taxiT, rideTime, rideLimit, rideDist; int rating; Vector3 spot, dest;
         Character ped;
