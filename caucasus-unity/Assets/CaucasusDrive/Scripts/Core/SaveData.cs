@@ -30,6 +30,7 @@ namespace CaucasusDrive
         public int radio;
         public bool askFines = true;   // спрашивать «со штрафами или без» при входе в город
         public bool sensors = true;    // парктроник в городе
+        public bool keepDamage;         // true — повреждения кузова остаются между заездами (чинить за деньги)
         public string nick = "";       // ник в онлайне
         public string lastIp = "";     // последний адрес комнаты
         public string cfUrl = "", cfRoom = "";   // сервер на Cloudflare (wss://…workers.dev) и код комнаты

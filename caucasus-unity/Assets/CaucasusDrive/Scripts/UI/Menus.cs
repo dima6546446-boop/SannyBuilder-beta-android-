@@ -471,7 +471,7 @@ namespace CaucasusDrive
             int y = 0;
             System.Action<string, string[], int, System.Action<int>> row = (title, opts, cur, set) =>
             {
-                float py = 215 - y * 64;
+                float py = 215 - y * 58;
                 UIKit.LabelAt(s, title, 22, Color.white, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-420, py), new Vector2(300, 40), TextAnchor.MiddleLeft);
                 for (int i = 0; i < opts.Length; i++)
                 {
@@ -488,6 +488,7 @@ namespace CaucasusDrive
             row("Показывать FPS", new[] { "Да", "Нет" }, st.showFps ? 0 : 1, (k) => st.showFps = k == 0);
             row("Парктроник", new[] { "Вкл", "Выкл" }, st.sensors ? 0 : 1, (k) => st.sensors = k == 0);
             row("Штрафы в городе", new[] { "Спрашивать", "Всегда", "Никогда" }, st.askFines ? 0 : st.fines ? 1 : 2, (k) => { st.askFines = k == 0; if (k > 0) st.fines = k == 1; });
+            row("Повреждения кузова", new[] { "Чинить сразу", "Сохранять" }, st.keepDamage ? 1 : 0, (k) => st.keepDamage = k == 1);
             UIKit.Button(s, "Сбросить прогресс", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 50), new Vector2(300, 52), UIKit.Bg2, () => { app.save.Reset(); Show("settings"); }, 18);
         }
 

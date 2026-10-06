@@ -261,6 +261,9 @@ namespace CaucasusDrive
             mode?.Exit();
             menus.Hide();
             garage.Show(false);
+            // по умолчанию каждый заезд начинается с целым кузовом; «Сохранять повреждения» в настройках оставляет их до ремонта
+            var tn = save.Tune(save.d.current);
+            if (!save.d.settings.keepDamage && tn != null && tn.damage > 0f) { tn.damage = 0f; save.Commit(); }
             RefreshCar();
             ApplySettings();
             mode = m;
