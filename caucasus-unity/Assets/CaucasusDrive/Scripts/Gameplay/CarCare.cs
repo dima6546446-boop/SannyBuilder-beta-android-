@@ -23,7 +23,7 @@ namespace CaucasusDrive
         {
             if (m == null || t == null) return;
             var c = Color.Lerp(M.Hex(color), M.Hex(0x6b5a45), t.dirt * 0.55f);
-            m.paint.Col(c).Pbr(0.45f * (1f - t.dirt * 0.8f), Mathf.Lerp(0.8f, 0.25f, t.dirt));
+            m.paint.Col(c).Pbr(0.55f * (1f - t.dirt * 0.8f), Mathf.Lerp(0.9f, 0.25f, t.dirt));
         }
 
         public static void Damage(App app, float strength)

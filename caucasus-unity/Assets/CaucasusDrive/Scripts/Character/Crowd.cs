@@ -37,7 +37,7 @@ namespace CaucasusDrive
         public Crowd(App a)
         {
             app = a;
-            int count = a.quality.level == 0 ? 5 : a.quality.level == 1 ? 10 : 14;
+            int count = a.quality.level == 0 ? 10 : a.quality.level == 1 ? 18 : 28;
             for (int i = 0; i < count; i++)
             {
                 int suit = rnd.Pick(Suits);
@@ -242,7 +242,7 @@ namespace CaucasusDrive
                     if (dd < R * 2 && dd > 1e-4f) { float k = (R * 2 - dd) / dd; n.x += dx * k * 0.5f; n.z += dz * k * 0.5f; }
                 }
                 float cdx = n.x - camP.x, cdz = n.z - camP.z;
-                bool vis = dF < 60 && cdx * fwd.x + cdz * fwd.z > -4;
+                bool vis = dF < 75 && cdx * fwd.x + cdz * fwd.z > -4;
                 if (n.c.root.gameObject.activeSelf != vis) n.c.SetVisible(vis);
                 if (!vis) continue;
                 float gy = n.state == "bench" ? n.bench.bench.y + 0.06f - 0.52f : app.city.SurfaceAt(n.x, n.z).y;

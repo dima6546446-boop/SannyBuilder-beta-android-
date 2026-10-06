@@ -72,7 +72,7 @@ namespace CaucasusDrive
         {
             Texture2D t;
             if (texCache.TryGetValue(key, out t)) return t;
-            t = new Texture2D(w, h, TextureFormat.RGBA32, mips) { name = key, wrapMode = repeat ? TextureWrapMode.Repeat : TextureWrapMode.Clamp, anisoLevel = 4, filterMode = FilterMode.Trilinear };
+            t = new Texture2D(w, h, TextureFormat.RGBA32, mips) { name = key, wrapMode = repeat ? TextureWrapMode.Repeat : TextureWrapMode.Clamp, anisoLevel = 16, filterMode = FilterMode.Trilinear, mipMapBias = -0.25f };
             var data = new Color32[w * h];
             for (int y = 0; y < h; y++) for (int x = 0; x < w; x++) data[y * w + x] = px(x, y);
             t.SetPixels32(data);
@@ -116,42 +116,67 @@ namespace CaucasusDrive
 
         static Color32 C(float r, float g, float b) { return new Color32((byte)(Mathf.Clamp01(r) * 255), (byte)(Mathf.Clamp01(g) * 255), (byte)(Mathf.Clamp01(b) * 255), 255); }
 
-        public static Texture2D Asphalt => Make("asphalt", 256, 256, (x, y) =>
+        /// <summary>Множитель разрешения текстур города: 2 — 512 px, 4 — 1024 px (ставится до первого обращения).</summary>
+        public static int TexScale = 2;
+        static int S => 256 * TexScale;
+        static string K(string n) { return n + TexScale; }
+
+        static float Soft(float e0, float e1, float x) { return M.Smoothstep(e0, e1, x); }
+
+        public static Texture2D Asphalt => Make(K("asphalt"), S, S, (x, y) =>
         {
-            float n = Fbm(x, y, 256, 11) * 0.5f + Hash(x, y, 3) * 0.18f;
+            float k = TexScale;
+            float n = Fbm(x, y, S, 11) * 0.5f + Fbm(x * 3, y * 3, S, 12) * 0.12f + Hash(x, y, 3) * 0.14f;
             float v = 0.2f + n * 0.22f;
-            if (Hash(x, y, 9) > 0.985f) v += 0.12f; // щебень
+            if (Hash(x / 2, y / 2, 9) > 0.975f) v += 0.1f + Hash(x, y, 4) * 0.08f;     // щебень
+            if (Hash(x, y, 14) > 0.998f) v *= 0.55f;                                  // тёмные вкрапления
+            float crack = Mathf.Abs(Fbm(x, y, S, 19) - 0.5f);                          // тонкие трещины
+            if (crack < 0.006f * k * 0.5f) v *= 0.7f;
             return C(v, v, v * 1.02f);
         });
 
-        public static Texture2D Grass => Make("grass", 256, 256, (x, y) =>
+        public static Texture2D Grass => Make(K("grass"), S, S, (x, y) =>
         {
-            float n = Fbm(x, y, 256, 21), d = Hash(x, y, 5);
-            return C(0.22f + n * 0.18f + d * 0.05f, 0.38f + n * 0.22f + d * 0.08f, 0.14f + n * 0.08f);
+            float n = Fbm(x, y, S, 21), d = Hash(x, y, 5), blade = Hash(x / 2, y, 6);
+            float shade = 0.85f + blade * 0.3f;
+            return C((0.22f + n * 0.18f + d * 0.05f) * shade, (0.38f + n * 0.22f + d * 0.08f) * shade, (0.14f + n * 0.08f) * shade);
         });
 
-        public static Texture2D Concrete => Make("concrete", 256, 256, (x, y) =>
+        public static Texture2D Concrete => Make(K("concrete"), S, S, (x, y) =>
         {
-            float n = Fbm(x, y, 256, 31) * 0.3f + Hash(x, y, 7) * 0.1f;
+            float k = TexScale;
+            float n = Fbm(x, y, S, 31) * 0.3f + Hash(x, y, 7) * 0.1f + Fbm(x * 4, y * 4, S, 32) * 0.05f;
             float v = 0.58f + n * 0.3f;
-            if (x % 128 < 2 || y % 128 < 2) v *= 0.7f; // плиты
+            float gx = x % (128 * k), gy = y % (128 * k);
+            if (gx < 1.5f * k || gy < 1.5f * k) v *= 0.7f;                              // швы плит
+            else if (gx < 3f * k || gy < 3f * k) v *= 1.06f;                             // фаска у шва
+            if (Hash(x / 3, y / 3, 33) > 0.992f) v *= 0.75f;                            // пятна
             return C(v, v * 0.99f, v * 0.96f);
         });
 
-        public static Texture2D Brick => Make("brick", 256, 256, (x, y) =>
+        public static Texture2D Brick => Make(K("brick"), S, S, (x, y) =>
         {
-            int row = y / 16, off = (row % 2) * 16;
-            bool mortar = y % 16 < 2 || (x + off) % 32 < 2;
-            float n = Hash((x + off) / 32, row, 41) * 0.25f + Hash(x, y, 2) * 0.08f;
-            return mortar ? C(0.72f, 0.7f, 0.66f) : C(0.55f + n, 0.27f + n * 0.5f, 0.2f + n * 0.3f);
+            float k = TexScale;
+            float bh = 16 * k, bw = 32 * k, mt = 2 * k;
+            int row = Mathf.FloorToInt(y / bh); float off = (row % 2) * bw / 2;
+            float by = y % bh, bx = (x + off) % bw;
+            int col = Mathf.FloorToInt((x + off) / bw);
+            bool mortar = by < mt || bx < mt;
+            float edge = Mathf.Min(Mathf.Min(by - mt, bh - by), Mathf.Min(bx - mt, bw - bx));
+            float n = Hash(col, row, 41) * 0.25f + Hash(x, y, 2) * 0.1f + Fbm(x, y, S, 43) * 0.12f;
+            if (mortar) { float m = 0.68f + Hash(x, y, 8) * 0.08f; return C(m, m * 0.97f, m * 0.92f); }
+            float bevel = 0.85f + 0.15f * Soft(0, 2.5f * k, edge);                     // грани кирпича
+            return C((0.55f + n) * bevel, (0.27f + n * 0.5f) * bevel, (0.2f + n * 0.3f) * bevel);
         });
 
         /// <summary>Фасад панельки: 4×4 окна на текстуру. lit = true — карта свечения окон ночью.</summary>
-        public static Texture2D Facade(bool lit) => Make(lit ? "facadeLit" : "facade", 256, 256, (x, y) =>
+        public static Texture2D Facade(bool lit) => Make(K(lit ? "facadeLit" : "facade"), S, S, (x, y) =>
         {
-            int cx = x / 64, cy = y / 64, lx = x % 64, ly = y % 64;
+            float k = TexScale, cell = 64 * k;
+            int cx = Mathf.FloorToInt(x / cell), cy = Mathf.FloorToInt(y / cell);
+            float lx = (x % cell) / k, ly = (y % cell) / k;
             bool win = lx >= 14 && lx < 50 && ly >= 18 && ly < 52;
-            bool frame = win && (lx == 31 || lx == 32 || ly == 36);
+            bool frame = win && (Mathf.Abs(lx - 32f) < 0.8f || Mathf.Abs(ly - 36f) < 0.8f);
             float r = Hash(cx, cy, 77);
             if (lit)
             {
@@ -159,17 +184,23 @@ namespace CaucasusDrive
                 float w = 0.7f + Hash(cx, cy, 78) * 0.3f;
                 return C(w, w * 0.78f, w * 0.45f);
             }
+            bool rim = (lx >= 12.5f && lx < 51.5f && ly >= 16.5f && ly < 53.5f) && !win;        // рама окна
+            if (rim) return C(0.88f, 0.88f, 0.85f);
             if (frame) return C(0.85f, 0.85f, 0.82f);
             if (win)
             {
                 float g = 0.18f + Hash(cx, cy, 79) * 0.12f + (ly - 18) * 0.004f;
-                return C(g * 0.8f, g * 0.95f, g * 1.15f);
+                float refl = Soft(0.2f, 0.9f, (lx - 14f) / 36f - (ly - 18f) / 34f + 0.5f) * 0.1f;   // блик на стекле
+                return C((g + refl) * 0.8f, (g + refl) * 0.95f, (g + refl) * 1.15f);
             }
-            bool seam = lx < 1 || ly < 1;          // швы панелей
+            bool seam = lx < 0.8f || ly < 0.8f;                                                  // швы панелей
+            bool sill = ly >= 14 && ly < 16.5f && lx >= 12 && lx < 52;                           // подоконник
             bool balcony = ly < 14 && lx > 8 && lx < 56 && r > 0.6f;
-            float v = 0.86f + Fbm(x, y, 256, 51) * 0.12f;
+            float v = 0.86f + Fbm(x, y, S, 51) * 0.12f + (Hash(x, y, 52) - 0.5f) * 0.03f;
             if (seam) v *= 0.75f;
+            if (sill) v *= 0.82f;
             if (balcony) v *= 0.8f;
+            if (ly > 56) v *= 0.95f - (ly - 56) * 0.01f;                                         // потёки под карнизом
             return C(v, v, v);
         });
 

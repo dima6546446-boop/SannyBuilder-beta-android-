@@ -12,8 +12,8 @@ namespace CaucasusDrive
 
         public CarMaterials(int color, float tint, bool high)
         {
-            paint = (high ? Mats.Lit() : Mats.Lit()).Col(M.Hex(color)).Pbr(0.45f, high ? 0.82f : 0.7f);
-            chrome = Mats.Lit().Col(M.Hex(0xe6e6e6)).Pbr(1f, 0.88f);
+            paint = (high ? Mats.Lit() : Mats.Lit()).Col(M.Hex(color)).Pbr(0.55f, high ? 0.9f : 0.82f);
+            chrome = Mats.Lit().Col(M.Hex(0xe6e6e6)).Pbr(1f, 0.93f);
             glass = Mats.LitTransparent().Col(new Color(0.03f, 0.05f, 0.07f, tint)).Pbr(0.3f, 0.95f);
             black = Mats.Lit().Col(M.Hex(0x1b1b1b)).Pbr(0f, 0.35f);
             rubber = Mats.Simple().Col(M.Hex(0x151515));

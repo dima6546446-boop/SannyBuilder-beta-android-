@@ -372,6 +372,7 @@ namespace CaucasusDrive
         public override void Exit()
         {
             scene?.Destroy(); scene = null;
+            app.crowd.Stop();
             app.rules.onViolation = null; app.rules.onTurn = null;
             app.beacon.Hide();
             app.hud.Mission(null, null, 0);
@@ -428,7 +429,8 @@ namespace CaucasusDrive
             stage = "city";
             scene?.Destroy(); scene = null;
             app.traffic.enabled = true;
-            app.traffic.target = Mathf.Max(6, Mathf.RoundToInt(app.quality.traffic * 0.6f));
+            app.traffic.target = Mathf.Max(8, Mathf.RoundToInt(app.quality.traffic * 0.7f));
+            app.crowd.Start();
             app.traffic.Prefill(app.cam);
             app.hud.ShowLimit(true);
             route = MakeRoute(); ri = 0; hasFinish = false;

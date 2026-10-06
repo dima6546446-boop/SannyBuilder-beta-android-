@@ -36,11 +36,12 @@ namespace CaucasusDrive
             level = Mathf.Clamp(lvl, 0, 2);
             switch (level)
             {
-                case 0: renderScale = 0.72f; minScale = 0.55f; msaa = 1; traffic = 10; shadowDist = 0f; shadowRes = 512; drawDist = 320f; carLod = "LOD_hi"; break;
-                case 1: renderScale = 0.85f; minScale = 0.6f; msaa = 2; traffic = 18; shadowDist = 45f; shadowRes = 1024; drawDist = 420f; carLod = "LOD_hi"; break;
-                default: renderScale = 1f; minScale = 0.7f; msaa = 4; traffic = 26; shadowDist = 70f; shadowRes = 2048; drawDist = 520f; carLod = "LOD_ultra"; softShadows = true; break;
+                case 0: renderScale = 0.85f; minScale = 0.65f; msaa = 2; traffic = 16; shadowDist = 0f; shadowRes = 512; drawDist = 320f; carLod = "LOD_hi"; break;
+                case 1: renderScale = 1f; minScale = 0.75f; msaa = 4; traffic = 28; shadowDist = 45f; shadowRes = 1024; drawDist = 420f; carLod = "LOD_hi"; break;
+                default: renderScale = 1f; minScale = 0.85f; msaa = 4; traffic = 40; shadowDist = 70f; shadowRes = 2048; drawDist = 520f; carLod = "LOD_ultra"; softShadows = true; break;
             }
             scale = renderScale;
+            Mats.TexScale = level >= 2 ? 4 : 2;   // текстуры города 1024 px на «Высоком», иначе 512 (до первого обращения к ним)
         }
 
         static void Set(object o, string prop, object v)
@@ -65,6 +66,11 @@ namespace CaucasusDrive
             Set(rp, "supportsCameraDepthTexture", false);
             Set(rp, "supportsCameraOpaqueTexture", false);
             QualitySettings.shadowDistance = shadowDist;
+            QualitySettings.anisotropicFiltering = AnisotropicFiltering.ForceEnable;
+#if !CD_STUB
+            QualitySettings.globalTextureMipmapLimit = 0;
+#endif
+            Set(rp, "upscalingFilter", 0);
             QualitySettings.antiAliasing = msaa > 1 ? msaa : 0;
             QualitySettings.lodBias = level == 0 ? 0.7f : level == 1 ? 1f : 1.4f;
             if (sun)
@@ -141,7 +147,7 @@ namespace CaucasusDrive
             probe.refreshMode = ReflectionProbeRefreshMode.ViaScripting;
             probe.timeSlicingMode = ReflectionProbeTimeSlicingMode.NoTimeSlicing;
             probe.cullingMask = 0; // только небо
-            probe.resolution = 64;
+            probe.resolution = 256;   // резкие отражения неба на кузове (при 64 всё «мылилось»)
             probe.size = new Vector3(5000, 2000, 5000);
             probe.importance = 0;
         }
