@@ -52,6 +52,7 @@ namespace CaucasusDrive
         {
             if (car != null) car.Destroy();
             car = CarVisual.Build(def, t, color, lod, false, turntable);
+            CarCare.ApplyLook(car.mats, t, color);
             car.root.transform.localPosition = new Vector3(0, 0, -(def.dims.front + def.dims.rear) / 2f);
         }
 
@@ -131,6 +132,7 @@ namespace CaucasusDrive
                 case "help": Help(); break;
                 case "freeask": FreeAsk(); break;
                 case "daily": DailyScreen(); break;
+                case "ach": AchScreen(); break;
             }
         }
 
@@ -170,8 +172,10 @@ namespace CaucasusDrive
                 UIKit.LabelAt(b.transform, titles[i], 26, Color.white, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 76), new Vector2(-24, 36), TextAnchor.MiddleLeft);
                 UIKit.LabelAt(b.transform, subs[i], 15, new Color(1, 1, 1, 0.75f), new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 38), new Vector2(-24, 30), TextAnchor.MiddleLeft, false);
             }
-            UIKit.Button(s, ready > 0 ? "ЗАДАНИЯ ДНЯ · забрать " + ready : "ЗАДАНИЯ ДНЯ", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 40), new Vector2(340, 50), ready > 0 ? UIKit.Green : UIKit.Bg, () => Show("daily"), 19);
-            var tg = UIKit.Button(s, "Наш Telegram: t.me/caucasusdrive", new Vector2(0, 0), new Vector2(0, 0), new Vector2(230, 40), new Vector2(420, 50), M.Hex(0x229ed9), () => Application.OpenURL("https://t.me/caucasusdrive"), 20);
+            UIKit.Button(s, ready > 0 ? "ЗАДАНИЯ · забрать " + ready : "ЗАДАНИЯ ДНЯ", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-110, 40), new Vector2(260, 50), ready > 0 ? UIKit.Green : UIKit.Bg, () => Show("daily"), 18);
+            UIKit.Button(s, "ДОСТИЖЕНИЯ " + Achievements.Count(app.save.d) + "/" + Achievements.All.Length, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(170, 40), new Vector2(260, 50), UIKit.Bg, () => Show("ach"), 18);
+            Achievements.Check(app);
+            var tg = UIKit.Button(s, "Telegram: t.me/caucasusdrive", new Vector2(0, 0), new Vector2(0, 0), new Vector2(190, 40), new Vector2(340, 50), M.Hex(0x229ed9), () => Application.OpenURL("https://t.me/caucasusdrive"), 20);
             UIKit.Button(s, "Как играть", new Vector2(1, 0), new Vector2(1, 0), new Vector2(-120, 40), new Vector2(200, 50), UIKit.Bg, () => Show("help"), 20);
             tg.name = "Telegram";
         }
@@ -220,6 +224,27 @@ namespace CaucasusDrive
             UIKit.LabelAt(s, "Новые задания — каждый день. Статистика: " + app.save.d.stats.km.ToString("0") + " км, такси " + app.save.d.stats.taxi + ", штрафов " + M.Rub(app.save.d.stats.fines), 17, UIKit.Muted, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 50), new Vector2(1000, 30), TextAnchor.MiddleCenter, false);
         }
 
+        // ------------------------------------------------------------------ достижения
+        void AchScreen()
+        {
+            var s = Screen(true);
+            TopBar(s, "Достижения · " + Achievements.Count(app.save.d) + " из " + Achievements.All.Length, "main");
+            var d = app.save.d;
+            for (int i = 0; i < Achievements.All.Length; i++)
+            {
+                var a = Achievements.All[i];
+                bool done = Achievements.Has(d, a.id);
+                float v = Mathf.Min(a.value(d), a.goal);
+                int col = i % 3, row = i / 3;
+                var p = UIKit.Panel(s, "Ach", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-400 + col * 400, 190 - row * 92), new Vector2(388, 84), done ? new Color(0.1f, 0.3f, 0.16f, 0.92f) : UIKit.Bg);
+                UIKit.LabelAt(p.transform, (done ? "★ " : "") + a.title, 19, done ? UIKit.Gold : Color.white, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -20), new Vector2(-20, 26), TextAnchor.MiddleLeft);
+                UIKit.LabelAt(p.transform, a.desc + " · +" + M.Rub(a.reward), 14, UIKit.Muted, new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -44), new Vector2(-20, 22), TextAnchor.MiddleLeft, false);
+                var bar = UIKit.Panel(p.transform, "Bar", new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 12), new Vector2(-24, 6), new Color(1, 1, 1, 0.12f));
+                var fill = UIKit.Img(UIKit.Fill(bar.transform, "Fill"), done ? UIKit.Gold : UIKit.Green, false);
+                fill.type = Image.Type.Filled; fill.fillMethod = Image.FillMethod.Horizontal; fill.sprite = UIKit.Rounded; fill.fillAmount = v / a.goal;
+            }
+        }
+
         // ------------------------------------------------------------------ уровни
         void LevelsScreen()
         {
@@ -256,6 +281,13 @@ namespace CaucasusDrive
             string stats = sp.hp + " л.с. · " + sp.torque + " Н·м\nПривод: " + (sp.drive == Drive.RWD ? "задний" : sp.drive == Drive.FWD ? "передний" : "полный") +
                 "\nКПП: " + (sp.gears.Length - 1) + "-ст.\nМасса: " + sp.mass + " кг\nБак: " + sp.tank + " л";
             UIKit.LabelAt(info.transform, stats, 18, new Color(1, 1, 1, 0.85f), new Vector2(0, 1), new Vector2(1, 1), new Vector2(0, -190), new Vector2(-24, 200), TextAnchor.UpperLeft, false);
+            if (owned)
+            {
+                UIKit.LabelAt(info.transform, "Кузов: " + Mathf.RoundToInt((1f - t.damage) * 100f) + "% · грязь: " + Mathf.RoundToInt(t.dirt * 100f) + "%", 17, t.damage > 0.4f ? M.Hex(0xff7a6a) : UIKit.Gold, new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 120), new Vector2(-24, 26), TextAnchor.MiddleLeft, false);
+                int rep = CarCare.RepairPrice(t);
+                UIKit.Button(info.transform, rep > 0 ? "РЕМОНТ · " + M.Rub(rep) : "ЦЕЛАЯ", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 76), new Vector2(260, 44), rep > 0 ? new Color(0.85f, 0.45f, 0.2f) : UIKit.Bg2, () => { if (CarCare.Repair(app, t)) { app.RefreshCar(); Show("garage"); } }, 17);
+                UIKit.Button(info.transform, t.dirt > 0.02f ? "МОЙКА · " + M.Rub(CarCare.WashPrice) : "ЧИСТАЯ", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 28), new Vector2(260, 44), t.dirt > 0.02f ? new Color(0.25f, 0.55f, 0.75f) : UIKit.Bg2, () => { if (CarCare.Wash(app, t)) { app.RefreshCar(); Show("garage"); } }, 17);
+            }
 
             UIKit.Button(s, "<", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-330, 60), new Vector2(70, 70), UIKit.Bg, () => { garageIndex = (garageIndex + Cars.All.Length - 1) % Cars.All.Length; Show("garage"); }, 34);
             UIKit.Button(s, ">", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(70, 60), new Vector2(70, 70), UIKit.Bg, () => { garageIndex = (garageIndex + 1) % Cars.All.Length; Show("garage"); }, 34);

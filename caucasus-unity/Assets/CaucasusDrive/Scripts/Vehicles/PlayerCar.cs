@@ -186,6 +186,13 @@ namespace CaucasusDrive
                 if (popQueue > 0 && (popT -= dt) <= 0f) { popQueue--; popT = 0.08f + Random.value * 0.1f; flame = 0.07f; onPop?.Invoke(); }
                 if (flame > 0f) flame -= dt;
             }
+            // пар/дым из-под капота у битой машины
+            if (tune != null && tune.damage > 0.4f && Random.value < (tune.damage - 0.3f) * 0.5f)
+            {
+                var hood = vis.body.TransformPoint(new Vector3(Random.Range(-0.3f, 0.3f), 0.95f, def.dims.front - 0.7f));
+                float g = tune.damage > 0.75f ? 0.35f : 0.8f;     // сильно битая — дым темнее
+                SmokeFx.I?.Puff(hood, GetVel() * 0.6f + new Vector3(Random.Range(-0.2f, 0.2f), 0.9f, Random.Range(-0.2f, 0.2f)), 0.25f, 0.28f, 1.4f, g * (1f - night * 0.6f));
+            }
             if (interior != null) interior.UpdateState(dt, p, lightsOn, night, App.I.dayNight.time, App.I.rainLevel > 0.15f);
             if (indicator != ' ')
             {

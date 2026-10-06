@@ -11,6 +11,7 @@ namespace CaucasusDrive
         public int color = -1;     // -1 — заводской цвет
         public int wheels, height, tint, engine, tires, neon, horn, exhaust;
         public string plateText = "Е213КХ", plateRegion = "26";
+        public float damage, dirt;   // 0..1: повреждения кузова и грязь
         // купленные позиции тюнинга (битовые маски по индексу варианта)
         public int ownWheels = 1, ownHeight = 1, ownTint = 1, ownEngine = 1, ownTires = 1, ownNeon = 1, ownHorn = 1, ownExhaust = 1;
     }
@@ -38,7 +39,7 @@ namespace CaucasusDrive
     public class DailyState { public string date = ""; public List<DailyTask> tasks = new List<DailyTask>(); }
 
     [Serializable]
-    public class Stats { public float km; public int fines, taxi, bestCombo, crashes; }
+    public class Stats { public float km, walk; public int fines, taxi, bestCombo, crashes, food, washes; }
 
     [Serializable]
     public class DriftStats { public int best, bestSeries, runs; }
@@ -58,6 +59,7 @@ namespace CaucasusDrive
         public Stats stats = new Stats();
         public DriftStats drift = new DriftStats();
         public DailyState daily = new DailyState();
+        public List<string> ach = new List<string>();
     }
 
     /// <summary>Прогресс в PlayerPrefs (JSON): деньги, гараж, тюнинг, звёзды, настройки.</summary>
@@ -76,6 +78,7 @@ namespace CaucasusDrive
             if (d.stats == null) d.stats = new Stats();
             if (d.drift == null) d.drift = new DriftStats();
             if (d.daily == null) d.daily = new DailyState();
+            if (d.ach == null) d.ach = new List<string>();
             if (d.daily.tasks == null) d.daily.tasks = new List<DailyTask>();
             while (d.stars.Count < Levels.Count) d.stars.Add(0);
         }

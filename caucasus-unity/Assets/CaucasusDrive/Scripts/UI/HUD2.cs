@@ -37,8 +37,8 @@ namespace CaucasusDrive
     /// парктроник, управление пешком (джойстик, прыжок, сесть, курить, свист, магазин), меню ларька.</summary>
     public partial class HUD
     {
-        Button radioBtn, taxiBtn, doorBtn, actionBtn, shopBtn, carBtn;
-        Text radioLabel, doorLabel, actionLabel, sensorText, shopLabel;
+        Button radioBtn, taxiBtn, doorBtn, shopBtn, carBtn;
+        Text radioLabel, doorLabel, sensorText, shopLabel;
         Image taxiImg, flashImg, smokeImg;
         RectTransform limit, sensors, foot, shopPanel;
         public Joystick joy;
@@ -60,9 +60,14 @@ namespace CaucasusDrive
             taxiBtn.gameObject.SetActive(false);
 
             // кнопка действия (заправка)
-            actionBtn = UIKit.Button(root, "", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 150), new Vector2(360, 60), UIKit.Gold * 0.85f, () => app.mode?.OnAction(), 22);
-            actionLabel = actionBtn.GetComponentInChildren<Text>(); actionLabel.color = Color.black;
-            actionBtn.gameObject.SetActive(false);
+            for (int i = 0; i < 3; i++)
+            {
+                int k = i;
+                actBtns[i] = UIKit.Button(root, "", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(0, 150), new Vector2(250, 58), i == 0 ? UIKit.Gold * 0.85f : i == 1 ? new Color(0.85f, 0.45f, 0.2f) : new Color(0.35f, 0.7f, 0.9f), () => app.mode?.OnAction(k), 19);
+                actLabels[i] = actBtns[i].GetComponentInChildren<Text>(); actLabels[i].color = Color.black;
+                actBtns[i].gameObject.SetActive(false);
+            }
+            damageText = UIKit.LabelAt(root, "", 16, UIKit.Gold, new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-170, 112), new Vector2(150, 24), TextAnchor.MiddleCenter, true);
 
             // знак «60»
             limit = UIKit.Rect(root, "Limit", new Vector2(0.5f, 0), new Vector2(0.5f, 0), new Vector2(-170, 60), new Vector2(64, 64));
@@ -114,11 +119,25 @@ namespace CaucasusDrive
         public void ShowLimit(bool on) { limitOn = on; }
         public void Flash() { flashT = 0.35f; }
 
-        public void Action(string text)
+        readonly Button[] actBtns = new Button[3];
+        readonly Text[] actLabels = new Text[3];
+        Text damageText;
+
+        /// <summary>До трёх кнопок действий (АЗС: заправка, ремонт, мойка); null — скрыть.</summary>
+        public void Actions(string a0, string a1, string a2)
         {
-            bool on = !string.IsNullOrEmpty(text);
-            if (actionBtn.gameObject.activeSelf != on) actionBtn.gameObject.SetActive(on);
-            if (on && actionLabel.text != text) actionLabel.text = text;
+            string[] t = { a0, a1, a2 };
+            int n = 0; foreach (var x in t) if (!string.IsNullOrEmpty(x)) n++;
+            int k = 0;
+            for (int i = 0; i < 3; i++)
+            {
+                bool on = !string.IsNullOrEmpty(t[i]);
+                if (actBtns[i].gameObject.activeSelf != on) actBtns[i].gameObject.SetActive(on);
+                if (!on) continue;
+                if (actLabels[i].text != t[i]) actLabels[i].text = t[i];
+                ((RectTransform)actBtns[i].transform).anchoredPosition = new Vector2((k - (n - 1) / 2f) * 262f, 150);
+                k++;
+            }
         }
 
         public void Sensors(bool on, float front, float rear)
@@ -161,6 +180,7 @@ namespace CaucasusDrive
             shopPanel.gameObject.SetActive(false);
             app.walker.Eat(k);
             app.daily.Progress("food", 1);
+            app.save.d.stats.food++;
             Toast(it.name + " · −" + it.price + " ₽ · «" + Shops.Thank() + "»", Good, 2.5f);
         }
 
@@ -186,6 +206,9 @@ namespace CaucasusDrive
                 if (shopPanel.gameObject.activeSelf && near == null) shopPanel.gameObject.SetActive(false);
             }
             else if (shopPanel.gameObject.activeSelf) shopPanel.gameObject.SetActive(false);
+            var tn = app.player.tune;
+            string dmg = !onFoot && tn != null && tn.damage > 0.05f ? "КУЗОВ " + Mathf.RoundToInt((1f - tn.damage) * 100f) + "%" : "";
+            if (damageText.text != dmg) { damageText.text = dmg; damageText.color = tn != null && tn.damage > 0.4f ? new Color(1f, 0.35f, 0.25f) : UIKit.Gold; }
             if (flashT > 0f) { flashT -= dt; flashImg.color = new Color(1, 1, 1, Mathf.Clamp01(flashT / 0.35f) * 0.85f); }
         }
 

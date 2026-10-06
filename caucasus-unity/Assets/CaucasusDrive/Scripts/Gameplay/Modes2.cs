@@ -77,7 +77,7 @@ namespace CaucasusDrive
             app.hud.Drift(false, 0, 1, 0);
             app.hud.ShowTaxi(false);
             app.hud.ShowLimit(false);
-            app.hud.Action(null);
+            app.hud.Actions(null, null, null);
             app.hud.Mission(null, null, 0);
             if (ped != null) { Object.Destroy(ped.root.gameObject); ped = null; }
         }
@@ -139,13 +139,27 @@ namespace CaucasusDrive
             var az = app.city.azs;
             atPump = !app.onFoot && az != Vector3.zero && p.speed < 0.5f && Vector3.Distance(app.player.Position, az) < app.city.azsR;
             float need = p.spec.tank - p.fuel;
-            app.hud.Action(atPump && need > 0.5f ? "ЗАПРАВИТЬ · " + M.Rub(Mathf.CeilToInt(need * FuelPrice)) : null);
+            var t = app.player.tune;
+            int rep = CarCare.RepairPrice(t);
+            app.hud.Actions(atPump && need > 0.5f ? "ЗАПРАВИТЬ · " + M.Rub(Mathf.CeilToInt(need * FuelPrice)) : null,
+                atPump && rep > 0 ? "РЕМОНТ · " + M.Rub(rep) : null,
+                atPump && t.dirt > 0.05f ? "МОЙКА · " + M.Rub(CarCare.WashPrice) : null);
             if (k < 0.15f && taxi == "off") app.hud.Nav(az);
         }
 
-        public override void OnAction()
+        public override void OnAction(int i)
         {
             if (!atPump) return;
+            if (i == 1) { if (CarCare.Repair(app, app.player.tune)) app.hud.Toast("Машину подлатали — как новая", HUD.Good); return; }
+            if (i == 2)
+            {
+                if (!CarCare.Wash(app, app.player.tune)) return;
+                app.RefreshLook();
+                var c = app.player.Position;
+                for (int k = 0; k < 30; k++) SmokeFx.I?.Puff(c + new Vector3(Random.Range(-1.6f, 1.6f), Random.Range(0.3f, 1.5f), Random.Range(-2.4f, 2.4f)), Vector3.up * 0.3f, 0.35f, 0.5f, 1.6f, 1f);
+                app.hud.Toast("Помыли до блеска!", HUD.Good);
+                return;
+            }
             var p = app.player.phys;
             float need = p.spec.tank - p.fuel;
             float afford = Mathf.Min(need, app.save.Money / FuelPrice);

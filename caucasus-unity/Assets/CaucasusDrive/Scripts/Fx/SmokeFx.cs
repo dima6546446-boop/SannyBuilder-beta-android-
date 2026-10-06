@@ -68,9 +68,9 @@ namespace CaucasusDrive
         }
 
         /// <summary>Клуб дыма (сигарета, выдох).</summary>
-        public void Puff(Vector3 pos, Vector3 vel, float size, float alpha, float life)
+        public void Puff(Vector3 pos, Vector3 vel, float size, float alpha, float life, float grey = 0.85f)
         {
-            ps.Emit(new ParticleSystem.EmitParams { position = pos, velocity = vel, startSize = size, startLifetime = life, startColor = new Color(0.85f, 0.85f, 0.85f, alpha) }, 1);
+            ps.Emit(new ParticleSystem.EmitParams { position = pos, velocity = vel, startSize = size, startLifetime = life, startColor = new Color(grey, grey, grey, alpha) }, 1);
         }
     }
 }

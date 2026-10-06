@@ -16,7 +16,7 @@ namespace CaucasusDrive
         public virtual bool Restartable => true;
         public virtual bool AllowWalk => false;
         public virtual void OnPedHit(float speed) { }
-        public virtual void OnAction() { }
+        public virtual void OnAction(int i) { }
         public virtual void OnTaxi() { }
         public virtual void RenderGlow(Glow glow, bool blink) { }
     }

@@ -179,7 +179,7 @@ namespace CaucasusDrive
             if (state != St.Sit && state != St.Down) { vx = M.Damp(vx, tvx, acc, dt); vz = M.Damp(vz, tvz, acc, dt); }
             else { vx = M.Damp(vx, 0, 8, dt); vz = M.Damp(vz, 0, 8, dt); }
             speed = Mathf.Sqrt(vx * vx + vz * vz);
-            if (state == St.Walk && speed > 0.3f) app.daily.Progress("walk", speed * dt);
+            if (state == St.Walk && speed > 0.3f) { app.daily.Progress("walk", speed * dt); app.save.d.stats.walk += speed * dt; }
 
             var pos = Pos;
             float gy = Ground(pos.x, pos.z);

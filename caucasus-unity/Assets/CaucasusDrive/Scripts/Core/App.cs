@@ -53,6 +53,21 @@ namespace CaucasusDrive
         public Radio radio;
         public bool onFoot;
         public const int GroundLayer = 11;
+        float achT, lookDirt;
+
+        /// <summary>Сообщение там, где его видно: в игре — HUD, в меню — поверх меню.</summary>
+        public void Notify(string text, int kind = 0, float sec = 2.5f)
+        {
+            if (hud != null && hud.canvas.gameObject.activeSelf) hud.Toast(text, kind, sec); else menus.Toast(text, kind, sec);
+        }
+
+        /// <summary>Перекрасить кузов с учётом грязи.</summary>
+        public void RefreshLook()
+        {
+            if (player?.vis == null || player.tune == null) return;
+            lookDirt = player.tune.dirt;
+            CarCare.ApplyLook(player.vis.mats, player.tune, save.ColorOf(player.def.id));
+        }
         float weatherTarget, weatherTimer, beepT;
         bool weatherAuto;
         readonly System.Collections.Generic.List<GameObject> dpsCars = new System.Collections.Generic.List<GameObject>();
@@ -158,7 +173,11 @@ namespace CaucasusDrive
             new SmokeFx(worldRoot, quality.level == 0 ? 90 : 180);
             player = new PlayerCar(worldRoot);
             player.go.layer = 2; // Ignore Raycast — камера и датчики не видят собственную машину
-            player.onCrash = (s, kind, col) => mode?.OnCrash(s, kind, col);
+            player.onCrash = (s, kind, col) =>
+            {
+                if (mode != null && mode.Name != "parking" && kind != "cone") CarCare.Damage(this, s);
+                mode?.OnCrash(s, kind, col);
+            };
             player.onBlink = () => audio.Tick(player.blinkOn);
             player.onPop = () => { float dd = Vector3.Distance(cam.transform.position, player.Position); audio.Pop(Mathf.Max(0.25f, 1f - dd / 40f)); };
             walker = new Walker(this);
@@ -310,6 +329,7 @@ namespace CaucasusDrive
             if (state != State.Play || paused || player?.phys == null) return;
             var inp = inputLocked ? new CarInput { brake = 1f } : input;
             if (onFoot) inp = new CarInput { brake = 1f, handbrake = true };
+            inp.throttle *= CarCare.Power(player.tune);
             player.FixedStep(Time.fixedDeltaTime, inp, 1f - 0.16f * rainLevel);
         }
 
@@ -375,6 +395,15 @@ namespace CaucasusDrive
                 daily.Progress("speed", Mathf.Round(p.speed * 3.6f));
             }
             Sensors(dt);
+            // грязь: копится с пробегом, в дождь и на траве быстрее
+            if (!onFoot && p.speed > 1f && player.tune != null)
+            {
+                float k = 0.02f * (1f + 3f * rainLevel) * (player.surface.type == 2 ? 4f : 1f);
+                player.tune.dirt = Mathf.Min(1f, player.tune.dirt + p.speed * dt / 1000f * k);
+                if (Mathf.Abs(player.tune.dirt - lookDirt) > 0.01f) RefreshLook();
+            }
+            achT -= dt;
+            if (achT <= 0f) { achT = 2f; Achievements.Check(this); }
             hud.Update(dt);
             RenderWorld(dt);
         }
@@ -430,7 +459,7 @@ namespace CaucasusDrive
             if (In.Pressed(In.K.F)) ToggleFoot();
             if (In.Pressed(In.K.R)) CycleRadio();
             if (In.Pressed(In.K.T)) mode?.OnTaxi();
-            if (In.Pressed(In.K.E)) mode?.OnAction();
+            if (In.Pressed(In.K.E)) mode?.OnAction(0);
             if (In.Pressed(In.K.Q)) player.ToggleIndicator('L');
             if (In.Pressed(In.K.Z) && !onFoot) player.ToggleIndicator('R');
             if (!onFoot) return;
@@ -447,6 +476,7 @@ namespace CaucasusDrive
             save.d.settings.radio = radio.index; save.Commit();
             Toast("Радио: " + n);
             ShowRadio();
+            RefreshLook();
         }
 
         void ShowRadio()
