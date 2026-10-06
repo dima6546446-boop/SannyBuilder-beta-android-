@@ -46,7 +46,7 @@ namespace CaucasusDrive
             c.root.name = "Walker";
             cc = c.root.gameObject.AddComponent<CharacterController>();
             cc.radius = 0.28f; cc.height = 1.75f; cc.center = new Vector3(0, 0.9f, 0); cc.stepOffset = 0.35f; cc.skinWidth = 0.03f; cc.slopeLimit = 60f;
-            hr = HumanRig.Create(c.root, "Human_Player");
+            hr = HumanRig.Create(c.root, "Human_Player", 1.78f, true);
             if (hr != null)
             {
                 c.smr.enabled = false;                                    // процедурный скелет остаётся «невидимым» — на нём считаются точки рта и рук

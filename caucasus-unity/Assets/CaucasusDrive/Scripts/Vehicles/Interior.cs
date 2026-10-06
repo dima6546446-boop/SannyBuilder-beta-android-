@@ -333,7 +333,7 @@ namespace CaucasusDrive
                 driver.Bone("shin" + s, 1.05f, 0, 0);
                 driver.Bone("foot" + s, -0.25f, 0, 0);
             }
-            hr = HumanRig.Create(root.transform, "Human_Player");
+            hr = HumanRig.Create(root.transform, "Human_Player", 1.78f, true);
             Vector3 headLocal;
             if (hr != null)
             {

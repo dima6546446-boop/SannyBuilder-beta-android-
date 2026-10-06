@@ -47,12 +47,12 @@ namespace CaucasusDrive
         }
 
         /// <param name="skin">имя текстуры-палитры в Resources/Characters (Human_Player, Human_Blue…)</param>
-        public static HumanRig Create(Transform parent, string skin, float height = 1.78f)
+        public static HumanRig Create(Transform parent, string skin, float height = 1.78f, bool tracksuit = false)
         {
             var prefab = Resources.Load<GameObject>(Path);
             if (prefab == null) return null;
             var r = new HumanRig();
-            try { r.Build(prefab, parent, skin, height); }
+            try { r.Build(prefab, parent, skin, height, tracksuit); }
             catch (System.Exception e) { Debug.LogWarning("HumanRig: " + e.Message); r.Destroy(); return null; }
             return r.alive ? r : null;
         }
@@ -64,7 +64,7 @@ namespace CaucasusDrive
             return null;
         }
 
-        void Build(GameObject prefab, Transform parent, string skin, float height)
+        void Build(GameObject prefab, Transform parent, string skin, float height, bool tracksuit)
         {
             root = new GameObject("HumanRig").transform;
             root.SetParent(parent, false);
@@ -92,6 +92,7 @@ namespace CaucasusDrive
             if (smr == null) throw new System.Exception("нет SkinnedMeshRenderer");
             var tex = LoadTex(skin) ?? LoadTex("Human_Player");
             smr.sharedMaterial = Mats.Simple().Tex(tex).Col(Color.white);
+            Smooth(smr);
             smr.updateWhenOffscreen = false;
             smr.localBounds = new Bounds(smr.localBounds.center, smr.localBounds.size + Vector3.one * 1.5f);
             smr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
@@ -149,6 +150,23 @@ namespace CaucasusDrive
             mouthT.position = B["head"].position + root.forward * 0.08f + root.up * 0.06f;
             foreach (var tr in root.GetComponentsInChildren<Transform>(true)) tr.gameObject.layer = root.gameObject.layer;
             AddShoes();
+            if (tracksuit) Tracksuit.Apply(this);
+        }
+
+        /// <summary>Сглаживание «гранёности»: нормали вершин в одной точке усредняются (меш копируется, исходный не трогаем).</summary>
+        static void Smooth(SkinnedMeshRenderer r)
+        {
+            var src = r.sharedMesh;
+            if (src == null || !src.isReadable) return;
+            var m = Object.Instantiate(src);
+            var v = m.vertices; var n = m.normals;
+            if (n.Length != v.Length) return;
+            var sum = new Dictionary<Vector3Int, Vector3>();
+            System.Func<Vector3, Vector3Int> key = p => new Vector3Int(Mathf.RoundToInt(p.x * 2000f), Mathf.RoundToInt(p.y * 2000f), Mathf.RoundToInt(p.z * 2000f));
+            for (int i = 0; i < v.Length; i++) { var k = key(v[i]); Vector3 a; sum[k] = sum.TryGetValue(k, out a) ? a + n[i] : n[i]; }
+            for (int i = 0; i < v.Length; i++) n[i] = Vector3.Slerp(n[i], sum[key(v[i])].normalized, 0.85f).normalized;
+            m.normals = n;
+            r.sharedMesh = m;
         }
 
         /// <summary>Модель босая — надеваем белые кроссовки (коробочки на костях стоп, в позе покоя стоят на полу).</summary>

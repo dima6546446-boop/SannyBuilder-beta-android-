@@ -15,7 +15,7 @@ namespace CaucasusDrive.EditorTools
             mi.importAnimation = true;
             mi.materialImportMode = ModelImporterMaterialImportMode.None;
             mi.optimizeGameObjects = false;
-            mi.isReadable = false;
+            mi.isReadable = true;   // нужно для сглаживания нормалей и подгонки одежды по сетке
             mi.importCameras = false;
             mi.importLights = false;
             mi.animationCompression = ModelImporterAnimationCompression.Optimal;
