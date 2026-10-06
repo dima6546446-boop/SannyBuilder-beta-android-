@@ -66,6 +66,7 @@ namespace CaucasusDrive
         // ------------------------------------------------------------------ состояние
         public GameObject root;
         public Character driver;
+        public HumanRig hr;                   // готовая модель водителя (если есть), иначе driver
         public Vector3 eye;                   // точка глаз водителя (в осях кузова Unity)
         InteriorStyle st;
         Transform spin, wheelTilt, clockH, clockM;
@@ -332,8 +333,17 @@ namespace CaucasusDrive
                 driver.Bone("shin" + s, 1.05f, 0, 0);
                 driver.Bone("foot" + s, -0.25f, 0, 0);
             }
-            var headLocal = root.transform.InverseTransformPoint(driver.B["head"].position);
-            eye = new Vector3(-(DX - 0.035f), headLocal.y + 0.11f, headLocal.z + 0.09f);
+            hr = HumanRig.Create(root.transform, "Human_Player");
+            Vector3 headLocal;
+            if (hr != null)
+            {
+                driver.smr.enabled = false;
+                hr.root.localPosition = new Vector3(-DX, Hy + 0.04f - hr.restHips, Hz - 0.04f);
+                SeatDriver(0f, 0f);
+                headLocal = root.transform.InverseTransformPoint(hr.Head.position);
+            }
+            else headLocal = root.transform.InverseTransformPoint(driver.B["head"].position);
+            eye = new Vector3(-(DX - 0.035f), headLocal.y + 0.1f, headLocal.z + 0.09f);
             foreach (var t in root.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = 2;
         }
 
@@ -408,9 +418,18 @@ namespace CaucasusDrive
 
         /// <summary>В виде из салона камера в голове водителя — голову прячем.</summary>
         public bool FirstPerson => firstPerson;
-        public void SetFirstPerson(bool v) { firstPerson = v; driver.B["neck"].localScale = Vector3.one * (v ? 0.001f : 1f); }
+        public void SetFirstPerson(bool v) { firstPerson = v; if (hr != null) hr.HideHead(v); else driver.B["neck"].localScale = Vector3.one * (v ? 0.001f : 1f); }
 
-        public void SetDriverVisible(bool v) { driver.SetVisible(v); }
+        public void SetDriverVisible(bool v) { if (hr != null) hr.root.gameObject.SetActive(v); else driver.SetVisible(v); }
+
+        /// <summary>Поза водителя: стойка из клипа Idle, ноги сидя, голова поворачивается за рулём.</summary>
+        void SeatDriver(float dt, float steer)
+        {
+            hr.Tick(dt, 0f, false, 0f, false, 0f);
+            hr.SeatedLegs(hr.root.forward, 1f, 0.14f, 0.4f);
+            hr.LeanSpine(-0.12f, 1f);
+            hr.B["head"].rotation = Quaternion.AngleAxis(steer * 20f, hr.root.up) * hr.B["head"].rotation;
+        }
 
         public void UpdateState(float dt, VehiclePhysics p, bool lights, float night, float clock, bool wipersOn)
         {
@@ -444,7 +463,21 @@ namespace CaucasusDrive
                 clockM.localRotation = PaletteMesh.Q3(0, 0, -m / 60f * Mathf.PI * 2);
             }
             // руки на руле: «10 и 2», следуют за ободом до ±90°, дальше перехватывают
-            if (driver.root.gameObject.activeInHierarchy)
+            if (hr != null)
+            {
+                if (hr.root.gameObject.activeInHierarchy)
+                {
+                    SeatDriver(dt, steer);
+                    foreach (var side in new[] { 'L', 'R' })
+                    {
+                        float a = (side == 'L' ? 150f : 30f) * Mathf.Deg2Rad + Mathf.Clamp(steerA, -1.55f, 1.55f);
+                        var tgt = wheelTilt.TransformPoint(new Vector3(-Mathf.Cos(a) * st.wheel.r, Mathf.Sin(a) * st.wheel.r, 0.035f));
+                        hr.ArmIK(side, tgt, 1f, hr.root.up * -0.6f + hr.root.right * (side == 'L' ? -0.5f : 0.5f) - hr.root.forward * 0.3f);
+                    }
+                    hr.UpdateAttach();
+                }
+            }
+            else if (driver.root.gameObject.activeInHierarchy)
             {
                 driver.Bone("head", 0.08f, -steer * 0.35f, 0);
                 float lim = Mathf.Clamp(steerA, -1.55f, 1.55f);

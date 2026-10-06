@@ -498,6 +498,7 @@ namespace CaucasusDrive
                 "Экзамен ГИБДД: площадка (змейка, параллельная, гараж задом), затем город по указаниям инструктора. 5 штрафных баллов — не сдал.\n" +
                 "Дрифт-зона ДОСААФ: 90 секунд вокруг конусов, сбитый конус сжигает серию. Пешком: «ВЫЙТИ» — гулять, курить, свистеть, есть шаурму.\n\n" +
                 "Клавиатура: WASD — езда, пробел — ручник, H — гудок, C — камера, F — выйти/сесть, R — радио, T — такси, E — заправка, Esc — пауза." +
+                "\n\nПерсонаж игрока: «Animated Human» — Quaternius (CC0), quaternius.com" +
                 (Credits.Models.Length > 0 ? "\n\nМодели машин (CC BY): " + string.Join("; ", Credits.Models) : ""),
                 20, Color.white, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, -20), new Vector2(1000, 520), TextAnchor.UpperLeft, false);
         }

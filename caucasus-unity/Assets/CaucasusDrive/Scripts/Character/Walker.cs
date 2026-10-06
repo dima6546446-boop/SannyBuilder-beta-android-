@@ -20,6 +20,8 @@ namespace CaucasusDrive
         public enum St { Walk, Air, Sit, Down }
         readonly App app;
         public readonly Character c;
+        public HumanRig hr;                      // готовая модель (если есть в Resources), иначе процедурный персонаж
+        float airT, downElapsed, hoverY;
         readonly CharacterController cc;
         public St state = St.Walk;
         public float yaw, speed, vy;
@@ -44,6 +46,13 @@ namespace CaucasusDrive
             c.root.name = "Walker";
             cc = c.root.gameObject.AddComponent<CharacterController>();
             cc.radius = 0.28f; cc.height = 1.75f; cc.center = new Vector3(0, 0.9f, 0); cc.stepOffset = 0.35f; cc.skinWidth = 0.03f; cc.slopeLimit = 60f;
+            hr = HumanRig.Create(c.root, "Human_Player");
+            if (hr != null)
+            {
+                c.smr.enabled = false;                                    // процедурный скелет остаётся «невидимым» — на нём считаются точки рта и рук
+                c.cigarette.transform.SetParent(hr.attachR, false);
+                c.mouth.SetParent(hr.mouthT, false); c.mouth.localPosition = Vector3.zero;
+            }
             foreach (var tr in c.root.GetComponentsInChildren<Transform>(true)) tr.gameObject.layer = Layer;
             Physics.IgnoreLayerCollision(Layer, City.StopLayer, true);
             foreach (var b in Bones) { cur[b] = Vector3.zero; T[b] = Vector3.zero; }
@@ -65,7 +74,7 @@ namespace CaucasusDrive
             Physics.SyncTransforms();
             cc.enabled = true;
             yaw = yw; vx = vz = vy = 0; speed = 0; state = St.Walk; seat = null;
-            c.ResetPose(); hipsY = 0.98f;
+            c.ResetPose(); hipsY = 0.98f; if (hr != null) hr.hipsDrop = 0f; hoverY = 0f;
             foreach (var b in Bones) cur[b] = Vector3.zero;
         }
 
@@ -76,7 +85,7 @@ namespace CaucasusDrive
         {
             if (state == St.Sit) { StandUp(); return; }
             if (state != St.Walk) return;
-            state = St.Air; vy = JUMP_V; app.audio.Footstep(1.4f);
+            state = St.Air; vy = JUMP_V; airT = 0; app.audio.Footstep(1.4f);
         }
 
         public void ToggleSit()
@@ -150,7 +159,7 @@ namespace CaucasusDrive
         {
             DropFood();
             food = kind;
-            foodObj = Shops.ItemMesh(kind, c.B["handL"]);
+            foodObj = Shops.ItemMesh(kind, hr != null ? hr.attachL : c.B["handL"]);
             foodObj.transform.localPosition = new Vector3(-0.01f, -0.095f, 0.04f);
             foodObj.transform.localRotation = PaletteMesh.Q3(Mathf.PI, 0, 0);
             foreach (var tr in foodObj.GetComponentsInChildren<Transform>()) tr.gameObject.layer = Layer;
@@ -214,9 +223,12 @@ namespace CaucasusDrive
             }
             if (state == St.Down) { downT -= dt; if (downT <= 0) { state = St.Walk; landT = 0.3f; } }
             c.root.rotation = M.Yaw(yaw);
-            float bx = Mathf.Lerp(c.body.localEulerAngles.x > 180 ? c.body.localEulerAngles.x - 360 : c.body.localEulerAngles.x,
-                state == St.Down && downT > 0.5f ? -83f : 0f, 1f - Mathf.Exp(-(state == St.Down ? 9f : 5f) * dt));
-            c.body.localRotation = Quaternion.Euler(bx, 0, 0);
+            if (hr == null)
+            {
+                float bx = Mathf.Lerp(c.body.localEulerAngles.x > 180 ? c.body.localEulerAngles.x - 360 : c.body.localEulerAngles.x,
+                    state == St.Down && downT > 0.5f ? -83f : 0f, 1f - Mathf.Exp(-(state == St.Down ? 9f : 5f) * dt));
+                c.body.localRotation = Quaternion.Euler(bx, 0, 0);
+            }
 
             var ped = app.traffic.ped;
             ped.active = state != St.Sit || seat.kind == "squat";
@@ -245,7 +257,7 @@ namespace CaucasusDrive
 
         void KnockDown(TrafficCar car)
         {
-            state = St.Down; downT = 2.4f; immuneUntil = t + 5f; seat = null;
+            state = St.Down; downT = 2.4f; downElapsed = 0; immuneUntil = t + 5f; seat = null;
             var f = M.Fwd(car.heading);
             vx = f.x * car.speed * 0.6f; vz = f.z * car.speed * 0.6f;
             yaw = Mathf.Atan2(-f.x, -f.z);
@@ -265,6 +277,7 @@ namespace CaucasusDrive
 
         void Animate(float dt)
         {
+            if (hr != null) { AnimateHuman(dt); return; }
             foreach (var b in Bones) T[b] = Vector3.zero;
             float hy = 0.98f, rate = 10f;
             if (state == St.Walk || (state == St.Down && downT <= 0.5f))
@@ -372,11 +385,65 @@ namespace CaucasusDrive
             }
         }
 
-        Vector3 MouthTarget(float fwd, float down) { return c.B["head"].TransformPoint(new Vector3(0, 0.06f - down, 0.11f + fwd)); }
+        // ------------------------------------------------------------------ анимация готовой модели
+        void AnimateHuman(float dt)
+        {
+            float v = speed;
+            if (state == St.Air) airT += dt;
+            bool down = state == St.Down;
+            if (down) downElapsed += dt;
+            // падение: Death-клип, в последние 0.4 с плавно возвращаемся в стойку
+            float blend = down ? Mathf.Clamp01(downT / 0.4f) : 0f;
+            bool sitting = state == St.Sit;
+            float wantDrop = 0f;
+            if (sitting) wantDrop = Mathf.Max(0f, hr.restHips - (seat.kind == "squat" ? SQUAT_HIPS : SIT_HIPS));
+            hr.hipsDrop = M.Damp(hr.hipsDrop, wantDrop, 8f, dt);
+            hr.Tick(dt, sitting || down ? 0f : v, state == St.Air, airT, down, downElapsed, blend);
+            if (landT > 0) landT -= dt;
+            var fwd = M.Fwd(yaw);
+            if (sitting)
+            {
+                if (seat.kind == "squat") { hr.SquatLegs(fwd, 1f); hr.LeanSpine(0.35f, 1f); }
+                else hr.SeatedLegs(fwd, 1f);
+            }
+            // руки: затяжка/свист — к губам; сидя — на колени; еда — к рту
+            bool toMouthR = smoking && (smokeStage == "light" || smokeStage == "drag");
+            char wh = whistleT > 0.15f && whistleT < 1.35f ? whistleHand : ' ';
+            bool sitHands = state == St.Sit;
+            float wR = toMouthR || wh == 'R' ? 1 : sitHands ? 0.85f : 0;
+            bool biteL = food != null && foodStage == "bite" && foodT > 0.1f && foodT < 0.85f;
+            float wL = wh == 'L' || biteL ? 1 : sitHands && food == null ? 0.85f : 0;
+            // курим/держим еду на ходу: рука согнута у груди
+            Vector3 chestHold = hr.B["chest"].position + fwd * 0.2f + Vector3.up * -0.05f;
+            float holdR = smoking && !toMouthR && wh != 'R' && state != St.Down ? 1f : 0f;
+            float holdL = food != null && !biteL && wh != 'L' && state != St.Down ? 1f : 0f;
+            ikR = M.Damp(ikR, Mathf.Max(wR, holdR), 9, dt); ikL = M.Damp(ikL, Mathf.Max(wL, holdL), 9, dt);
+            if (ikR > 0.01f)
+            {
+                var tg = toMouthR ? MouthTarget(0.07f, 0.085f) : wh == 'R' ? MouthTarget(0.05f, 0.075f) : holdR > 0 ? chestHold + hr.root.right * 0.1f : KneeTarget('R');
+                hr.ArmIK('R', tg, ikR);
+            }
+            if (ikL > 0.01f)
+            {
+                var tg = wh == 'L' ? MouthTarget(0.05f, 0.075f) : biteL ? MouthTarget(0.07f, Shops.Items[food].drink ? 0.15f : 0.12f) : holdL > 0 ? chestHold - hr.root.right * 0.1f : KneeTarget('L');
+                hr.ArmIK('L', tg, ikL);
+            }
+            if (wh != ' ' || toMouthR) hr.B["head"].rotation = Quaternion.AngleAxis(-6f, hr.root.right) * hr.B["head"].rotation;
+            if (landT > 0.01f) hr.hipsDrop = Mathf.Max(hr.hipsDrop, landT * 0.4f);
+            hr.UpdateAttach();
+            if (!down && speed > 0.3f && state == St.Walk)
+            {
+                float ph = Mathf.Repeat(t * (1.2f + speed * 0.9f), 2f);
+                int step = Mathf.FloorToInt(ph);
+                if (step != stepIdx) { stepIdx = step; app.audio.Footstep(0.5f + Mathf.Clamp01((speed - WALK) / (RUN - WALK)) * 0.7f); }
+            }
+        }
+
+        Vector3 MouthTarget(float fwd, float down) { return hr != null ? hr.MouthPoint(fwd, down) : c.B["head"].TransformPoint(new Vector3(0, 0.06f - down, 0.11f + fwd)); }
 
         Vector3 KneeTarget(char side)
         {
-            var o = c.B[side == 'L' ? "shinL" : "shinR"].position;
+            var o = (hr != null ? hr.B : c.B)[side == 'L' ? "shinL" : "shinR"].position;
             bool squat = seat != null && seat.kind == "squat";
             o += M.Fwd(yaw) * (squat ? 0.16f : 0.02f);
             o.y += squat ? -0.12f : 0.05f;
