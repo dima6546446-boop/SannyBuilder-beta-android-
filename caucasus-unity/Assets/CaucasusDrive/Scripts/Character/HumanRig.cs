@@ -34,7 +34,7 @@ namespace CaucasusDrive
         readonly AnimationClip[] clips = new AnimationClip[5];
         readonly float[] t = new float[5];
         readonly float[] w = new float[5];
-        float baseY;
+        float baseY, gait;
         bool alive;
 
         public static bool Available => Resources.Load<GameObject>(Path) != null;
@@ -200,14 +200,16 @@ namespace CaucasusDrive
             float idle, walk, run, jump = 0, death = 0;
             if (speed < 0.15f) { idle = 1; walk = 0; run = 0; }
             else if (speed < 1.7f) { float k = Mathf.Clamp01((speed - 0.15f) / 1.2f); idle = 1 - k; walk = k; run = 0; }
-            else { float k = Mathf.Clamp01((speed - 1.7f) / 3.2f); idle = 0; walk = 1 - k; run = k; }
+            else { float k = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((speed - 2.6f) / 1.3f)); idle = 0; walk = 1 - k; run = k; }
             if (air && clips[(int)Clip.Jump] != null) { jump = 1; idle = walk = run = 0; }
             if (down && clips[(int)Clip.Death] != null) { death = downBlend; float rest = 1 - death; idle *= rest; walk *= rest; run *= rest; jump = 0; }
             w[0] = idle; w[1] = walk; w[2] = run; w[3] = jump; w[4] = death;
             // время: ходьба и бег — темп по скорости; прыжок и падение идут с начала
             t[0] += dt;
-            t[1] += dt * Mathf.Clamp(speed / 1.45f, 0.6f, 1.6f);
-            t[2] += dt * Mathf.Clamp(speed / 4.6f, 0.7f, 1.4f);
+            // шаг и бег крутятся по одной фазе, иначе при переходе ноги двух клипов идут вразнобой
+            float cw = Mathf.Clamp(speed / 1.45f, 0.6f, 1.6f) / Len(1), cr = Mathf.Clamp(speed / 4.6f, 0.7f, 1.4f) / Len(2);
+            gait = (gait + dt * Mathf.Lerp(cw, cr, run)) % 1f;
+            t[1] = gait * Len(1); t[2] = gait * Len(2);
             t[3] = Mathf.Min(Len(3), airT);
             t[4] = Mathf.Min(Len(4), downT);
             for (int i = 0; i < 3; i++) t[i] %= Len(i);

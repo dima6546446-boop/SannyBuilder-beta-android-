@@ -14,7 +14,7 @@ namespace CaucasusDrive
         {
             paint = (high ? Mats.Lit() : Mats.Lit()).Col(M.Hex(color)).Pbr(0.55f, high ? 0.9f : 0.82f);
             chrome = Mats.Lit().Col(M.Hex(0xe6e6e6)).Pbr(1f, 0.93f);
-            glass = Mats.LitTransparent().Col(new Color(0.03f, 0.05f, 0.07f, tint)).Pbr(0.3f, 0.95f);
+            glass = Mats.Lit().Col(GlassCol(tint)).Pbr(0.6f, 0.97f);   // непрозрачное тёмное стекло: прозрачный материал на телефонах не рисовался
             black = Mats.Lit().Col(M.Hex(0x1b1b1b)).Pbr(0f, 0.35f);
             rubber = Mats.Simple().Col(M.Hex(0x151515));
             under = Mats.Simple().Col(M.Hex(0x0b0b0b));
@@ -32,6 +32,9 @@ namespace CaucasusDrive
             map["headLamp"] = headLamp; map["tailLamp"] = tailLamp; map["reverseLamp"] = reverseLamp;
             map["indL"] = indL; map["indR"] = indR; map["trim"] = chrome; map["interior"] = interior;
         }
+
+        /// <summary>Цвет стекла по плотности тонировки (0.6 заводская … 0.97 наглухо).</summary>
+        public static Color GlassCol(float tint) { float k = Mathf.Lerp(0.20f, 0.02f, Mathf.InverseLerp(0.5f, 1f, tint)); return new Color(k * 0.8f, k * 0.95f, k * 1.15f, 1f); }
 
         public Material For(string name) { Material m; return map.TryGetValue(name, out m) ? m : black; }
 
@@ -200,7 +203,7 @@ namespace CaucasusDrive
         }
 
         public void SetColor(int hex) { mats.paint.Col(M.Hex(hex)); }
-        public void SetTint(float a) { mats.glass.Col(new Color(0.03f, 0.05f, 0.07f, a)); }
+        public void SetTint(float a) { mats.glass.Col(CarMaterials.GlassCol(a)); }
         public void SetHeight(float h) { body.localPosition = new Vector3(0, h, 0); }
 
         public void Destroy()

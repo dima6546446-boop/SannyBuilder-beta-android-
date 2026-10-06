@@ -30,10 +30,7 @@ namespace CaucasusDrive
             owner = new int[verts.Count];
             for (int i = 0; i < owner.Length; i++) owner[i] = i < bw.Length ? bw[i].boneIndex0 : -1;
 
-            Limb("thighL", "shinL", 0.08f, 0.96f, true); Limb("thighR", "shinR", 0.08f, 0.96f, true);
-            Limb("shinL", "footL", 0.04f, 0.8f, true); Limb("shinR", "footR", 0.04f, 0.8f, true);
-            Limb("armL", "foreL", 0.1f, 0.95f, false); Limb("armR", "foreR", 0.1f, 0.95f, false);
-            Limb("foreL", "handL", 0.04f, 0.8f, false); Limb("foreR", "handR", 0.04f, 0.8f, false);
+            TracksuitShell.Build(r, verts, owner, 0.007f);   // рукава и штанины с полосками — гнутся вместе с телом
             Cuff("shinL", "footL", 0.86f); Cuff("shinR", "footR", 0.86f);
             Cuff("foreL", "handL", 0.84f); Cuff("foreR", "handR", 0.84f);
             Collar(); Zip(); Cap(); Shoes(); Hands();
@@ -84,36 +81,6 @@ namespace CaucasusDrive
         }
 
         // ------------------------------------------------------------------ детали
-        /// <summary>Три белые полоски вдоль конечности по внешней стороне.</summary>
-        static void Limb(string from, string to, float t0, float t1, bool leg)
-        {
-            var bone = rig.B[from];
-            var a = rig.root.InverseTransformPoint(bone.position); var b = rig.root.InverseTransformPoint(rig.B[to].position);
-            float r = Radius(a, b, 0.3f, 0.7f, leg ? 0.07f : 0.045f, bone, rig.B[to]);
-            var dir = (b - a).normalized; float len = (b - a).magnitude;
-            var hips = rig.root.InverseTransformPoint(rig.B["hips"].position);
-            float side = Mathf.Sign(((a + b) * 0.5f - hips).x == 0 ? 1f : ((a + b) * 0.5f - hips).x);
-            var n = new Vector3(side, 0, 0);
-            n = (n - dir * Vector3.Dot(n, dir)).normalized;
-            var mid = a + dir * (len * (t0 + t1) * 0.5f);
-            if (!leg)
-            {
-                // длинный рукав поверх голой руки футболки (плечо → кисть)
-                var sg = Anchor(bone, a + dir * (len * 0.5f), Quaternion.FromToRotation(Vector3.up, dir), "Sleeve_" + from);
-                var sp = new PaletteMesh();
-                float st = from.StartsWith("arm") ? 0.02f : 0f, en = from.StartsWith("arm") ? 1.02f : 0.9f;
-                sp.Cyl(new Vector3(0, len * ((st + en) * 0.5f - 0.5f), 0), r + 0.008f, r + 0.008f, len * (en - st), Jacket, 10, false);
-                if (from.StartsWith("arm")) sp.Sphere(new Vector3(0, len * 0.5f, 0), r + 0.008f, Jacket, 10, 6);   // локоть
-                sp.ToObject("Sl", sg.transform);
-                r += 0.01f;
-            }
-            var go = Anchor(bone, mid + n * (r + 0.001f), Quaternion.LookRotation(dir, n), "Stripes_" + from);
-            var pm = new PaletteMesh();
-            float seg = len * (t1 - t0), w = Mathf.Min(0.011f, r * 0.2f), gap = Mathf.Min(0.019f, r * 0.34f);
-            for (int i = -1; i <= 1; i++) pm.Box(new Vector3(i * gap, 0, 0), new Vector3(w, 0.007f, seg), White);
-            pm.ToObject("S", go.transform);
-        }
-
         /// <summary>Резинка-манжета на конце рукава/штанины.</summary>
         static void Cuff(string from, string to, float t)
         {
