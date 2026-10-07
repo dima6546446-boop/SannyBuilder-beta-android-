@@ -49,6 +49,10 @@ public class Vehicle : MonoBehaviour
     public float yawSoftGain = 11.0f;
     [Range(0.7f, 1.1f)] public float rearGripScale = 0.92f;  //rear tyres grip a bit less than the front: the tail steps out under power
     public float reverseThrottle = 0.5f;
+    public float gripScale = 1.0f;                    //per-car overall grip multiplier
+    public float driftTargetAngle = 0.5f;             //rad: angle the assist holds while A/D is held in a slide
+    public float driftKp = 3.0f;
+    public float driftKd = 0.6f;
 
     [Header("Drift State (read-only)")]
     public float speed;
@@ -63,6 +67,7 @@ public class Vehicle : MonoBehaviour
     public float gasInput;
     public string gearLabel = "N";
 
+    public bool inputLocked;       //menu / garage: car idles on the grid with the brakes on
     Rigidbody rb;
     float keyboardSteer;
     float nextShiftTime;
@@ -76,8 +81,20 @@ public class Vehicle : MonoBehaviour
         return x * x * (3.0f - 2.0f * x);
     }
 
+    bool initialized;
+    float baseClutchCapacity, baseClutchStiffness, baseMu0, baseMu1, baseMu2, baseMu3;
+    float prevBeta, betaRate;
+
     void Start()
     {
+        Init();
+    }
+
+    /// <summary>One-time setup; safe to call many times (menu code may need the car before the first frame).</summary>
+    public void Init()
+    {
+        if (initialized) return;
+        initialized = true;
         rb = GetComponent<Rigidbody>();
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
@@ -91,12 +108,10 @@ public class Vehicle : MonoBehaviour
         }
         wheels[2].rear = true;
         wheels[3].rear = true;
-        wheels[2].mu *= rearGripScale;
-        wheels[3].mu *= rearGripScale;
-
-        //The engine got more torque, so the clutch must carry it
-        clutch.clutchTorqueCapacity *= engine.powerMultiplier;
-        clutch.clutchStiffness *= engine.powerMultiplier;
+        baseClutchCapacity = clutch.clutchTorqueCapacity;
+        baseClutchStiffness = clutch.clutchStiffness;
+        baseMu0 = wheels[0].mu; baseMu1 = wheels[1].mu; baseMu2 = wheels[2].mu; baseMu3 = wheels[3].mu;
+        ApplyTune();
         rb.inertiaTensor = new Vector3(2700.0f, 2800.0f, 900.0f);
         rb.inertiaTensorRotation = Quaternion.identity;
 
@@ -107,6 +122,33 @@ public class Vehicle : MonoBehaviour
         gearbox.Initialize();
         gearbox.EngageInstant(2); //1st gear: the engine is running and the car is ready to go, no starter or manual shifting needed
         engineAudio.Initialize();
+    }
+
+    /// <summary>Re-applies mu / power / clutch from the public tuning fields (call after changing them).</summary>
+    public void ApplyTune()
+    {
+        wheels[0].mu = baseMu0 * gripScale; wheels[1].mu = baseMu1 * gripScale;
+        wheels[2].mu = baseMu2 * gripScale * rearGripScale; wheels[3].mu = baseMu3 * gripScale * rearGripScale;
+        //more engine torque needs a clutch that can carry it
+        clutch.clutchTorqueCapacity = baseClutchCapacity * engine.powerMultiplier;
+        clutch.clutchStiffness = baseClutchStiffness * engine.powerMultiplier;
+    }
+
+    /// <summary>Apply a car from the catalogue: mass, power, grip, gearing, brakes and the visual model.</summary>
+    public void ApplyCar(CarSpec spec, int colorIndex)
+    {
+        Init();
+        rb.mass = spec.mass;
+        engine.powerMultiplier = spec.power;
+        gripScale = spec.grip;
+        rearGripScale = spec.rearGrip;
+        differential.finalDriveRatio = spec.finalDrive;
+        maxBrakeTorque = spec.brake;
+        ApplyTune();
+        CarCatalog.ApplyModel(this, spec, colorIndex);
+        for (int i = 0; i < wheels.Length; i++) steerings[i].Initialize(wheelbase, rearTrackLength, turningRadius);
+        Vector3 fp = transform.InverseTransformPoint(wheels[0].transform.position);
+        distToFrontAxle = Mathf.Max(0.5f, fp.z - rb.centerOfMass.z);
     }
 
     static bool Held(KeyCode a, KeyCode b)
@@ -135,12 +177,12 @@ public class Vehicle : MonoBehaviour
         float dt = Time.deltaTime;
         UpdateState();
 
-        bool w = Held(KeyCode.W, KeyCode.UpArrow);
-        bool s = Held(KeyCode.S, KeyCode.DownArrow);
-        bool a = Held(KeyCode.A, KeyCode.LeftArrow);
-        bool d = Held(KeyCode.D, KeyCode.RightArrow);
-        handbrake = Input.GetKey(KeyCode.Space);
-        clutchKickHeld = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
+        bool w = !inputLocked && Held(KeyCode.W, KeyCode.UpArrow);
+        bool s = !inputLocked && Held(KeyCode.S, KeyCode.DownArrow);
+        bool a = !inputLocked && Held(KeyCode.A, KeyCode.LeftArrow);
+        bool d = !inputLocked && Held(KeyCode.D, KeyCode.RightArrow);
+        handbrake = inputLocked || Input.GetKey(KeyCode.Space);
+        clutchKickHeld = !inputLocked && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
 
         //Pedals: W = gas / S = brake, then reverse once stopped
         bool reverse = gearbox.GearIndex == 0;
@@ -177,14 +219,19 @@ public class Vehicle : MonoBehaviour
         float lockF = Mathf.Lerp(1.0f, minLockFrac, Smooth01(speed / steerSpeedRef));
         lockF = Mathf.Lerp(lockF, 1.0f, Smooth01((betaDeg - 6.0f) / 18.0f));
         float target = keyboardSteer * lockF;
+        float bRad = driftAngle * Mathf.Deg2Rad;
+        float bdt = Mathf.Max(dt, 1e-4f);
+        betaRate += (((bRad - prevBeta) / bdt) - betaRate) * Mathf.Clamp01(dt * 20.0f);
+        prevBeta = bRad;
         if (assist > 0.0f && forwardSpeed > 2.5f)
         {
+            //Angle-hold assist: A/D choose the slide angle (towards the turn = deeper), the assist steers to hold it
             float gate = Smooth01((betaDeg - 3.0f) / 8.0f) * Smooth01((speed - 3.0f) / 5.0f);
-            float betaF = Mathf.Atan2(lateralSpeed + yawRate * distToFrontAxle, forwardSpeed); //where the front axle is really going, relative to the nose
             float maxRad = Mathf.Atan(wheelbase / turningRadius);
-            float counter = Mathf.Clamp(betaF * 0.92f / maxRad, -1.0f, 1.0f);
-            float blend = Mathf.Min(1.0f, assist * gate * 1.4f);
-            target = Mathf.Lerp(target, Mathf.Clamp(counter + target * 0.2f, -1.0f, 1.0f), blend);
+            float err = bRad + keyboardSteer * driftTargetAngle;
+            float pd = Mathf.Clamp((driftKp * err + driftKd * betaRate) / maxRad, -1.0f, 1.0f);
+            float blend = Mathf.Min(1.0f, gate * 1.4f * Mathf.Clamp01(assist / 0.7f));
+            target = Mathf.Lerp(target, pd, blend);
         }
         float rate = steerRate * (Mathf.Abs(target) > Mathf.Abs(steeringInput) ? 1.0f : 1.25f);
         steeringInput = Mathf.MoveTowards(steeringInput, target, dt * rate);
@@ -230,7 +277,7 @@ public class Vehicle : MonoBehaviour
 
         //Drift assists
         float betaDeg = Mathf.Abs(driftAngle);
-        float cut = 1.0f - Mathf.Min(0.97f, 1.45f * assist) * Smooth01((betaDeg - 28.0f) / 16.0f); //very big angles: ease off the throttle so it doesn't spin out
+        float cut = 1.0f - Mathf.Min(0.97f, 0.7f * assist) * Smooth01((betaDeg - 30.0f) / 20.0f); //very big angles: ease off the throttle so it doesn't spin out
         throttleCutFactor = cut;
         float boost = 0.16f * assist * Smooth01((betaDeg - 24.0f) / 28.0f);                        //rear tyres hold a bit more at huge angles
         wheels[2].floorBoost = boost;
@@ -280,6 +327,9 @@ public class Vehicle : MonoBehaviour
     /// <summary>Teleport the car (spawn / reset). Keeps the engine running in 1st gear.</summary>
     public void PlaceAt(Vector3 position, Quaternion rotation)
     {
+        Init();
+        rb.isKinematic = false;
+        prevBeta = 0.0f; betaRate = 0.0f;
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
         transform.SetPositionAndRotation(position, rotation);

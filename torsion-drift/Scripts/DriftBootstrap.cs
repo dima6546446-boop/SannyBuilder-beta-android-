@@ -53,7 +53,14 @@ public static class DriftBootstrap
         hud.score = score;
         hud.track = track;
 
-        Application.targetFrameRate = 60;
+        DriftGame game = host.AddComponent<DriftGame>();
+        game.vehicle = vehicle;
+        game.track = track;
+        game.score = score;
+        game.hud = hud;
+        game.fx = fx;
+        game.cam = cam != null ? cam.GetComponent<DriftCamera>() : null;
+
         Screen.sleepTimeout = SleepTimeout.NeverSleep;
     }
 }

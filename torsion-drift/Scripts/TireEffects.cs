@@ -112,9 +112,18 @@ public class TireEffects : MonoBehaviour
         squeal.Play();
     }
 
+    public void Silence()
+    {
+        if (smoke == null) return;
+        for (int i = 0; i < smoke.Length; i++) { var em = smoke[i].emission; em.rateOverTime = 0.0f; marks[i].emitting = false; }
+        if (squeal != null) squeal.volume = 0.0f;
+        smoothSlip = 0.0f;
+    }
+
     void Update()
     {
         if (vehicle == null || smoke == null) return;
+        if (vehicle.inputLocked) { Silence(); return; }
         float worst = 0.0f;
         for (int i = 0; i < vehicle.wheels.Length; i++)
         {
@@ -125,12 +134,12 @@ public class TireEffects : MonoBehaviour
             worst = Mathf.Max(worst, slip);
 
             var em = smoke[i].emission;
-            em.rateOverTime = slip * (onTrack ? 70.0f : 35.0f) * Mathf.Clamp01(0.4f + spd / 12.0f);
+            em.rateOverTime = slip * (onTrack ? 70.0f : 35.0f) * Mathf.Clamp01(0.4f + spd / 12.0f) * GameSettings.smoke;
             smoke[i].transform.position = w.isGrounded ? w.contactPoint + Vector3.up * 0.1f : w.transform.position;
             var main = smoke[i].main;
             main.startColor = onTrack ? new Color(0.93f, 0.93f, 0.96f, 0.5f) : new Color(0.62f, 0.55f, 0.38f, 0.5f);
 
-            bool mark = w.isGrounded && onTrack && slip > 0.15f;
+            bool mark = GameSettings.skidMarks && w.isGrounded && onTrack && slip > 0.15f;
             if (mark)
             {
                 marks[i].transform.position = w.contactPoint + Vector3.up * 0.025f;
@@ -140,7 +149,7 @@ public class TireEffects : MonoBehaviour
             if (mark) marks[i].transform.position = w.contactPoint + Vector3.up * 0.025f;
         }
         smoothSlip = Mathf.MoveTowards(smoothSlip, worst, Time.deltaTime * (worst > smoothSlip ? 6.0f : 3.0f));
-        squeal.volume = smoothSlip * 0.35f * Mathf.Clamp01(vehicle.speed / 8.0f);
+        squeal.volume = smoothSlip * 0.35f * GameSettings.sfx * Mathf.Clamp01(vehicle.speed / 8.0f);
         squeal.pitch = 0.85f + smoothSlip * 0.35f + Mathf.Clamp01(vehicle.speed / 40.0f) * 0.2f;
     }
 }

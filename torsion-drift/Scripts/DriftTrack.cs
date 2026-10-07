@@ -22,6 +22,7 @@ public class DriftTrack : MonoBehaviour
     public float lastLap;
     public float bestLap;
     public float progress;
+    public bool active;          //lap timing / R-respawn only while the game is running (not in the menu)
 
     static readonly Vector2[] Control =
     {
@@ -41,6 +42,7 @@ public class DriftTrack : MonoBehaviour
     int lastIdx;
     bool halfway;
     Transform root;
+    Transform sceneryRoot;
 
     // ------------------------------------------------------------------ helpers
     static Vector3 CatmullRom(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
@@ -158,12 +160,12 @@ public class DriftTrack : MonoBehaviour
         BuildKerbs();
         BuildWalls();
         BuildStartLine();
+        sceneryRoot = new GameObject("Scenery").transform;
+        sceneryRoot.SetParent(root, false);
         BuildScenery();
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.Linear;
         RenderSettings.fogColor = new Color(0.72f, 0.80f, 0.90f);
-        RenderSettings.fogStartDistance = 160.0f;
-        RenderSettings.fogEndDistance = 700.0f;
     }
 
     void BuildCenterLine()
@@ -457,7 +459,12 @@ public class DriftTrack : MonoBehaviour
         m.name = name;
         m.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
         m.CombineMeshes(list.ToArray(), true, true);
-        MakeObject(name, m, mat, false, 1.0f);
+        MakeObject(name, m, mat, false, 1.0f, sceneryRoot);
+    }
+
+    public void SetScenery(bool on)
+    {
+        if (sceneryRoot != null) sceneryRoot.gameObject.SetActive(on);
     }
 
     float DistToTrack(Vector3 p)
@@ -473,11 +480,6 @@ public class DriftTrack : MonoBehaviour
     }
 
     // ------------------------------------------------------------------ gameplay
-    void Start()
-    {
-        if (vehicle != null) Respawn(true);
-    }
-
     int NearestIndex(Vector3 p, int around, int window)
     {
         int best = around;
@@ -520,6 +522,7 @@ public class DriftTrack : MonoBehaviour
     void Update()
     {
         if (vehicle == null || count == 0) return;
+        if (!active) return;
         if (Input.GetKeyDown(KeyCode.R)) Respawn(false);
 
         lapTime += Time.deltaTime;

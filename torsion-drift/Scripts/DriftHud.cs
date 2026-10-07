@@ -6,10 +6,11 @@ public class DriftHud : MonoBehaviour
     public Vehicle vehicle;
     public DriftScore score;
     public DriftTrack track;
+    public bool visible = true;
 
     GUIStyle big, mid, small, center;
     Texture2D white;
-    float hintTimer = 14.0f;
+    public float hintTimer = 14.0f;
 
     void Awake()
     {
@@ -53,15 +54,15 @@ public class DriftHud : MonoBehaviour
 
     void OnGUI()
     {
-        if (vehicle == null) return;
+        if (vehicle == null || !visible || !GameSettings.showHud) return;
         if (big == null || Mathf.Abs(big.fontSize - 64 * Screen.height / 720.0f) > 2) MakeStyles();
         float W = Screen.width, H = Screen.height, k = H / 720.0f;
-        hintTimer -= Time.deltaTime;
+        hintTimer -= Time.unscaledDeltaTime;
 
         // --- speedometer (bottom right) ---
         float bx = W - 40 * k, by = H - 150 * k;
-        Label(Mathf.RoundToInt(vehicle.speedKmh).ToString(), bx - 300 * k, by, 300 * k, 80 * k, big, Color.white);
-        Label("км/ч", bx - 300 * k, by + 70 * k, 300 * k, 30 * k, new GUIStyle(small) { alignment = TextAnchor.MiddleRight }, new Color(1, 1, 1, 0.7f));
+        Label(Mathf.RoundToInt(vehicle.speedKmh * (GameSettings.units == 0 ? 1.0f : 0.6214f)).ToString(), bx - 300 * k, by, 300 * k, 80 * k, big, Color.white);
+        Label(GameSettings.UnitNames[GameSettings.units], bx - 300 * k, by + 70 * k, 300 * k, 30 * k, new GUIStyle(small) { alignment = TextAnchor.MiddleRight }, new Color(1, 1, 1, 0.7f));
         Label(vehicle.gearLabel, bx - 420 * k, by, 100 * k, 80 * k, new GUIStyle(big) { alignment = TextAnchor.MiddleCenter, fontSize = Mathf.RoundToInt(54 * k) }, new Color(1.0f, 0.8f, 0.2f));
         float rpmN = Mathf.Clamp01(vehicle.engine.engineRPM / vehicle.engine.redlineRPM);
         Rect(bx - 420 * k, by + 100 * k, 420 * k, 12 * k, new Color(0, 0, 0, 0.55f));
