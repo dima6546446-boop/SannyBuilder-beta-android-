@@ -99,7 +99,6 @@ namespace RussianDrift.UI
             if (canDouble && r.coins > 0)
             {
                 var ads = Services.Get<IAdService>();
-                ButtonHolder holder = new ButtonHolder();
                 var dbl = Ui.Button(panel.transform, "res.double", null, Theme.Good * 0.9f, 32);
                 Ui.Place(dbl.image.rectTransform, new Vector2(0.5f, 0), new Vector2(0, 160), new Vector2(840, 96), new Vector2(0.5f, 0));
                 dbl.button.onClick.AddListener(() =>
@@ -119,6 +118,5 @@ namespace RussianDrift.UI
             return root;
         }
 
-        private class ButtonHolder { }
     }
 }

@@ -400,6 +400,7 @@ namespace RussianDrift.UI
         public static HorizontalLayoutGroup HBox(Transform parent, float spacing, TextAnchor align = TextAnchor.MiddleLeft, bool expandW = false, bool expandH = true)
         {
             var rt = Rect("HBox", parent);
+            Stretch(rt);
             var h = rt.gameObject.AddComponent<HorizontalLayoutGroup>();
             h.spacing = spacing; h.childAlignment = align;
             h.childControlWidth = true; h.childControlHeight = true; h.childForceExpandWidth = expandW; h.childForceExpandHeight = expandH;
@@ -409,6 +410,7 @@ namespace RussianDrift.UI
         public static VerticalLayoutGroup VBox(Transform parent, float spacing, TextAnchor align = TextAnchor.UpperLeft, bool expandW = true, bool expandH = false)
         {
             var rt = Rect("VBox", parent);
+            Stretch(rt);
             var v = rt.gameObject.AddComponent<VerticalLayoutGroup>();
             v.spacing = spacing; v.childAlignment = align;
             v.childControlWidth = true; v.childControlHeight = true; v.childForceExpandWidth = expandW; v.childForceExpandHeight = expandH;
@@ -418,6 +420,7 @@ namespace RussianDrift.UI
         public static GridLayoutGroup Grid(Transform parent, Vector2 cell, Vector2 spacing, int columns)
         {
             var rt = Rect("Grid", parent);
+            Stretch(rt);
             var g = rt.gameObject.AddComponent<GridLayoutGroup>();
             g.cellSize = cell; g.spacing = spacing; g.constraint = GridLayoutGroup.Constraint.FixedColumnCount; g.constraintCount = columns;
             return g;

@@ -15,9 +15,9 @@ namespace RussianDrift.World
             // ---------- path (relative control points) ----------
             Vector2[] rel =
             {
-                new Vector2(-110,-75), new Vector2(-40,-82), new Vector2(40,-78), new Vector2(100,-55), new Vector2(118,-5),
-                new Vector2(95,45), new Vector2(45,70), new Vector2(-10,55), new Vector2(-40,25), new Vector2(-70,45),
-                new Vector2(-110,60), new Vector2(-130,10), new Vector2(-135,-40)
+                new Vector2(-115,-80), new Vector2(-40,-88), new Vector2(45,-84), new Vector2(110,-62), new Vector2(135,-10),
+                new Vector2(112,50), new Vector2(60,80), new Vector2(0,72), new Vector2(-48,54), new Vector2(-90,68),
+                new Vector2(-128,40), new Vector2(-142,-15), new Vector2(-136,-58)
             };
             var ctrl = new List<Vector3>();
             foreach (var p in rel) ctrl.Add(new Vector3(C.x + p.x, 0.05f, C.z + p.y));

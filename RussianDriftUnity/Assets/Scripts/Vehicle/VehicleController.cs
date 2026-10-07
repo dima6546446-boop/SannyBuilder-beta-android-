@@ -404,7 +404,9 @@ namespace RussianDrift.Vehicle
             get
             {
                 float speedFactor = Mathf.Clamp01(SpeedMs / 48f);
-                return Mathf.Lerp(Stats.steerAngle, Stats.steerAngle * 0.32f, Mathf.Pow(speedFactor, 0.7f));
+                float a = Mathf.Lerp(Stats.steerAngle, Stats.steerAngle * 0.32f, Mathf.Pow(speedFactor, 0.7f));
+                // in a slide the full lock is available for counter-steering
+                return Mathf.Lerp(a, Stats.steerAngle, Mathf.Clamp01((AbsDriftAngle - 8f) / 20f));
             }
         }
 
@@ -412,7 +414,7 @@ namespace RussianDrift.Vehicle
         {
             float maxSteer = Stats.steerAngle;
             float speedFactor = Mathf.Clamp01(SpeedMs / 48f);
-            float maxAngle = Mathf.Lerp(maxSteer, maxSteer * 0.32f, Mathf.Pow(speedFactor, 0.7f));
+            float maxAngle = MaxSteerNow;
             float target = inp.steer * maxAngle;
 
             if (Assists.steeringAssist && SpeedMs > 3f && ForwardSpeed > 0f)
