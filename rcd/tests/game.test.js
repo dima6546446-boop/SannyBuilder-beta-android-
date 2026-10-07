@@ -212,3 +212,29 @@ describe('старт на картах', () => {
     }
   });
 });
+
+describe('правила испытаний', () => {
+  const mk = (cid) => new Session({ mapId: 'parking', carId: 'kopeyka', mode: 'challenge', challengeId: cid });
+  it('score: успех при достижении цели, провал по таймеру', () => {
+    const s = mk('park-1'); s.scoring.banked = 3100; s.step(1 / 240);
+    expect(s.finished && s.success).toBe(true);
+    const f = mk('park-1'); f.time = f.challenge.time + 1; f.step(1 / 240);
+    expect(f.finished && !f.success).toBe(true);
+  });
+  it('chain: нужна одна серия нужной длины', () => {
+    const s = mk('park-4'); s.scoring.update = () => {}; s.scoring.banked = 9000; s.step(1 / 240); expect(s.finished).toBe(false);
+    s.scoring.chain = 4100; s.scoring.chainTime = 5; s.step(1 / 240); expect(s.finished && s.success).toBe(true);
+  });
+  it('angle: удержание угла N секунд', () => {
+    const s = mk('park-2');
+    for (let i = 0; i < 240 * 3.2; i++) { s.scoring.update = () => {}; s.scoring.active = true; s.scoring.angle = 40; s.step(1 / 240); if (s.finished) break; }
+    expect(s.finished && s.success).toBe(true);
+    const f = mk('park-2');
+    for (let i = 0; i < 240 * 5; i++) { f.scoring.update = () => {}; f.scoring.active = true; f.scoring.angle = i % 480 < 200 ? 40 : 10; f.step(1 / 240); }
+    expect(f.finished).toBe(false);
+  });
+  it('noHit: любой удар проваливает попытку', () => {
+    const s = mk('park-5'); s.scoring.stats.hits = 1; s.step(1 / 240);
+    expect(s.finished && !s.success).toBe(true);
+  });
+});

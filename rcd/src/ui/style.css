@@ -67,7 +67,8 @@ kbd{display:inline-block;min-width:26px;text-align:center;padding:2px 8px;border
 .carname div{color:var(--dim);letter-spacing:.2em;font-size:12px}
 
 /* ---------- выбор заезда ---------- */
-.play-grid{display:grid;grid-template-columns:minmax(300px,1.1fr) minmax(280px,.9fr);gap:14px;min-height:0;flex:1}
+.play-grid{display:grid;grid-template-columns:minmax(300px,1.1fr) minmax(280px,.9fr);grid-template-rows:minmax(0,1fr);gap:14px;min-height:0;flex:1}
+.play-grid>.panel{min-height:0;overflow-y:auto}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px}
 .card{background:var(--panel2);border:1px solid var(--line);border-radius:6px;padding:12px;cursor:pointer;position:relative;transition:border-color .15s,transform .1s}
 .card:hover{border-color:var(--acc);transform:translateY(-2px)}
@@ -90,7 +91,8 @@ kbd{display:inline-block;min-width:26px;text-align:center;padding:2px 8px;border
 .opt.on{background:var(--acc);color:#150a00;border-color:transparent}
 
 /* ---------- гараж ---------- */
-.garage{display:grid;grid-template-columns:minmax(260px,330px) 1fr minmax(300px,380px);gap:14px;flex:1;min-height:0}
+.garage{display:grid;grid-template-columns:minmax(260px,330px) 1fr minmax(300px,380px);grid-template-rows:minmax(0,1fr);gap:14px;flex:1;min-height:0}
+.garage>.panel{min-height:0;overflow-y:auto}
 .garage .mid{pointer-events:none}
 .carrow{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:4px;background:var(--panel2);cursor:pointer}
 .carrow:hover{border-color:var(--acc)} .carrow.on{border-color:var(--acc);background:#2a2219}
@@ -137,7 +139,7 @@ kbd{display:inline-block;min-width:26px;text-align:center;padding:2px 8px;border
 .keys .panel{padding:12px}
 .keys table{width:100%;border-collapse:collapse} .keys td{padding:4px 2px;vertical-align:top} .keys td:first-child{white-space:nowrap;padding-right:10px}
 .tips li{margin:3px 0;color:#cfd5e0;font-size:13px}
-@media (max-width:900px){.keys{grid-template-columns:1fr}.garage{grid-template-columns:1fr}.play-grid{grid-template-columns:1fr}.garage .mid{display:none}}
+@media (max-width:900px){.keys{grid-template-columns:1fr}.garage{grid-template-columns:1fr;grid-template-rows:none}.play-grid{grid-template-columns:1fr;grid-template-rows:none}.garage .mid{display:none}}
 
 /* ---------- HUD ---------- */
 #hud{position:fixed;inset:0;pointer-events:none;z-index:5;font-weight:700}
@@ -188,3 +190,11 @@ body.touch .hud-hint{display:none}
   .menu-left{width:100%}
   .topbar h2{font-size:20px}
 }
+@media (max-width:900px){
+  .screen:not(.center){overflow-y:auto;touch-action:pan-y}
+  .play-grid,.garage{flex:none}
+  .play-grid>.panel,.garage>.panel{overflow:visible;max-height:none}
+  .panel.scroll{overflow:visible}
+}
+body.touch #gauge{right:76px}
+body.touch .hud-mode{right:76px}

@@ -8,13 +8,16 @@ function chromePath() {
 }
 
 export async function startServer(port = 5199) {
-  const p = spawn('npx', ['vite', '--port', String(port), '--strictPort', '--host', '127.0.0.1'], { stdio: ['ignore', 'pipe', 'pipe'] });
+  // тестируем продакшн-сборку: она стабильнее dev-сервера и заодно проверяет `npm run build`
+  const { execSync } = await import('node:child_process');
+  execSync('npx vite build', { stdio: 'ignore' });
+  const p = spawn('npx', ['vite', 'preview', '--port', String(port), '--strictPort', '--host', '127.0.0.1'], { stdio: ['ignore', 'pipe', 'pipe'], detached: true });
   await new Promise((res, rej) => {
-    const t = setTimeout(() => rej(new Error('vite не запустился')), 30000);
-    const onData = (d) => { if (String(d).includes('Local') || String(d).includes('ready')) { clearTimeout(t); res(); } };
+    const t = setTimeout(() => rej(new Error('vite preview не запустился')), 30000);
+    const onData = (d) => { if (String(d).includes('Local') || String(d).includes('127.0.0.1')) { clearTimeout(t); res(); } };
     p.stdout.on('data', onData); p.stderr.on('data', onData);
   });
-  return { url: `http://127.0.0.1:${port}/`, stop: () => p.kill() };
+  return { url: `http://127.0.0.1:${port}/`, stop: () => { try { process.kill(-p.pid); } catch (e) { p.kill(); } } };
 }
 
 export async function launch(url, { width = 1280, height = 720, touch = false } = {}) {

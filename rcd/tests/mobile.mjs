@@ -1,0 +1,31 @@
+// Проверка на «телефоне»: сенсорный режим, кнопки управления, раскладка меню.
+import { startServer, launch } from './lib.mjs';
+const srv = await startServer(5207);
+const { browser, page, errors } = await launch(srv.url, { width: 844, height: 390, touch: true });
+const sleep = (ms) => page.waitForTimeout(ms);
+let failed = 0; const check = (n, ok, i = '') => { console.log((ok ? '  ✔ ' : '  ✘ ') + n + (i ? '  ' + i : '')); if (!ok) failed++; };
+await page.evaluate(() => { __rcd.progress.updateSettings({ quality: 'low', pixelRatio: 0.5, hintsSeen: true }); __rcd.applySettings(); __rcd.go('menu', false); });
+await sleep(500);
+await page.screenshot({ path: 'docs/screenshots/30-mobile-menu.png' });
+await page.evaluate(() => { __rcd.sel.map = 'parking'; __rcd.sel.mode = 'free'; __rcd.act('start'); __rcd.countdown = 0; });
+await sleep(700);
+check('экранные кнопки показаны на сенсорном устройстве', !(await page.evaluate(() => document.querySelector('#touch').classList.contains('hidden'))));
+const btn = await page.$$('#touch .tb');
+check('есть 7 кнопок', btn.length === 7, String(btn.length));
+// касание «ГАЗ»
+const gas = await page.evaluateHandle(() => [...document.querySelectorAll('#touch .tb')].find((b) => b.textContent === 'ГАЗ'));
+const box = await gas.asElement().boundingBox();
+await page.touchscreen.tap(box.x + box.width / 2, box.y + box.height / 2);
+await page.evaluate(() => { __rcd.controls.touch.throttle = true; }); await sleep(1200);
+check('кнопка ГАЗ разгоняет машину', (await page.evaluate(() => __rcd.session.car.speed)) > 1);
+await page.evaluate(() => { __rcd.controls.touch.throttle = false; });
+await page.screenshot({ path: 'docs/screenshots/31-mobile-game.png' });
+await page.evaluate(() => __rcd.pauseToggle()); await sleep(300);
+await page.screenshot({ path: 'docs/screenshots/32-mobile-pause.png' });
+await page.evaluate(() => { __rcd.act('quit'); __rcd.act('goGarage'); }); await sleep(500);
+await page.screenshot({ path: 'docs/screenshots/33-mobile-garage.png' });
+await page.evaluate(() => { __rcd.go('menu', false); __rcd.act('goPlay'); }); await sleep(500);
+await page.screenshot({ path: 'docs/screenshots/34-mobile-play.png' });
+await browser.close(); srv.stop();
+check('нет ошибок в консоли', errors.filter((e) => !e.includes('favicon')).length === 0, errors.join('|'));
+process.exit(failed ? 1 : 0);

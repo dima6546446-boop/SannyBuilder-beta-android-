@@ -60,7 +60,7 @@ export const PHYS = {
     angleLimitRangeDeg: 28,
     yawSoftMax: 0.85,          // рад/с (~60°/с): выше этого рыскание гасится
     yawSoftGain: 11,
-    angleThrottleCut: 0.92,    // доля момента, срезаемая на больших углах заноса
+    angleThrottleCut: 1.45,    // доля момента, срезаемая на больших углах заноса
     angleCutStartDeg: 28,
     angleCutRangeDeg: 16,
     spinGuardDeg: 62,          // выше этого угла помощник гасит вращение

@@ -38,9 +38,9 @@ export class Scoring {
   update(dt, car) {
     const kmh = car.speed * 3.6;
     this.stats.topSpeed = Math.max(this.stats.topSpeed, kmh);
-    const beta = car.fwdSpeed > 1 ? Math.atan2(car.latSpeed, car.fwdSpeed) : (car.fwdSpeed < -1 ? 0 : 0);
+    const beta = car.fwdSpeed > 1 ? Math.atan2(car.latSpeed, car.fwdSpeed) : 0;
     const a = Math.abs(beta) * 180 / Math.PI;
-    this.signedAngle = beta * 180 / Math.PI * (car.w >= 0 ? 1 : 1);
+    this.signedAngle = beta * 180 / Math.PI;
     this.angle = a;
     const driftNow = kmh >= SCORE.minSpeedKmh && a >= SCORE.minAngleDeg && a <= SCORE.maxAngleDeg && car.fwdSpeed > 0.5;
     if (driftNow) {
@@ -52,7 +52,7 @@ export class Scoring {
       this.stats.angleSum += a * dt;
       this.stats.bestAngle = Math.max(this.stats.bestAngle, a);
       this.stats.longestDrift = Math.max(this.stats.longestDrift, this._cur);
-      if (a >= 0) this.holdAngleTime += dt;
+      this.holdAngleTime += dt;
       const sign = Math.sign(beta);
       if (this.lastSign !== 0 && sign !== this.lastSign && a > SCORE.minAngleDeg) {
         this.mult = Math.min(SCORE.multMax, this.mult + SCORE.transitionBonus);

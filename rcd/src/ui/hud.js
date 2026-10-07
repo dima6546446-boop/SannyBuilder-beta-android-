@@ -138,7 +138,6 @@ export class Hud {
     const Wc = 380, car = session.car;
     g.clearRect(0, 0, Wc, Wc);
     g.save(); g.beginPath(); g.arc(Wc / 2, Wc / 2, Wc / 2 - 2, 0, 7); g.clip();
-    const view = 2.4 * 1.5 / 2.4 * 2.2; // пикселей миникарты на метр
     const k = 2.4;                      // масштаб фоновой карты
     const viewScale = 2.3;              // px/м на миникарте
     g.translate(Wc / 2, Wc / 2); g.rotate(-car.h);

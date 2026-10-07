@@ -243,7 +243,7 @@ export class Gfx {
     // фары
     const fwd = new THREE.Vector3(Math.sin(car.h), 0, -Math.cos(car.h)), rgt = new THREE.Vector3(Math.cos(car.h), 0, Math.sin(car.h));
     this.head.forEach((l, i) => {
-      l.intensity = this.headlightsOn ? (this.time === 'night' ? 2200 : 900) : 0;
+      l.intensity = this.headlightsOn ? (this.time === 'night' ? 1500 : 700) : 0;
       l.position.copy(P).addScaledVector(fwd, car.spec.length * 0.4).addScaledVector(rgt, (i ? 1 : -1) * 0.6); l.position.y = 0.75;
       l.target.position.copy(P).addScaledVector(fwd, 30).addScaledVector(rgt, (i ? 1 : -1) * 1.2); l.target.position.y = 0;
       l.target.updateMatrixWorld();
@@ -264,6 +264,13 @@ export class Gfx {
     this.renderer.render(this.scene, this.camera);
   }
 
+  /** Дым не светится сам: ночью и в сумерках затемняем, чтобы не «горел» белым пятном. */
+  tintSmoke(hex) {
+    const k = (this.time === 'night' ? 0.32 : this.time === 'dusk' ? 0.7 : 1) * (this.weatherKind === 'rain' ? 0.8 : 1);
+    const r = ((hex >> 16) & 255) * k, g = ((hex >> 8) & 255) * k, b = (hex & 255) * k;
+    return (r << 16) | (g << 8) | b;
+  }
+
   emitEffects(dt, session) {
     const car = session.car;
     const fx = Math.sin(car.h), fz = Math.cos(car.h), rx = Math.cos(car.h), rz = -Math.sin(car.h);
@@ -280,7 +287,7 @@ export class Gfx {
         while (this.smokeAcc[i] >= 1) {
           this.smokeAcc[i] -= 1;
           const jx = (Math.random() - 0.5) * 1.4, jz = (Math.random() - 0.5) * 1.4;
-          this.smoke.emit(wx, 0.15, -wz, car.vx * 0.35 + jx, 0.6 + Math.random() * 0.8, -car.vz * 0.35 + jz, smokeColor(surf), 0.8 + Math.random() * 0.8 + s, 1.0 + Math.random() * 1.4, 1);
+          this.smoke.emit(wx, 0.15, -wz, car.vx * 0.35 + jx, 0.6 + Math.random() * 0.8, -car.vz * 0.35 + jz, this.tintSmoke(smokeColor(surf)), 0.8 + Math.random() * 0.8 + s, 1.0 + Math.random() * 1.4, 1);
         }
       } else this.smokeAcc[i] = 0;
     }

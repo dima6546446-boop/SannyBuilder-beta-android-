@@ -45,7 +45,6 @@ export class Smoke {
       this.vel[i * 3] *= drag; this.vel[i * 3 + 1] = this.vel[i * 3 + 1] * drag + 0.5 * dt; this.vel[i * 3 + 2] *= drag;
       this.pos[i * 3] += this.vel[i * 3] * dt; this.pos[i * 3 + 1] += this.vel[i * 3 + 1] * dt; this.pos[i * 3 + 2] += this.vel[i * 3 + 2] * dt;
       this.size[i] = this.base[i] * (1 + t * 3.2);
-      const a0 = this.alphaBase ? this.alphaBase[i] : 1;
       this.alpha[i] = Math.max(0, (1 - t) * (1 - t)) * (t < 0.08 ? t / 0.08 : 1) * 0.55;
     }
     this.geo.attributes.position.needsUpdate = true; this.geo.attributes.aSize.needsUpdate = true; this.geo.attributes.aAlpha.needsUpdate = true; this.geo.attributes.aColor.needsUpdate = true;

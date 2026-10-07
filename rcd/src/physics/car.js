@@ -136,7 +136,7 @@ export class Car {
       driveTorque -= s.peakTorque * D.engineBrake * clamp(this.rpm / s.redline, 0, 1) * Math.sign(rearW || 1);
     }
     // ограничитель заноса: на очень больших углах мягко убираем момент, чтобы газ в пол не закручивал в вертушку
-    if (this.assist > 0 && driveTorque > 0) driveTorque *= 1 - S.angleThrottleCut * this.assist * smooth((betaDeg - S.angleCutStartDeg) / S.angleCutRangeDeg);
+    if (this.assist > 0 && driveTorque > 0) driveTorque *= 1 - Math.min(0.97, S.angleThrottleCut * this.assist) * smooth((betaDeg - S.angleCutStartDeg) / S.angleCutRangeDeg);
     let wheelTorque = driveTorque * ratio * D.efficiency * D.powerMul;
     // скорость-ограничитель: тяга плавно затухает у предела передач
     // (естественное ограничение через обороты отсечки)
@@ -157,7 +157,6 @@ export class Car {
     // --- силы по колёсам ---
     let Fbx = 0, Fbz = 0, tau = 0;
     const tmp = this.tmp;
-    const diffBiasTotal = [0, 0];
     // дифференциал с блокировкой: больше момента на колесо, которое отстаёт
     const dW = this.wheelW[3] - this.wheelW[2];
     const lock2 = s.diffLock;
@@ -166,7 +165,7 @@ export class Car {
     const driveTq = [0, 0, half + bias, half - bias];            // RL получает больше, если RR крутится быстрее
 
     // самоограничение угла: на больших углах задняя ось «цепляется» сильнее — занос держится, а не уходит в вертушку
-    const boost = this.assist > 0 ? S.angleLimitBoost * this.assist * smooth((betaDeg - S.angleLimitStartDeg) / S.angleLimitRangeDeg) : 0;
+    const boost = this.assist > 0 ? S.angleLimitBoost * (s.tailHold || 1) * this.assist * smooth((betaDeg - S.angleLimitStartDeg) / S.angleLimitRangeDeg) : 0;
     const Rw = s.wheelRadius;
     // приведённая инерция двигателя: ведущие колёса «тянут» за собой маховик (иначе обороты взлетают мгновенно)
     const coupled = this.shiftTimer <= 0 ? (launching ? 0.35 : 1) : 0.0;
@@ -211,7 +210,6 @@ export class Car {
       const eps = 0.25;
       tireForce(tmp, Nz, mu, uLong, uLat, w * Rw + eps, !front, boost);
       const dFx = (tmp.fx - fx) / eps;                       // dFx / d(скорость колеса)
-      const free = (!front || true);
       let drive = driveTq[i];
       let net = drive - fx * Rw;
       const Iw = front ? D.wheelInertia : IwRear;
@@ -252,7 +250,7 @@ export class Car {
     }
     if (this.assist > 0 && speed > 4) {
       // мягкий потолок скорости рыскания: не даёт машине закручиваться в вертушку, но не мешает держать угол
-      const over = Math.abs(this.w) - S.yawSoftMax * clamp(speed / 14, 0.5, 1.15);
+      const over = Math.abs(this.w) - S.yawSoftMax * (s.yawQuick || 1) * clamp(speed / 14, 0.5, 1.15);
       if (over > 0) tau -= Math.sign(this.w) * over * this.Iz * S.yawSoftGain * this.assist;
     }
     tau -= this.w * this.Iz * P.chassis.yawDamping;

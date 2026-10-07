@@ -10,6 +10,7 @@ export const CARS = [
     peakTorque: 170, peakRpm: 4300, redline: 6600, idleRpm: 900, turbo: 0,
     gears: [3.75, 2.30, 1.52, 1.10, 0.86], reverseRatio: 3.5, finalDrive: 4.1,
     maxSteerDeg: 38, brakeTorque: 2300, tireGrip: 1.04, rearGripBias: 1.0, rollFront: 0.56, diffLock: 0.55, cdA: 0.72,
+    yawQuick: 1.0, tailHold: 1.0,
     color: '#b3262b',
   },
   {
@@ -20,6 +21,7 @@ export const CARS = [
     peakTorque: 190, peakRpm: 4500, redline: 6900, idleRpm: 900, turbo: 0,
     gears: [3.65, 2.20, 1.50, 1.10, 0.85], reverseRatio: 3.5, finalDrive: 4.1,
     maxSteerDeg: 38, brakeTorque: 2400, tireGrip: 1.06, rearGripBias: 1.0, rollFront: 0.56, diffLock: 0.58, cdA: 0.72,
+    yawQuick: 1.0, tailHold: 1.06,
     color: '#e5e5e0',
   },
   {
@@ -29,7 +31,8 @@ export const CARS = [
     length: 4.01, width: 1.65, height: 1.40, wheelRadius: 0.30,
     peakTorque: 205, peakRpm: 4800, redline: 7200, idleRpm: 900, turbo: 0,
     gears: [3.60, 2.15, 1.50, 1.12, 0.88], reverseRatio: 3.5, finalDrive: 4.2,
-    maxSteerDeg: 40, brakeTorque: 2300, tireGrip: 1.08, rearGripBias: 1.0, rollFront: 0.55, diffLock: 0.60, cdA: 0.70,
+    maxSteerDeg: 40, brakeTorque: 2300, tireGrip: 1.08, rearGripBias: 0.98, rollFront: 0.55, diffLock: 0.60, cdA: 0.70,
+    yawQuick: 1.12, tailHold: 0.95,
     color: '#2d5fb0',
   },
   {
@@ -39,7 +42,8 @@ export const CARS = [
     length: 4.28, width: 1.69, height: 1.30, wheelRadius: 0.31,
     peakTorque: 240, peakRpm: 5000, redline: 7400, idleRpm: 950, turbo: 0,
     gears: [3.62, 2.19, 1.54, 1.19, 0.96, 0.78], reverseRatio: 3.4, finalDrive: 3.9,
-    maxSteerDeg: 40, brakeTorque: 2700, tireGrip: 1.10, rearGripBias: 1.0, rollFront: 0.54, diffLock: 0.62, cdA: 0.66,
+    maxSteerDeg: 40, brakeTorque: 2700, tireGrip: 1.10, rearGripBias: 0.98, rollFront: 0.54, diffLock: 0.62, cdA: 0.66,
+    yawQuick: 1.1, tailHold: 1.0,
     color: '#f2f2f2',
   },
   {
@@ -49,7 +53,8 @@ export const CARS = [
     length: 4.85, width: 1.80, height: 1.46, wheelRadius: 0.33,
     peakTorque: 370, peakRpm: 3900, redline: 6200, idleRpm: 800, turbo: 0,
     gears: [3.15, 1.95, 1.40, 1.00, 0.78], reverseRatio: 3.2, finalDrive: 3.7,
-    maxSteerDeg: 35, brakeTorque: 3200, tireGrip: 1.04, rearGripBias: 1.0, rollFront: 0.58, diffLock: 0.55, cdA: 0.78,
+    maxSteerDeg: 35, brakeTorque: 3200, tireGrip: 1.04, rearGripBias: 1.03, rollFront: 0.58, diffLock: 0.55, cdA: 0.78,
+    yawQuick: 0.85, tailHold: 1.1,
     color: '#0f3a2a',
   },
   {
@@ -59,7 +64,8 @@ export const CARS = [
     length: 4.55, width: 1.71, height: 1.45, wheelRadius: 0.31,
     peakTorque: 290, peakRpm: 4400, redline: 6900, idleRpm: 900, turbo: 0.32,
     gears: [3.30, 2.05, 1.45, 1.09, 0.86], reverseRatio: 3.3, finalDrive: 3.9,
-    maxSteerDeg: 38, brakeTorque: 2900, tireGrip: 1.08, rearGripBias: 1.0, rollFront: 0.56, diffLock: 0.62, cdA: 0.76,
+    maxSteerDeg: 38, brakeTorque: 2900, tireGrip: 1.08, rearGripBias: 1.02, rollFront: 0.56, diffLock: 0.62, cdA: 0.76,
+    yawQuick: 0.95, tailHold: 1.05,
     color: '#d7b26a',
   },
   {
@@ -69,7 +75,8 @@ export const CARS = [
     length: 4.50, width: 1.74, height: 1.29, wheelRadius: 0.31,
     peakTorque: 330, peakRpm: 5200, redline: 7600, idleRpm: 950, turbo: 0.40,
     gears: [3.60, 2.20, 1.55, 1.18, 0.95, 0.78], reverseRatio: 3.4, finalDrive: 3.85,
-    maxSteerDeg: 42, brakeTorque: 3000, tireGrip: 1.14, rearGripBias: 1.0, rollFront: 0.54, diffLock: 0.68, cdA: 0.66,
+    maxSteerDeg: 42, brakeTorque: 3000, tireGrip: 1.14, rearGripBias: 0.97, rollFront: 0.54, diffLock: 0.68, cdA: 0.66,
+    yawQuick: 1.18, tailHold: 0.93,
     color: '#7a2cc0',
   },
   {
@@ -79,7 +86,8 @@ export const CARS = [
     length: 4.60, width: 1.85, height: 1.26, wheelRadius: 0.33,
     peakTorque: 420, peakRpm: 5200, redline: 7800, idleRpm: 1000, turbo: 0.45,
     gears: [3.45, 2.20, 1.62, 1.28, 1.02, 0.83], reverseRatio: 3.4, finalDrive: 3.7,
-    maxSteerDeg: 42, brakeTorque: 3600, tireGrip: 1.20, rearGripBias: 1.0, rollFront: 0.53, diffLock: 0.72, cdA: 0.70,
+    maxSteerDeg: 42, brakeTorque: 3600, tireGrip: 1.20, rearGripBias: 0.96, rollFront: 0.53, diffLock: 0.72, cdA: 0.70,
+    yawQuick: 1.25, tailHold: 0.9,
     color: '#ff7a00',
   },
 ];

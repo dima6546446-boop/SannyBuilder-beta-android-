@@ -115,13 +115,18 @@ export class Session {
     }
     const c = this.challenge;
     if (!c) return;
-    if (this.time >= c.time && c.type !== 'angle') { this.finish(false); return; }
     if (this.time >= c.time) { this.finish(false); return; }
     switch (c.type) {
       case 'score': if (sc.banked + sc.chain >= c.target) { sc.bank(); this.finish(true); } break;
       case 'chain': if (sc.chain >= c.target) { sc.bank(); this.finish(true); } break;
-      case 'noHit': if (sc.stats.hits > 0 && sc.banked + sc.chain < c.target) { /* продолжаем, но попытка провалена */ this.finish(false); } else if (sc.banked + sc.chain >= c.target) { sc.bank(); this.finish(true); } break;
-      case 'angle': if (sc.angle >= c.target && sc.active) { this.holdT = (this.holdT || 0) + dt; } else this.holdT = 0; if (this.holdT >= c.hold) this.finish(true); break;
+      case 'noHit':
+        if (sc.stats.hits > 0) this.finish(false);
+        else if (sc.banked + sc.chain >= c.target) { sc.bank(); this.finish(true); }
+        break;
+      case 'angle':
+        this.holdT = sc.active && sc.angle >= c.target ? (this.holdT || 0) + dt : 0;
+        if (this.holdT >= c.hold) this.finish(true);
+        break;
       case 'gates': this.updateGates(c); break;
     }
   }
