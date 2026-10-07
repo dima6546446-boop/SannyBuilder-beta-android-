@@ -58,6 +58,11 @@ namespace RussianDrift.Vehicle
 
         public static CarModel Build(CarDefinition d, CarSetup s, Transform parent, bool traffic = false)
         {
+            if (d.modelPrefab != null)
+            {
+                var ext = ExternalCarModel.Build(d, s, parent);
+                if (ext != null) return ext;
+            }
             var b = new CarBuilder(d, s, traffic);
             return b.Run(parent);
         }

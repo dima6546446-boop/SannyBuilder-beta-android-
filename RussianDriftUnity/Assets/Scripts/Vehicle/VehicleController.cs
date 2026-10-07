@@ -302,6 +302,15 @@ namespace RussianDrift.Vehicle
                     w.locked = true;
                 }
                 if (!Assists.abs && brakeInput > 0.85f && SpeedMs > 6f && !w.front) { latMu *= 0.80f; w.locked = true; }
+                if (!w.front && SpeedMs > 8f)
+                {
+                    // power-slide: throttle (and a clutch kick) unloads the rear tyres' lateral grip once the car is already sliding
+                    float gateAng = Mathf.Clamp01((AbsDriftAngle - 4f) / 12f);
+                    float loss = (0.30f + 0.15f * Stats.diffLock) * (Stats.drive == DriveType.AWD ? 0.6f : 1f);
+                    float cut = loss * Engine.throttleApplied * gateAng;
+                    if (Engine.clutchKickTimer > 0f) cut = Mathf.Max(cut, 0.5f);
+                    latMu *= 1f - Mathf.Clamp(cut, 0f, 0.6f);
+                }
                 if (parked) brake += Body.mass * Gravity * 0.5f;
                 float brakeLimit = Mathf.Abs(vF) * meff / dt;
                 float brakeMag = Mathf.Min(brake, brakeLimit);
@@ -383,7 +392,7 @@ namespace RussianDrift.Vehicle
         /// <summary>Normalised lateral friction vs slip angle: linear to the peak, then a soft fall-off to sliding friction.</summary>
         public static float LateralCurve(float alpha)
         {
-            const float peak = 0.14f, slide = 0.50f, floor = 0.80f;
+            const float peak = 0.14f, slide = 0.50f, floor = 0.72f;
             if (alpha < peak) return alpha / peak;
             float x = Mathf.Clamp01((alpha - peak) / (slide - peak));
             return Mathf.Lerp(1f, floor, x * x * (3f - 2f * x));
@@ -409,8 +418,8 @@ namespace RussianDrift.Vehicle
             if (Assists.steeringAssist && SpeedMs > 3f && ForwardSpeed > 0f)
             {
                 float gate = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((AbsDriftAngle - 3f) / 9f)) * Mathf.Clamp01((SpeedMs - 3f) / 6f);
-                float counter = Mathf.Clamp(DriftAngle * 0.9f, -maxSteer, maxSteer);
-                target = Mathf.Clamp(counter * gate + target * (1f - 0.42f * gate), -maxSteer, maxSteer);
+                float counter = Mathf.Clamp(DriftAngle * 0.75f, -maxSteer, maxSteer);
+                target = Mathf.Clamp(counter * gate + target * (1f - 0.30f * gate), -maxSteer, maxSteer);
             }
 
             float rate = Mathf.Abs(target) > Mathf.Abs(steerAngleCur) ? 260f : 340f;

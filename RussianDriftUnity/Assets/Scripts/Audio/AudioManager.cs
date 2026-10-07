@@ -69,7 +69,8 @@ namespace RussianDrift.Audio
         {
             AudioClip c;
             if (clips.TryGetValue(key, out c)) return c;
-            c = Generate(key);
+            c = Resources.Load<AudioClip>("Audio/" + key);      // imported clip with the same key overrides the generated one
+            if (c == null) c = Generate(key);
             if (c != null) clips[key] = c;
             return c;
         }
@@ -97,6 +98,8 @@ namespace RussianDrift.Audio
         {
             AudioClip c;
             if (clips.TryGetValue(key, out c)) return c;
+            c = Resources.Load<AudioClip>("Audio/" + key);
+            if (c != null) { clips[key] = c; return c; }
             MusicJob job;
             if (!musicJobs.TryGetValue(key, out job))
             {
@@ -157,6 +160,8 @@ namespace RussianDrift.Audio
         /// <summary>Engine layer clips are cached per cylinder count / character.</summary>
         public AudioClip[] GetEngineLayers(int cylinders, float tone)
         {
+            AudioClip ia = Resources.Load<AudioClip>("Audio/engine_low"), ib = Resources.Load<AudioClip>("Audio/engine_mid"), ic = Resources.Load<AudioClip>("Audio/engine_high");
+            if (ia != null && ib != null && ic != null) return new[] { ia, ib, ic };      // recorded loops (reference rpm 1500 / 3500 / 6000, 4-cyl pitch basis)
             string k = "eng_" + cylinders + "_" + Mathf.RoundToInt(tone * 10f);
             AudioClip a, b, c;
             if (!clips.TryGetValue(k + "a", out a))

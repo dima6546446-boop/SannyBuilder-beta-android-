@@ -58,6 +58,9 @@ namespace RussianDrift.Core
         public float engineTone = 1f;         // audio character multiplier
         public DriveType defaultDrive = DriveType.RWD;
         public Color defaultColor = new Color(0.78f, 0.1f, 0.1f);
+
+        [Header("Optional imported model (see ASSETS.md); leave empty to use the procedural model")]
+        public GameObject modelPrefab;
     }
 
     [CreateAssetMenu(menuName = "Drift/Upgrade Definition", fileName = "Upgrade")]

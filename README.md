@@ -19,3 +19,10 @@ View your app in AI Studio: https://ai.studio/apps/ee8006a9-fc6b-4044-9a63-8cb0b
 4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
 5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
 6. Run the app on an emulator or physical device
+
+
+---
+
+## Russian Drift (Unity 6 / Android)
+
+В подпапке [`RussianDriftUnity/`](RussianDriftUnity/README.md) находится полноценный Unity 6.0 LTS проект аркадного дрифта для Android (URP, новая Input System). Инструкции по запуску, сборке APK и архитектуре — в `RussianDriftUnity/README.md`.

@@ -67,7 +67,9 @@ namespace RussianDrift.Core
         {
             Texture2D t;
             if (cache.TryGetValue(key, out t) && t != null) return t;
-            t = make();
+            // an imported texture named Resources/Textures/<key>.(png|jpg) replaces the procedural one
+            t = Resources.Load<Texture2D>("Textures/" + key);
+            if (t == null) t = make();
             t.name = key;
             cache[key] = t;
             return t;

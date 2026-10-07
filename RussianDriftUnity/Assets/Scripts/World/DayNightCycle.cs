@@ -92,6 +92,7 @@ namespace RussianDrift.World
             var r = sg.GetComponent<ParticleSystemRenderer>();
             r.sharedMaterial = MatLib.Additive(ProcTex.Glow(), Color.white);
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            starPs.Play();
             var rnd = new System.Random(3);
             var ep = new ParticleSystem.EmitParams();
             for (int i = 0; i < 400; i++)

@@ -8,6 +8,7 @@ namespace RussianDrift.Vehicle
     {
         // configuration
         public float idleRpm = 900f, redline = 6800f, peakTorque = 160f, peakRpm = 4200f;
+        public const float ArcadePower = 1.3f;       // extra wheel force so mid-power cars can still break traction
         public float finalDrive = 3.9f, wheelRadius = 0.3f, reverseRatio = 3.5f, efficiency = 0.88f;
         public float turboBoost;           // extra torque fraction at full boost
         public float[] gears = { 3.5f, 2.1f, 1.4f, 1.05f, 0.82f };
@@ -148,7 +149,13 @@ namespace RussianDrift.Vehicle
             if (gear == 0) return 0f;
             float sign = gear < 0 ? -1f : 1f;
             // wheel-side force; engine braking only acts when rolling
-            float force = engineTorqueNm * ratioAbs * efficiency / wheelRadius * sign;
+            float force = engineTorqueNm * ratioAbs * efficiency / wheelRadius * sign * ArcadePower;
+            if (force * sign > 0f)
+            {
+                // soft speed limiter: fade out drive force close to ~82 % of the top-gear redline speed
+                float vTop = redline * 0.10472f * wheelRadius / (gears[gears.Length - 1] * finalDrive) * 0.82f;
+                force *= Mathf.Clamp01((vTop - Mathf.Abs(forwardSpeed)) / 6f);
+            }
             if (t <= 0.01f && Mathf.Abs(forwardSpeed) < 1.5f) force = 0f;
             return force;
         }
