@@ -291,7 +291,7 @@ namespace RussianDrift.Vehicle
                 else drive = 0f;
 
                 // brakes
-                float bias = w.front ? 0.60f : 0.40f;
+                float bias = w.front ? 0.68f : 0.32f;      // front-biased: keeps the rears free to carry lateral load under braking
                 float brake = brakeTotal * bias * 0.5f;
                 bool hb = inp.handbrake && !w.front;
                 w.locked = false;

@@ -32,6 +32,14 @@ namespace RussianDrift.Core
         public static event Action<float> NearMiss;
         public static event Action<float> CrowdExcitement;               // 0..1 for spectators
 
+        /// <summary>Drops every subscriber (used when domain reload is disabled in the editor).</summary>
+        public static void ClearAll()
+        {
+            DriftUpdated = null; DriftBanked = null; DriftPenalty = null; VehicleCollision = null; DistanceDriven = null; Backfire = null;
+            LapCompleted = null; CheckpointPassed = null; AchievementUnlocked = null; CurrencyChanged = null; LevelUp = null;
+            LanguageChanged = null; SettingsChanged = null; NearMiss = null; CrowdExcitement = null;
+        }
+
         public static void RaiseDriftUpdated(DriftSnapshot s) { if (DriftUpdated != null) DriftUpdated(s); }
         public static void RaiseDriftBanked(int p, float m, float d) { if (DriftBanked != null) DriftBanked(p, m, d); }
         public static void RaiseDriftPenalty(float p) { if (DriftPenalty != null) DriftPenalty(p); }

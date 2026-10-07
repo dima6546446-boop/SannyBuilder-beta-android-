@@ -17,6 +17,8 @@ namespace RussianDrift.Core
 
         private static bool loaded;
 
+        public static void Reset() { loaded = false; Cars = null; Upgrades = null; Cosmetics = null; Tracks = null; }
+
         public static void EnsureLoaded()
         {
             if (loaded) return;
