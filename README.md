@@ -40,3 +40,9 @@ View your app in AI Studio: https://ai.studio/apps/ee8006a9-fc6b-4044-9a63-8cb0b
 cd rcd && npm install && npm start      # или ./run.sh
 ```
 Подробности — в [`rcd/README.md`](rcd/README.md).
+
+### ЗАНОС для Unity 6
+
+[`ZanosUnity/`](ZanosUnity/README.md) — Unity-порт той же игры: ядро (физика, мир, очки, сессия, прогресс) на чистом C# сверено с браузерной
+версией (расхождение ≤ 4·10⁻¹²), слой Unity (IMGUI-интерфейс, процедурные модели, камеры, эффекты, звук) компилируется против UnityEngine;
+запуск в самом Unity Editor в среде разработки не проверялся.

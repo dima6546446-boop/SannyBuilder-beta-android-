@@ -4,7 +4,7 @@ import { rng, chaikin, offsetLine, polyToSegments, rectSurface, circleSurface, r
 function newMap(o) {
   return {
     segments: [], boxes: [], circles: [], props: [], surfaces: [], buildings: [], barriers: [], trees: [], lamps: [],
-    roads: [], markings: [], parked: [], containers: [], gates: [], decoBuildings: [], pads: [],
+    roads: [], curbs: [], markings: [], parked: [], containers: [], gates: [], decoBuildings: [], pads: [],
     ...o,
   };
 }
@@ -41,11 +41,21 @@ function cityStreet() {
   // разметка
   for (const x of X) m.markings.push({ pts: [[x, -85 + 8], [x, 85 - 8]], w: 0.2, color: 0xf2c94c, dash: [6, 6] });
   for (const z of Z) m.markings.push({ pts: [[-130 + 8, z], [130 - 8, z]], w: 0.2, color: 0xf2c94c, dash: [6, 6] });
+  // пешеходные переходы («зебры») на въездах в перекрёстки
+  for (const cx of X) for (const cz of Z) for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    const ex = cx + dx * (W / 2 + 3.5), ez = cz + dz * (W / 2 + 3.5);
+    if (Math.abs(ex) > 130 + W / 2 + 0.1 || ez > 85 + W / 2 + 0.1 || ez < -85 - W / 2 - 0.1) continue;
+    for (let k = -5; k <= 5; k++) {
+      const ox = dz !== 0 ? k * 1.15 : 0, oz = dx !== 0 ? k * 1.15 : 0;
+      m.markings.push({ pts: [[ex + ox - dx * 1.5, ez + oz - dz * 1.5], [ex + ox + dx * 1.5, ez + oz + dz * 1.5]], w: 0.55, color: 0xf2f2f2 });
+    }
+  }
   // здания по кварталам
   const blocks = [[-130, -85, 0, 0], [0, -85, 130, 0], [-130, 0, 0, 85], [0, 0, 130, 85]];
   const palette = [0x8c8f96, 0xa3866a, 0x7c8ea3, 0xb59b8a, 0x6f7a73, 0x9a9aa6];
   blocks.forEach(([x0, z0, x1, z1], bi) => {
     const ix0 = x0 + W / 2 + 4.5, iz0 = z0 + W / 2 + 4.5, ix1 = x1 - W / 2 - 4.5, iz1 = z1 - W / 2 - 4.5;
+    m.curbs.push({ pts: [[ix0 - 4.5, iz0 - 4.5], [ix1 + 4.5, iz0 - 4.5], [ix1 + 4.5, iz1 + 4.5], [ix0 - 4.5, iz1 + 4.5]], closed: true });
     if (bi === 3) { // парк с фонтаном
       m.surfaces.push(rectSurface('grass', ix0, iz0, ix1, iz1));
       m.parkRect = { x0: ix0, z0: iz0, x1: ix1, z1: iz1 };

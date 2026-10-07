@@ -3,6 +3,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { SURFACES } from '../physics/config.js';
 import { surfaceTexture, facadeTextures, glowTexture, tyreTexture } from './textures.js';
 import { offsetLine } from '../game/geom.js';
+import { buildParkedCars } from './props.js';
 
 const V = (x, z) => new THREE.Vector3(x, 0, -z);   // координаты симуляции -> three
 
@@ -89,13 +90,14 @@ function buildingMesh(b, night) {
   const tex = facadeTextures(style);
   const geo = new THREE.BoxGeometry(b.w, b.h, b.d);
   const uv = geo.attributes.uv, groups = geo.groups;
-  const rep = (w, h) => [Math.max(1, Math.round(w / (style === 'warehouse' ? 14 : 6))), Math.max(1, Math.round(h / (style === 'warehouse' ? 7 : 3.4)))];
+  const rep = (w, h) => [Math.max(1, Math.round(w / (style === 'warehouse' ? 14 : style === 'mall' ? 22 : 6))), Math.max(1, Math.round(h / (style === 'warehouse' ? 7 : 3.4)))];
   for (const gp of groups) {
     const side = gp.materialIndex; if (side === 2 || side === 3) continue;
     const [ru, rv] = rep(side < 2 ? b.d : b.w, b.h);
-    for (let i = gp.start; i < gp.start + gp.count; i++) { const idx = geo.index.getX(i); uv.setXY(idx, uv.getX(idx) * ru, uv.getY(idx) * rv); }
+    const seen = new Set();   // у каждой вершины масштабируем UV ровно один раз (вершины входят в несколько треугольников)
+    for (let i = gp.start; i < gp.start + gp.count; i++) { const idx = geo.index.getX(i); if (seen.has(idx)) continue; seen.add(idx); uv.setXY(idx, uv.getX(idx) * ru, uv.getY(idx) * rv); }
   }
-  const sideMat = new THREE.MeshStandardMaterial({ map: tex.map, color: b.color, emissiveMap: tex.em, emissive: 0xffffff, emissiveIntensity: night ? 1.1 : 0.0, roughness: 0.85 });
+  const sideMat = new THREE.MeshStandardMaterial({ map: tex.map, color: b.color, emissiveMap: tex.em, emissive: 0xffffff, emissiveIntensity: night ? 0.7 : 0.0, roughness: 0.85 });
   const roofMat = new THREE.MeshStandardMaterial({ color: 0x3b3d42, roughness: 0.95 });
   const mesh = new THREE.Mesh(geo, [sideMat, sideMat, roofMat, roofMat, sideMat, sideMat]);
   mesh.position.set(b.x, b.h / 2, -b.z); mesh.rotation.y = -(b.rot || 0);
@@ -161,6 +163,20 @@ export function buildMap(map, env) {
   for (const b of map.buildings) group.add(buildingMesh(b, night));
   for (const b of map.decoBuildings) group.add(buildingMesh(b, night));
 
+  // крыши зданий: вентиляция и антенны (instanced)
+  const roofs = map.buildings.filter((b) => b.h > 8 && b.style !== 'warehouse' || b.style === 'factory');
+  if (roofs.length) {
+    const ac = instanced(track(new THREE.BoxGeometry(2.4, 1.1, 1.8)), new THREE.MeshStandardMaterial({ color: 0x8a8d92, roughness: 0.7, metalness: 0.4 }), roofs.length * 2);
+    const an = instanced(track(new THREE.CylinderGeometry(0.06, 0.06, 5, 5)), new THREE.MeshStandardMaterial({ color: 0x2a2c30 }), roofs.length);
+    roofs.forEach((b, i) => {
+      const c = Math.cos(b.rot || 0), s = Math.sin(b.rot || 0);
+      const at = (lx, lz) => [b.x + lx * c + lz * s, b.z - lx * s + lz * c];
+      let p0 = at(b.w * 0.22, b.d * 0.18); setInst(ac, i * 2, p0[0], b.h + 0.55, -p0[1], -(b.rot || 0));
+      p0 = at(-b.w * 0.2, -b.d * 0.22); setInst(ac, i * 2 + 1, p0[0], b.h + 0.55, -p0[1], -(b.rot || 0) + 0.4);
+      p0 = at(-b.w * 0.3, b.d * 0.3); setInst(an, i, p0[0], b.h + 2.5, -p0[1], 0);
+    });
+    group.add(ac, an);
+  }
   // контейнеры
   const conts = map.containers.filter((c) => !c.small), small = map.containers.filter((c) => c.small);
   if (conts.length) {
@@ -177,6 +193,7 @@ export function buildMap(map, env) {
   }
 
   // припаркованные машины (облегчённые)
+  let parkedBoxes = [];
   if (map.parked.length) {
     const n = map.parked.length;
     const body = instanced(track(new THREE.BoxGeometry(1.8, 0.62, 4.2)), new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 0.5, roughness: 0.4 }), n);
@@ -193,6 +210,7 @@ export function buildMap(map, env) {
       }
     });
     group.add(body, cabin, wheel);
+    parkedBoxes = [body, cabin, wheel];
   }
 
   // деревья
@@ -223,8 +241,8 @@ export function buildMap(map, env) {
     });
     group.add(pole, head);
     if (night || env.time === 'dusk') {
-      const sprMat = new THREE.SpriteMaterial({ map: glowTexture(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: night ? 0.9 : 0.6 });
-      map.lamps.forEach((l) => { const sp = new THREE.Sprite(sprMat); sp.position.set(l.x, l.h, -l.z); sp.scale.set(7, 7, 1); group.add(sp); });
+      const sprMat = new THREE.SpriteMaterial({ map: glowTexture(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: night ? 0.65 : 0.45 });
+      map.lamps.forEach((l) => { const sp = new THREE.Sprite(sprMat); sp.position.set(l.x, l.h, -l.z); sp.scale.set(4.2, 4.2, 1); group.add(sp); });
     }
   }
 
@@ -265,6 +283,13 @@ export function buildMap(map, env) {
     const tm = instanced(track(new THREE.TorusGeometry(0.28, 0.14, 8, 14)), new THREE.MeshStandardMaterial({ color: 0xffffff, map: tyreTexture(), roughness: 0.95 }), tpos.length);
     tpos.forEach((t, i) => { _o.position.set(t[0], t[1], -t[2]); _o.rotation.set(Math.PI / 2, 0, 0); _o.scale.set(1, 1, 1); _o.updateMatrix(); tm.setMatrixAt(i, _o.matrix); _c.set(t[3] ? 0xf4f4f4 : 0x3a3a3c); tm.setColorAt(i, _c); });
     group.add(tm);
+  }
+  // визуальные бордюры (без коллизий) вокруг кварталов
+  if (map.curbs && map.curbs.length) {
+    const gs = [];
+    for (const c of map.curbs) { const n = c.pts.length; for (let i = 0; i < (c.closed ? n : n - 1); i++) { const g = boxSeg(c.pts[i], c.pts[(i + 1) % n], 0.16, 0.45); if (g) gs.push(g); } }
+    const mg = mergeGeometries(gs); gs.forEach((g) => g.dispose());
+    const mesh = new THREE.Mesh(track(mg), new THREE.MeshStandardMaterial({ color: 0xb7b8b2, roughness: 0.9 })); mesh.receiveShadow = true; mesh.castShadow = true; group.add(mesh);
   }
   // шаблоны: фонтан, цистерны, столб
   for (const p of map.pads) {
@@ -327,6 +352,15 @@ export function buildMap(map, env) {
 
   return {
     group, lampPositions, updateProps,
+    /** Асинхронно подменяет «коробки» на CC0-модели Kenney (если загрузились). */
+    async upgradeParked() {
+      if (!parkedBoxes.length) return false;
+      const g = await buildParkedCars(map.parked);
+      if (!g) return false;
+      parkedBoxes.forEach((m) => group.remove(m)); parkedBoxes = [];
+      group.add(g);
+      return true;
+    },
     dispose() { group.traverse((o) => { if (o.isMesh && o.material && !Array.isArray(o.material) && o.material.userData?.own) o.material.dispose(); }); disposables.forEach((d) => d.dispose && d.dispose()); },
   };
 }

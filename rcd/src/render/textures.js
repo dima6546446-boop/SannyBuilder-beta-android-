@@ -42,7 +42,7 @@ export function facadeTextures(style) {
     g.fillStyle = '#b8bcc4'; g.fillRect(0, 0, w, h);
     const cols = style === 'warehouse' ? 2 : 4, rows = style === 'warehouse' ? 2 : 8;
     for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
-      g.fillStyle = style === 'mall' ? '#2b3a4a' : '#44566a';
+      g.fillStyle = style === 'mall' ? '#4a5a6c' : '#66788d';
       g.fillRect((c + 0.15) * w / cols, (r + 0.2) * h / rows, w / cols * 0.7, h / rows * 0.55);
     }
   });

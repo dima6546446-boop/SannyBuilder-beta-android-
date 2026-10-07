@@ -31,7 +31,7 @@ export function createCarModel(def, look = {}) {
   const L = def.length, W = def.width, H = def.height;
   const prof = BODY[def.body] || BODY.sedan;
   const paint = new THREE.MeshPhysicalMaterial({ color: look.paint || def.color, metalness: 0.55, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.08 });
-  const glass = new THREE.MeshPhysicalMaterial({ color: 0x0c1218, metalness: 0.2, roughness: 0.05, clearcoat: 1, transparent: true, opacity: 0.92 });
+  const glass = new THREE.MeshPhysicalMaterial({ color: 0x10161c, metalness: 0.3, roughness: 0.04, clearcoat: 1, transparent: true, opacity: 0.62 });
   const dark = std(0x111214, { roughness: 0.8 });
   const chrome = std(0xcfd3d8, { metalness: 1, roughness: 0.2 });
   const parts = { paint, glass };
@@ -119,6 +119,50 @@ export function createCarModel(def, look = {}) {
   // зеркала
   for (const s of [-1, 1]) { const mm = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.09, 0.1), paint); mm.position.set(s * (cabW / 2 + 0.1), hoodY + 0.12, -(L * prof.cab[3] - L / 2) + 0.05); body.add(mm); }
 
+  // ---------- детали кузова ----------
+  const zAt = (frac) => L / 2 - L * frac;                 // координата z кузова по доле длины (0 — зад)
+  const seam = std(0x0c0d10, { roughness: 0.9 });
+  const sideX = W / 2 + 0.03;
+  const doorTop = belt, doorBot = lowL + 0.16;
+  const seamFr = def.body === 'coupe' ? [prof.cab[3] - 0.03, prof.cab[0] + 0.02] : [prof.cab[3] - 0.03, (prof.cab[0] + prof.cab[3]) / 2, prof.cab[0] + 0.02];
+  for (const sd of [-1, 1]) {
+    for (const fr of seamFr) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(0.012, doorTop - doorBot, 0.014), seam); m.position.set(sd * sideX, (doorTop + doorBot) / 2, zAt(fr)); body.add(m);
+    }
+    const belt0 = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.012, L * (prof.cab[3] - prof.cab[0] - 0.04)), seam); belt0.position.set(sd * sideX, doorBot, zAt((prof.cab[3] + prof.cab[0]) / 2)); body.add(belt0);
+    for (const fr of def.body === 'coupe' ? [prof.cab[3] - 0.1] : [prof.cab[3] - 0.1, (prof.cab[0] + prof.cab[3]) / 2 - 0.08]) {
+      const hdl = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.025, 0.14), chrome); hdl.position.set(sd * (sideX + 0.01), doorTop - 0.1, zAt(fr)); body.add(hdl);
+    }
+    // боковой повторитель
+    const rep = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 0.07), std(0xffa000, { emissive: 0xff8a00, emissiveIntensity: 0.6 })); rep.position.set(sd * (sideX + 0.005), lowL + 0.32, zAt(0.9)); body.add(rep);
+  }
+  // решётка радиатора и круглые фары с хромовыми ободками
+  for (let k = 0; k < 4; k++) { const bar = new THREE.Mesh(new THREE.BoxGeometry(W * 0.32, 0.012, 0.02), chrome); bar.position.set(0, lampY - 0.05 + k * 0.032, -L / 2 - 0.02); body.add(bar); }
+  for (const sd of [-1, 1]) {
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.095, 0.014, 8, 20), chrome); rim.position.set(sd * W * 0.34, lampY, -L / 2 + 0.005); body.add(rim);
+    const lens = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 0.04, 20), headMat); lens.rotation.x = Math.PI / 2; lens.position.set(sd * W * 0.34, lampY, -L / 2 + 0.01); body.add(lens);
+    const tail = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.05, 0.03), tailMat); tail.position.set(sd * W * 0.32, trunkY - 0.12, L / 2 + 0.012); body.add(tail);
+  }
+  // складка капота и вентиляция
+  const crease = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.01, L * 0.26), seam); crease.position.set(0, hoodY + 0.012, zAt(prof.cab[3] + 0.13)); body.add(crease);
+  if (def.body === 'coupe' || def.id === 'barin') {
+    for (const sd of [-1, 1]) { const vent = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.012, 0.3), seam); vent.position.set(sd * W * 0.2, hoodY + 0.014, zAt(0.9)); body.add(vent); }
+  }
+  // салон: приборная панель, кресла, руль (видны через стекло)
+  const seatMat = std(0x1a1b1f, { roughness: 0.95 });
+  const dash = new THREE.Mesh(new THREE.BoxGeometry(cabW * 0.92, 0.16, 0.35), seatMat); dash.position.set(0, hoodY + 0.02, zAt(prof.cab[3] - 0.04)); body.add(dash);
+  for (const sd of [-1, 1]) {
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.18, 0.46), seatMat); seat.position.set(sd * W * 0.22, belt - 0.05, zAt((prof.cab[3] + prof.cab[1]) / 2 + 0.05)); body.add(seat);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.5, 0.1), seatMat); back.position.set(sd * W * 0.22, belt + 0.18, zAt((prof.cab[3] + prof.cab[1]) / 2 + 0.12)); back.rotation.x = -0.18; body.add(back);
+  }
+  const wheelIn = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.018, 8, 20), seatMat); wheelIn.position.set(-W * 0.22, hoodY + 0.14, zAt(prof.cab[3] - 0.07)); wheelIn.rotation.x = 1.2; body.add(wheelIn);
+  // антенна, лючок бензобака, багажник на универсале
+  const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.004, 0.004, 0.45, 5), dark); ant.position.set(W * 0.38, H + 0.2, zAt(prof.cab[1] - 0.02)); ant.rotation.z = -0.2; body.add(ant);
+  const fuel = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.012, 14), chrome); fuel.rotation.z = Math.PI / 2; fuel.position.set(W / 2 + 0.03, trunkY - 0.12, zAt(0.2)); body.add(fuel);
+  if (def.body === 'wagon') for (const sd of [-1, 1]) { const rail = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.035, L * (prof.cab[2] - prof.cab[1])), chrome); rail.position.set(sd * cabW * 0.45, H + 0.05, zAt((prof.cab[1] + prof.cab[2]) / 2)); body.add(rail); }
+  // защитные брызговики и тёмное днище
+  const under = new THREE.Mesh(new THREE.BoxGeometry(W * 0.9, 0.05, L * 0.92), dark); under.position.set(0, lowL - 0.02, 0); body.add(under);
+
   // обвес
   const kit = look.bodykit || 'none';
   if (kit !== 'none') {
@@ -172,6 +216,8 @@ export function createCarModel(def, look = {}) {
     } else {
       const cap = new THREE.Mesh(new THREE.CylinderGeometry(rimR * 0.25, rimR * 0.25, tw * 1.0, 12), chrome); cap.rotation.z = Math.PI / 2; spin.add(cap);
     }
+    const disc2 = new THREE.Mesh(new THREE.CylinderGeometry(rimR * 0.92, rimR * 0.92, 0.025, 28), std(0x6e7077, { metalness: 0.8, roughness: 0.45 })); disc2.rotation.z = Math.PI / 2; disc2.position.x = -side * tw * 0.2; spin.add(disc2);
+    const cal = new THREE.Mesh(new THREE.BoxGeometry(0.06, rimR * 0.7, rimR * 0.5), std(i < 2 ? 0xd01818 : 0xb01010, { roughness: 0.4 })); cal.position.set(-side * tw * 0.22, rimR * 0.35, -0.02); pivot.add(cal);
     pivot.add(spin);
     pivot.position.set(wheelXs[i], wheelR, -wheelZs[i]);
     group.add(pivot);

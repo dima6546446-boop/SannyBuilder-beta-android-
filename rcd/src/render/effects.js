@@ -112,7 +112,7 @@ export class Sparks {
     this.mat = new THREE.ShaderMaterial({
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
       uniforms: { map: { value: spriteTexture('spark') }, scale: { value: 600 } },
-      vertexShader: 'attribute float aAlpha; varying float vA; uniform float scale; void main(){ vA=aAlpha; vec4 mv=modelViewMatrix*vec4(position,1.0); gl_PointSize=0.22*scale/max(0.1,-mv.z); gl_Position=projectionMatrix*mv; }',
+      vertexShader: 'attribute float aAlpha; varying float vA; uniform float scale; void main(){ vA=aAlpha; vec4 mv=modelViewMatrix*vec4(position,1.0); gl_PointSize=0.09*scale/max(0.1,-mv.z); gl_Position=projectionMatrix*mv; }',
       fragmentShader: 'uniform sampler2D map; varying float vA; void main(){ vec4 t=texture2D(map,gl_PointCoord); gl_FragColor=vec4(t.rgb*1.4, t.a*vA); }',
     });
     this.points = new THREE.Points(g, this.mat); this.points.frustumCulled = false; this.points.renderOrder = 6;

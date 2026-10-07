@@ -1,0 +1,8 @@
+{
+  "name": "Zanos.Editor",
+  "rootNamespace": "Zanos.Editor",
+  "references": [ "Zanos.Core", "Zanos.Game" ],
+  "includePlatforms": [ "Editor" ],
+  "excludePlatforms": [],
+  "autoReferenced": false
+}

@@ -32,7 +32,10 @@ await page.mouse.click(30, 30); await sleep(400);
 check('звук (Web Audio) инициализирован и запущен', await ev(() => __rcd.audio.ready && __rcd.audio.ctx.state === 'running'), await ev(() => __rcd.audio.ctx && __rcd.audio.ctx.state));
 console.log('Реальный ввод с клавиатуры');
 const z0 = await ev(() => __rcd.session.car.z);
-await page.keyboard.down('KeyW'); await page.keyboard.down('KeyD'); await sleep(2500);
+await page.keyboard.down('KeyW'); await page.keyboard.down('KeyD');
+// в программном WebGL кадров мало — ждём не по времени, а пока машина реально поедет (до 30 с)
+await page.waitForFunction((z) => __rcd.session.car.z > z + 1.5, z0, { timeout: 30000 }).catch(() => {});
+await sleep(300);
 const kb = await ev(() => ({ thr: __rcd.controls.state.throttle, steer: __rcd.controls.state.steer, z: __rcd.session.car.z, kmh: __rcd.session.car.speed * 3.6 }));
 check('клавиша W даёт газ и машина едет', kb.thr > 0.9 && kb.z > z0 + 0.5, `газ ${kb.thr.toFixed(2)}, ${Math.round(kb.kmh)} км/ч`);
 check('клавиша D поворачивает руль плавно', kb.steer > 0.5, 'руль ' + kb.steer.toFixed(2));

@@ -36,6 +36,7 @@ class App {
     this.showCarInRoom(p.selected);
     this.gfx.enterShowroom();
     this.go('menu', false);
+    this.getCar = getCar;
     window.__rcd = this;
     requestAnimationFrame((t) => this.loop(t));
     setTimeout(() => $('#loading').classList.add('gone'), 400);
@@ -45,7 +46,7 @@ class App {
   // ---------- настройки ----------
   applySettings() {
     const s = this.progress.settings;
-    this.gfx.setSettings({ quality: s.quality, shadows: s.shadows, effects: s.effects, fov: s.fov, speedFx: s.speedFx, pixelRatio: s.pixelRatio });
+    this.gfx.setSettings({ quality: s.quality, shadows: s.shadows, post: s.post, effects: s.effects, fov: s.fov, speedFx: s.speedFx, pixelRatio: s.pixelRatio });
     this.audio.setVolumes({ master: s.master, engine: s.engine, sfx: s.sfx, music: s.music });
     this.controls.settings.steerSens = s.steerSens; this.controls.settings.deadzone = s.deadzone;
     if (this.session) { this.session.car.assist = s.assist; this.session.opts.assist = s.assist; this.session.car.autoGear = s.transmission === 'auto'; }

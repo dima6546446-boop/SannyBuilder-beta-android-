@@ -10,7 +10,7 @@ export const moneyForScore = (score) => Math.floor(score / 3.5);
 export const xpForScore = (score) => Math.floor(score / 7);
 
 export const DEFAULT_SETTINGS = {
-  quality: 'high', shadows: true, pixelRatio: 1, fov: 70, effects: true, speedFx: true, showFps: false,
+  quality: 'high', shadows: true, post: true, pixelRatio: 1, fov: 70, effects: true, speedFx: true, showFps: false,
   master: 0.8, engine: 0.7, sfx: 0.8, music: 0.4,
   assist: 0.7, steerSens: 1, deadzone: 0.1, transmission: 'auto', camera: 'chase', units: 'kmh', weather: 'clear', touch: 'auto',
   hintsSeen: false,

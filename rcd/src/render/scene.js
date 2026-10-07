@@ -1,14 +1,20 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { buildMap } from './mapBuilder.js';
 import { createCarModel, syncCarModel, disposeModel } from './carModel.js';
 import { Smoke, Skids, Sparks, Weather, smokeColor } from './effects.js';
 import { CameraRig } from './camera.js';
 import { SURFACES } from '../physics/config.js';
+import { spriteTexture } from './textures.js';
 
 const ENVS = {
-  day:   { top: 0x3f86d4, horizon: 0xd2e6f5, sun: 0xfff0d2, sunI: 3.0, sunDir: [-0.55, 0.85, 0.4], hemiSky: 0xcfe2ff, hemiGround: 0x7a7766, hemiI: 1.15, fog: 0xcfe2f1, fogNear: 180, fogFar: 1100, exposure: 0.95, lights: false },
+  day:   { top: 0x3f86d4, horizon: 0xd2e6f5, sun: 0xfff0d2, sunI: 2.1, sunDir: [-0.55, 0.85, 0.4], hemiSky: 0xcfe2ff, hemiGround: 0x7a7766, hemiI: 0.8, fog: 0xcfe2f1, fogNear: 180, fogFar: 1100, exposure: 0.85, lights: false },
   dusk:  { top: 0x2a3b66, horizon: 0xf2a263, sun: 0xffb877, sunI: 2.3, sunDir: [0.8, 0.28, 0.4], hemiSky: 0x9aa6d8, hemiGround: 0x5a4a45, hemiI: 0.85, fog: 0xc49272, fogNear: 120, fogFar: 800, exposure: 0.9, lights: true },
-  night: { top: 0x050914, horizon: 0x1a2744, sun: 0x8aa4ff, sunI: 0.55, sunDir: [-0.4, 0.7, 0.3], hemiSky: 0x3a4d86, hemiGround: 0x1c2029, hemiI: 1.0, fog: 0x0c1428, fogNear: 80, fogFar: 620, exposure: 1.15, lights: true },
+  night: { top: 0x050914, horizon: 0x1a2744, sun: 0x8aa4ff, sunI: 0.55, sunDir: [-0.4, 0.7, 0.3], hemiSky: 0x4a60a0, hemiGround: 0x232834, hemiI: 1.5, fog: 0x0c1428, fogNear: 80, fogFar: 620, exposure: 1.15, lights: true },
 };
 const WEATHER_MOD = {
   clear: { fogMul: 1, dim: 1 },
@@ -16,9 +22,27 @@ const WEATHER_MOD = {
   snow: { fogMul: 0.5, dim: 0.9 },
 };
 const QUALITY = {
-  low:    { shadow: 0, pr: 0.7, aa: false, smoke: 220, env: false },
-  medium: { shadow: 1024, pr: 1, aa: true, smoke: 450, env: true },
-  high:   { shadow: 2048, pr: 1.5, aa: true, smoke: 700, env: true },
+  low:    { shadow: 0, pr: 0.7, aa: false, smoke: 220, env: false, post: false, bloom: 0 },
+  medium: { shadow: 1024, pr: 1, aa: true, smoke: 450, env: true, post: true, bloom: 0.5 },
+  high:   { shadow: 2048, pr: 1.5, aa: true, smoke: 700, env: true, post: true, bloom: 0.75 },
+};
+
+// Цветокоррекция: контраст, насыщенность, виньетка, хроматическая аберрация на скорости.
+const GradeShader = {
+  uniforms: { tDiffuse: { value: null }, vig: { value: 0.35 }, sat: { value: 1.12 }, con: { value: 1.06 }, ca: { value: 0 }, tint: { value: new THREE.Color(1, 1, 1) } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }',
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float vig; uniform float sat; uniform float con; uniform float ca; uniform vec3 tint; varying vec2 vUv;
+    void main(){
+      vec2 d = vUv - 0.5; float r = dot(d, d);
+      vec2 off = d * ca * r * 2.0;
+      vec3 c = vec3(texture2D(tDiffuse, vUv + off).r, texture2D(tDiffuse, vUv).g, texture2D(tDiffuse, vUv - off).b);
+      float l = dot(c, vec3(0.299, 0.587, 0.114));
+      c = mix(vec3(l), c, sat);
+      c = (c - 0.5) * con + 0.5;
+      c *= tint;
+      c *= 1.0 - vig * smoothstep(0.1, 0.55, r * 1.6);
+      gl_FragColor = vec4(max(c, 0.0), 1.0);
+    }`,
 };
 
 export class Gfx {
@@ -31,6 +55,7 @@ export class Gfx {
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.camera = new THREE.PerspectiveCamera(70, 1, 0.1, 2500);
+    this.composer = null; this.usePost = false;
     this.rig = new CameraRig(this.camera);
     this.scene = new THREE.Scene();
     this.mapGroup = null; this.mapData = null; this.carModel = null; this.carLookKey = '';
@@ -79,7 +104,11 @@ export class Gfx {
     for (let i = 0; i < n; i++) { const u = Math.random() * 2 - 1, a = Math.random() * 6.283, r = Math.sqrt(1 - u * u); const y = Math.abs(u) * 0.9 + 0.08; pos[i * 3] = Math.cos(a) * r * 1700; pos[i * 3 + 1] = y * 1700; pos[i * 3 + 2] = Math.sin(a) * r * 1700; }
     const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     const stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 2, sizeAttenuation: false, fog: false, transparent: true, opacity: 0.85 })); stars.visible = false; group.add(stars);
-    return { group, mat, stars, dome };
+    // облака: большие мягкие спрайты на горизонте
+    const cloudMat = new THREE.SpriteMaterial({ map: spriteTexture('smoke'), color: 0xffffff, transparent: true, opacity: 0.55, depthWrite: false, fog: false });
+    const clouds = [];
+    for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2 + (i % 3) * 0.2, h = 0.08 + (i * 37 % 10) / 80; const sp = new THREE.Sprite(cloudMat.clone()); sp.position.set(Math.cos(a) * 1500, h * 1500, Math.sin(a) * 1500); sp.scale.set(520 + (i % 4) * 90, 150 + (i % 3) * 40, 1); group.add(sp); clouds.push(sp); }
+    return { group, mat, stars, dome, clouds };
   }
 
   makeShowroom() {
@@ -88,8 +117,8 @@ export class Gfx {
     floor.rotation.x = -Math.PI / 2; floor.receiveShadow = true; g.add(floor);
     const ring = new THREE.Mesh(new THREE.RingGeometry(4.6, 4.75, 64), new THREE.MeshBasicMaterial({ color: 0xff7a00, side: THREE.DoubleSide })); ring.rotation.x = -Math.PI / 2; ring.position.y = 0.01; g.add(ring);
     const ring2 = new THREE.Mesh(new THREE.RingGeometry(6.4, 6.46, 64), new THREE.MeshBasicMaterial({ color: 0x4a5160, side: THREE.DoubleSide })); ring2.rotation.x = -Math.PI / 2; ring2.position.y = 0.01; g.add(ring2);
-    const key = new THREE.SpotLight(0xffffff, 380, 40, 0.7, 0.6, 1.5); key.position.set(7, 11, 6); key.castShadow = true; key.shadow.mapSize.set(1024, 1024); key.target.position.set(0, 0.5, 0); g.add(key, key.target);
-    const rim = new THREE.SpotLight(0x6aa8ff, 420, 40, 0.8, 0.6, 1.5); rim.position.set(-8, 6, -7); rim.target.position.set(0, 0.7, 0); g.add(rim, rim.target);
+    const key = new THREE.SpotLight(0xffffff, 230, 40, 0.7, 0.6, 1.5); key.position.set(7, 11, 6); key.castShadow = true; key.shadow.mapSize.set(1024, 1024); key.target.position.set(0, 0.5, 0); g.add(key, key.target);
+    const rim = new THREE.SpotLight(0x6aa8ff, 220, 40, 0.8, 0.6, 1.5); rim.position.set(-8, 6, -7); rim.target.position.set(0, 0.7, 0); g.add(rim, rim.target);
     const fill = new THREE.PointLight(0xffd9b0, 60, 25, 2); fill.position.set(-5, 3, 6); g.add(fill);
     g.visible = false;
     this.scene.add(g);
@@ -127,12 +156,39 @@ export class Gfx {
     return false;
   }
 
+  /** Постобработка (bloom + цветокоррекция) создаётся по требованию, только для среднего/высокого качества. */
+  ensureComposer() {
+    if (this.composer) return;
+    const size = this.renderer.getSize(new THREE.Vector2());
+    const rt = new THREE.WebGLRenderTarget(size.x, size.y, { type: THREE.HalfFloatType, samples: 4 });
+    this.composer = new EffectComposer(this.renderer, rt);
+    this.renderPass = new RenderPass(this.scene, this.camera);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(size.x / 2, size.y / 2), 0.6, 0.7, 0.88);
+    this.grade = new ShaderPass(GradeShader);
+    this.composer.addPass(this.renderPass); this.composer.addPass(this.bloom); this.composer.addPass(this.grade); this.composer.addPass(new OutputPass());
+  }
+
+  draw(speedKmh = 0) {
+    const q = QUALITY[this.settings.quality] || QUALITY.high;
+    if (q.post && this.settings.post !== false) {
+      this.ensureComposer();
+      const show = this.mode === 'showroom';
+      this.bloom.strength = show ? 0.18 : q.bloom * (this.time === 'night' ? 1.0 : this.time === 'dusk' ? 0.85 : 0.45);
+      this.bloom.threshold = show ? 1.3 : this.time === 'day' ? 1.5 : 1.05;
+      const u = this.grade.uniforms;
+      u.ca.value = this.settings.speedFx === false ? 0 : Math.max(0, (speedKmh - 90) / 120) * 0.012;
+      u.vig.value = this.mode === 'showroom' ? 0.5 : 0.32;
+      this.composer.render();
+    } else this.renderer.render(this.scene, this.camera);
+  }
+
   resize() {
     const w = this.canvas.clientWidth || window.innerWidth, h = this.canvas.clientHeight || window.innerHeight;
     this.renderer.setPixelRatio(this.pixelRatioTarget || Math.min(window.devicePixelRatio || 1, 1));
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h; this.camera.updateProjectionMatrix();
     this.viewH = h * this.renderer.getPixelRatio();
+    if (this.composer) { this.composer.setPixelRatio(this.renderer.getPixelRatio()); this.composer.setSize(w, h); this.bloom.resolution.set(w / 2, h / 2); }
   }
 
   /** Освещение и небо по времени суток / погоде. */
@@ -147,6 +203,8 @@ export class Gfx {
     this.sky.mat.uniforms.top.value.copy(top); this.sky.mat.uniforms.horizon.value.copy(horizon);
     this.sky.mat.uniforms.ground.value.copy(horizon).multiplyScalar(0.7);
     this.sky.stars.visible = time === 'night' && weather === 'clear';
+    const cloudCol = new THREE.Color(time === 'night' ? 0x1a2236 : time === 'dusk' ? 0xf0b080 : weather === 'rain' ? 0x6c747c : 0xffffff);
+    this.sky.clouds.forEach((c) => { c.material.color.copy(cloudCol); c.material.opacity = weather === 'rain' ? 0.8 : weather === 'snow' ? 0.7 : time === 'night' ? 0.35 : 0.55; });
     this.scene.fog = new THREE.Fog(horizon.clone(), e.fogNear * w.fogMul, e.fogFar * w.fogMul);
     this.scene.background = horizon.clone();
     this.sun.color.set(e.sun); this.sun.intensity = e.sunI * (weather === 'clear' ? 1 : weather === 'rain' ? 0.35 : 0.6);
@@ -162,7 +220,7 @@ export class Gfx {
       if (this.envTex) this.envTex.dispose();
       this.envTex = this.pmrem.fromScene(sc, 0.02).texture;
       this.scene.environment = this.envTex;
-      this.scene.environmentIntensity = time === 'night' ? 0.35 : weather === 'rain' ? 0.5 : 0.9;
+      this.scene.environmentIntensity = time === 'night' ? 0.6 : weather === 'rain' ? 0.5 : 0.9;
     } else this.scene.environment = null;
   }
 
@@ -175,6 +233,7 @@ export class Gfx {
     this.skids.clear();
     this.setGates(null, 0);
     this.lampPos = this.mapGroup.lampPositions;
+    const mg = this.mapGroup; mg.upgradeParked().catch(() => {});
   }
 
   /** Ворота испытания: подсветка текущих. */
@@ -232,13 +291,13 @@ export class Gfx {
     const vw = this.canvas.clientWidth || window.innerWidth;
     const gap = Math.max(0.3, Math.min(0.62, (vw - 720) / vw));
     const want = 5.2 / (gap * 0.85 * 2 * Math.tan(21 * Math.PI / 180) * this.camera.aspect);
-    this.showroom.camDist += (Math.max(8.5, Math.min(24, want)) - this.showroom.camDist) * Math.min(1, dt * 4);
+    this.showroom.camDist += ((this.showroom.fixedDist || Math.max(8.5, Math.min(24, want))) - this.showroom.camDist) * Math.min(1, dt * 4);
     const a = this.showroom.angle, d = this.showroom.camDist;
     this.camera.position.set(Math.sin(a) * d, 2.6, Math.cos(a) * d);
     this.camera.lookAt(0, 0.7, 0);
     this.camera.fov = 42; this.camera.updateProjectionMatrix();
     if (this.carModel) { this.carModel.position.set(0, 0, 0); this.carModel.rotation.set(0, Math.PI * 0.9, 0); const u = this.carModel.userData; u.body.rotation.set(0, 0, 0); u.wheels.forEach((w) => { w.pivot.rotation.y = 0; w.spin.rotation.x += dt * 0.0; }); u.tailMat.emissiveIntensity = 0.5; }
-    this.renderer.render(this.scene, this.camera);
+    this.draw(0);
   }
 
   /** Событие сессии для эффектов. */
@@ -281,7 +340,7 @@ export class Gfx {
     this.weather.update(dt, this.camera.position);
     if (this.effectsOn !== false) this.emitEffects(dt, session);
     this.smoke.update(dt, this.viewH); this.sparks.update(dt, this.viewH); this.skids.flush();
-    this.renderer.render(this.scene, this.camera);
+    this.draw(car.speed * 3.6);
   }
 
   /** Дым не светится сам: ночью и в сумерках затемняем, чтобы не «горел» белым пятном. */
