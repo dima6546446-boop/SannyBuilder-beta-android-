@@ -1,0 +1,13 @@
+{
+  "name": "RussianDrift.Vehicle",
+  "rootNamespace": "RussianDrift.Vehicle",
+  "references": ["RussianDrift.Core","Unity.InputSystem"],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

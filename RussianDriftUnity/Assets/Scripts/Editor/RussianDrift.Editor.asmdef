@@ -1,0 +1,18 @@
+{
+  "name": "RussianDrift.Editor",
+  "rootNamespace": "RussianDrift.EditorTools",
+  "references": [
+    "RussianDrift.Core","RussianDrift.Vehicle","RussianDrift.Audio","RussianDrift.World",
+    "RussianDrift.AI","RussianDrift.Meta","RussianDrift.UI",
+    "Unity.RenderPipelines.Universal.Runtime","Unity.RenderPipelines.Universal.Editor",
+    "Unity.RenderPipelines.Core.Runtime","Unity.RenderPipelines.Core.Editor","Unity.InputSystem"
+  ],
+  "includePlatforms": ["Editor"],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

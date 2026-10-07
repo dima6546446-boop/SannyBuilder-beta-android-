@@ -1,0 +1,6 @@
+<linker>
+  <!-- QualityManager sets some URP asset properties through reflection; keep them out of managed stripping -->
+  <assembly fullname="Unity.RenderPipelines.Universal.Runtime" preserve="all"/>
+  <assembly fullname="Unity.RenderPipelines.Core.Runtime" preserve="all"/>
+  <assembly fullname="RussianDrift.Core" preserve="all"/>
+</linker>

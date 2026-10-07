@@ -1,0 +1,13 @@
+{
+  "name": "RussianDrift.World",
+  "rootNamespace": "RussianDrift.World",
+  "references": ["RussianDrift.Core","RussianDrift.Vehicle","Unity.RenderPipelines.Universal.Runtime","Unity.RenderPipelines.Core.Runtime"],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

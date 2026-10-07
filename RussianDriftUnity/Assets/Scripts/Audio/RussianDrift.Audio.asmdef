@@ -1,0 +1,13 @@
+{
+  "name": "RussianDrift.Audio",
+  "rootNamespace": "RussianDrift.Audio",
+  "references": ["RussianDrift.Core","RussianDrift.Vehicle"],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

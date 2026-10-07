@@ -1,0 +1,13 @@
+{
+  "name": "RussianDrift.AI",
+  "rootNamespace": "RussianDrift.AI",
+  "references": ["RussianDrift.Core","RussianDrift.Vehicle","RussianDrift.World"],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
