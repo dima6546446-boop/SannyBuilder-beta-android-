@@ -88,7 +88,7 @@ namespace RussianDrift.Vehicle
                     flames = MakePS("Flames", vc.Model.exhaust, add, 0.10f, 0.22f, 0.25f, 0.5f, new Color(1f, 0.55f, 0.15f, 1f), 0f, true, 40);
                     flames.transform.localPosition = new Vector3(0, 0, -0.1f);
                     flames.transform.localRotation = Quaternion.Euler(180f, 0, 0);
-                    var mf = flames.main; mf.startSpeed = new ParticleSystem.MinMaxCurve(4f, 9f); mf.loop = false;
+                    var mf = flames.main; mf.startSpeed = new ParticleSystem.MinMaxCurve(4f, 9f);
                     var shf = flames.shape; shf.angle = 6f;
                     heatGlow = MakePS("HeatGlow", vc.Model.exhaust, add, 0.5f, 0.9f, 0.3f, 0.6f, new Color(1f, 0.3f, 0.08f, 0.35f), -0.1f, true, 40);
                     heatGlow.transform.localRotation = Quaternion.Euler(180f, 0, 0);
@@ -108,6 +108,26 @@ namespace RussianDrift.Vehicle
             if (flames != null) flames.Emit(Mathf.CeilToInt(10 * partScale));
             if (exhaustSmoke != null) exhaustSmoke.Emit(6);
             if (vc.IsPlayer) GameEvents.RaiseBackfire();
+        }
+
+        /// <summary>One-shot dust/smoke puff for impacts, taken from the shared PoolManager and returned automatically.</summary>
+        public static void SpawnImpactPuff(Vector3 pos, float strength)
+        {
+            var go = PoolManager.Spawn("ImpactPuff", () =>
+            {
+                var holder = new GameObject("ImpactPuff");
+                var ps = MakePS("Puff", holder.transform, MatLib.Alpha(ProcTex.SoftCircle(), Color.white), 0.6f, 1.2f, 0.8f, 1.8f, new Color(0.75f, 0.72f, 0.68f, 0.55f), -0.05f, true, 40);
+                var m = ps.main; m.startSpeed = new ParticleSystem.MinMaxCurve(0.5f, 2.2f); m.loop = false;
+                var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Sphere; sh.radius = 0.25f;
+                holder.AddComponent<PooledLifetime>().key = "ImpactPuff";
+                return holder;
+            }, pos, Quaternion.identity);
+            var life = go.GetComponent<PooledLifetime>();
+            life.life = 2.5f;
+            var puff = go.GetComponentInChildren<ParticleSystem>();
+            puff.Clear();
+            puff.Play();
+            puff.Emit(Mathf.CeilToInt(Mathf.Lerp(5f, 22f, Mathf.Clamp01(strength)) * QualityManager.Current.particleScale));
         }
 
         public void EmitSparks(Vector3 pos, Vector3 dir, int count)

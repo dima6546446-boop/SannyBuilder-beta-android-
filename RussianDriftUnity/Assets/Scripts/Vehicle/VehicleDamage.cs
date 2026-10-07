@@ -60,6 +60,7 @@ namespace RussianDrift.Vehicle
                 AddScratch(cp.point, cp.normal);
                 var fx = GetComponent<VehicleEffects>();
                 if (fx != null) fx.EmitSparks(cp.point, cp.normal, Mathf.CeilToInt(6 + 14 * strength));
+                if (i == 0) VehicleEffects.SpawnImpactPuff(cp.point, strength);
             }
             if (shell != null) { shell.vertices = cur; shell.RecalculateNormals(); shell.RecalculateBounds(); }
 
