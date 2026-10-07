@@ -1,4 +1,4 @@
-import { makeCar, setSpeed } from './harness.mjs';
+import { makeCar, setSpeed } from '../harness.mjs';
 const id=process.argv[2]||'kopeyka', v0=+(process.argv[3]||22), thr=+(process.argv[4]||0.8), st=+(process.argv[5]||0.5), assist=+(process.argv[6]||0.7);
 const c=makeCar(id); setSpeed(c,v0); c.assist=assist; const dt=1/240;
 for(let i=0;i<240*10;i++){const t=i*dt,inp=c.input;

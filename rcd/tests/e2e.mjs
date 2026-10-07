@@ -28,6 +28,8 @@ await sleep(800);
 check('игра запущена', (await ev(() => __rcd.state)) === 'play');
 check('HUD виден', !(await ev(() => document.querySelector('#hud').classList.contains('hidden'))));
 
+await page.mouse.click(30, 30); await sleep(400);
+check('звук (Web Audio) инициализирован и запущен', await ev(() => __rcd.audio.ready && __rcd.audio.ctx.state === 'running'), await ev(() => __rcd.audio.ctx && __rcd.audio.ctx.state));
 console.log('Реальный ввод с клавиатуры');
 const z0 = await ev(() => __rcd.session.car.z);
 await page.keyboard.down('KeyW'); await page.keyboard.down('KeyD'); await sleep(2500);
@@ -51,6 +53,12 @@ const drive = (script, seconds) => ev(([script, seconds]) => {
 console.log('Разгон');
 let r = await drive('c.throttle = 1; c.steer = 0;', 4);
 check('машина разгоняется', r.kmh > 50, Math.round(r.kmh) + ' км/ч');
+const lvl = [];
+for (let k = 0; k < 4; k++) { await ev(() => { __rcd.session.car.input.throttle = 1; }); await sleep(200); lvl.push(await ev(() => __rcd.audio.level())); }
+check('двигатель звучит (уровень сигнала > 0)', Math.max(...lvl) > 0.002, 'RMS ' + Math.max(...lvl).toFixed(4));
+// ставим машину в свободное место парковки с разгоном до 72 км/ч (проверено симуляцией в Node: на этом участке нет препятствий)
+await ev(() => { const c = __rcd.session.car; c.reset(-40, -40, Math.PI / 2); c.vx = 20; c.vz = 0; for (let i = 0; i < 4; i++) c.wheelW[i] = 20 / c.spec.wheelRadius; c.gear = 3; __rcd.session.scoring.reset(); });
+await drive('c.throttle = 1;', 1.5);
 console.log('Вход в занос');
 r = await drive('c.throttle = t < 0.3 ? 0.4 : 0.9; c.steer = t < 0.9 ? -0.5 : -0.3; c.handbrake = t > 0.2 && t < 0.55;', 1.6);
 check('появился угол заноса > 20°', Math.abs(r.beta) > 20, Math.round(r.beta) + '°');

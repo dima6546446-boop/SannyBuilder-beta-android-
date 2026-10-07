@@ -1,4 +1,4 @@
-import { startServer, launch } from './lib.mjs';
+import { startServer, launch } from '../lib.mjs';
 const only = process.argv[2];
 const srv = await startServer();
 const { browser, page, errors } = await launch(srv.url);

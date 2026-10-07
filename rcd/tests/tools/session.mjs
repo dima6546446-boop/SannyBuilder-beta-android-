@@ -1,4 +1,4 @@
-import { Session } from '../src/game/session.js';
+import { Session } from '../../src/game/session.js';
 const s = new Session({ mapId: 'parking', carId: 'kopeyka', mode: 'free' });
 const ev = []; s.on((e) => ev.push(e.type));
 const dt = 1 / 60;

@@ -137,7 +137,7 @@ kbd{display:inline-block;min-width:26px;text-align:center;padding:2px 8px;border
 .rew{display:flex;gap:10px;flex-wrap:wrap}
 .keys{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:13px}
 .keys .panel{padding:12px}
-.keys table{width:100%;border-collapse:collapse} .keys td{padding:4px 2px;vertical-align:top} .keys td:first-child{white-space:nowrap;padding-right:10px}
+.keys table{width:100%;border-collapse:collapse} .keys td{padding:3px 2px;vertical-align:top} .keys td:first-child{white-space:nowrap;padding-right:10px}
 .tips li{margin:3px 0;color:#cfd5e0;font-size:13px}
 @media (max-width:900px){.keys{grid-template-columns:1fr}.garage{grid-template-columns:1fr;grid-template-rows:none}.play-grid{grid-template-columns:1fr;grid-template-rows:none}.garage .mid{display:none}}
 

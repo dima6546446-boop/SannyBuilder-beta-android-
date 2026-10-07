@@ -22,7 +22,7 @@ npm start          # откроется http://localhost:5173 (сервер сл
 | `npm test` | модульные тесты (vitest): физика, очки, прогресс, мир, режимы, ввод |
 | `npm run e2e` | сквозной тест в настоящем Chromium + WebGL: меню → заезд → дрифт → удар → режимы → гараж → сохранение; скриншоты в `docs/screenshots/` |
 | `npm run e2e:mobile` | то же на «телефоне» (сенсорный режим, экранные кнопки, раскладка меню) |
-| `node tests/recover.mjs <id машины>` | отчёт по поведению машины в заносе (угол, рыскание, скорость) в 6 сценариях «игрока» |
+| `node tests/tools/recover.mjs <id машины>` | отчёт по поведению машины в заносе (угол, рыскание, скорость) в 6 сценариях «игрока» |
 | `npm run build` | продакшн-сборка в `dist/` (статические файлы, можно выложить на любой хостинг) |
 | `npm run preview` | запустить собранную версию |
 
@@ -115,7 +115,8 @@ rcd/
 │  ├─ render/                 scene.js (Gfx) · carModel.js · mapBuilder.js · effects.js · camera.js · textures.js
 │  ├─ audio/audio.js          процедурный звук
 │  └─ ui/                     screens.js (экраны) · hud.js · style.css
-├─ tests/                     physics.test.js · game.test.js (vitest) · e2e.mjs (Playwright) · скрипты-эксперименты
+├─ tests/                     physics.test.js · game.test.js (vitest) · e2e.mjs, mobile.mjs (Playwright)
+│  └─ tools/                  скрипты настройки физики (recover/drift/ramp) и съёмки скриншотов
 └─ docs/screenshots/          скриншоты, снятые e2e-тестом
 ```
 

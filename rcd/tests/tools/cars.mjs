@@ -1,4 +1,4 @@
-import { startServer, launch } from './lib.mjs';
+import { startServer, launch } from '../lib.mjs';
 const srv = await startServer(5205);
 const { browser, page } = await launch(srv.url, { width: 900, height: 520 });
 await page.evaluate(() => { __rcd.progress.updateSettings({ quality: 'medium', pixelRatio: 1, hintsSeen: true }); __rcd.applySettings(); __rcd.go('menu', false); });

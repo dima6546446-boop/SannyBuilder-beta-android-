@@ -14,6 +14,7 @@ export class AudioSystem {
     if (!AC) return;
     const ctx = this.ctx = new AC();
     this.master = ctx.createGain(); this.master.connect(ctx.destination);
+    this.analyser = ctx.createAnalyser(); this.analyser.fftSize = 1024; this.master.connect(this.analyser); this.buf = new Float32Array(1024);
     const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -14; comp.ratio.value = 6; comp.connect(this.master); this.bus = comp;
     this.engineBus = ctx.createGain(); this.engineBus.connect(this.bus);
     this.sfxBus = ctx.createGain(); this.sfxBus.connect(this.bus);
@@ -22,6 +23,14 @@ export class AudioSystem {
     this.buildEngine(); this.buildTire(); this.buildWind();
     this.applyVolumes();
     this.ready = true;
+  }
+
+  /** Текущий уровень выходного сигнала (RMS 0..1) — для диагностики и тестов. */
+  level() {
+    if (!this.ready) return 0;
+    this.analyser.getFloatTimeDomainData(this.buf);
+    let s = 0; for (let i = 0; i < this.buf.length; i++) s += this.buf[i] * this.buf[i];
+    return Math.sqrt(s / this.buf.length);
   }
 
   makeNoise() {

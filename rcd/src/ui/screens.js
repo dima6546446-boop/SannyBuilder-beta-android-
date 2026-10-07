@@ -178,7 +178,7 @@ export function settingsScreen(app) {
 
 export function hintsScreen(app) {
   return `<div class="screen center"><div class="dialog" style="max-width:1000px">
-    <h2>Управление и подсказки</h2>
+    <div class="row"><h2 style="margin:0">Управление и подсказки</h2><div class="spacer"></div><button class="btn primary" data-act="closeHints">Понятно</button></div>
     <div class="keys">
       <div class="panel"><h3>Клавиатура</h3><table>
         <tr><td><kbd>W</kbd> <kbd>↑</kbd></td><td>газ</td></tr><tr><td><kbd>S</kbd> <kbd>↓</kbd></td><td>тормоз / задний ход</td></tr>
@@ -198,7 +198,6 @@ export function hintsScreen(app) {
       <li>В заносе рули <b>в сторону скольжения</b> (помощник делает это мягко). Угол держи газом: больше газа — больше угла, меньше — машина выравнивается.</li>
       <li>Мокрый асфальт, гравий и снег срываются легче, но и скорость падает быстрее. Конусы можно сбивать — это не удар.</li>
     </ul></div>
-    <div class="row"><div class="spacer"></div><button class="btn primary" data-act="closeHints">Понятно</button></div>
   </div></div>`;
 }
 

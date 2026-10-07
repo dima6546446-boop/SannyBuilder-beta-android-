@@ -12,7 +12,7 @@
     "test": "vitest run",
     "e2e": "node tests/e2e.mjs",
     "e2e:mobile": "node tests/mobile.mjs",
-    "physics:report": "node tests/recover.mjs"
+    "physics:report": "node tests/tools/recover.mjs"
   },
   "dependencies": {
     "playwright-core": "^1.63.0",

@@ -30,6 +30,7 @@ class App {
     this.setTab = 'gfx';
     this.result = null;
     this.last = performance.now();
+    if (!p.settings.hintsSeen && ('ontouchstart' in window || navigator.maxTouchPoints > 0)) p.updateSettings({ quality: 'medium', pixelRatio: 0.85 });   // первый запуск на телефоне: лёгкие настройки
     this.applySettings();
     this.bind();
     this.showCarInRoom(p.selected);
@@ -272,6 +273,7 @@ class App {
         this.audio.update(car, car.input.throttle, car.contactSurface[2]);
       } else this.audio.update(car, 0, 'asphalt', true);
       g.frame(this.state === 'play' ? dt : 0, sess);
+      if (this.state === 'play' && g.adaptResolution(dt)) this.toast('Разрешение снижено для плавной игры (настройки → Графика)');
       this.hud.update(dt, sess, this.progress.settings);
     } else {
       this.audio.update({ rpm: 0, spec: { redline: 7000, turbo: 0 }, slip: [0, 0, 0, 0], speed: 0, boost: 0, throttleApplied: 0, limiter: 0 }, 0, 'asphalt', true);

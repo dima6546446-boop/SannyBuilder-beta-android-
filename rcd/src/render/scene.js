@@ -104,12 +104,27 @@ export class Gfx {
     this.renderer.shadowMap.enabled = shadowsOn;
     this.sun.castShadow = shadowsOn;
     if (shadowsOn && this.sun.shadow.mapSize.x !== q.shadow) { this.sun.shadow.mapSize.set(q.shadow, q.shadow); if (this.sun.shadow.map) { this.sun.shadow.map.dispose(); this.sun.shadow.map = null; } }
-    this.pixelRatioTarget = Math.min(window.devicePixelRatio || 1, q.pr * (this.settings.pixelRatio || 1) * 1.0);
+    this.updatePixelRatio();
     this.rig.baseFov = this.settings.fov; this.rig.speedFx = this.settings.speedFx;
     this.effectsOn = this.settings.effects;
     this.resize();
     // материалы перекомпилируются при смене теней
     this.scene.traverse((o) => { if (o.material) { const m = Array.isArray(o.material) ? o.material : [o.material]; m.forEach((x) => { x.needsUpdate = true; }); } });
+  }
+
+  updatePixelRatio() {
+    const q = QUALITY[this.settings.quality] || QUALITY.high;
+    this.pixelRatioTarget = Math.min(window.devicePixelRatio || 1, q.pr * (this.settings.pixelRatio || 1) * (this.autoScale || 1));
+  }
+
+  /** Адаптивное разрешение: если кадры стабильно дольше 40 мс — уменьшаем разрешение (не ниже 50%). Возвращает true, если изменили. */
+  adaptResolution(dt) {
+    if (navigator.webdriver) return false;
+    this._fpsAcc = (this._fpsAcc || 0) + dt; this._fpsN = (this._fpsN || 0) + 1;
+    if (this._fpsAcc < 2.5) return false;
+    const avg = this._fpsAcc / this._fpsN; this._fpsAcc = 0; this._fpsN = 0;
+    if (avg > 0.04 && (this.autoScale || 1) > 0.55) { this.autoScale = (this.autoScale || 1) * 0.85; this.updatePixelRatio(); this.resize(); return true; }
+    return false;
   }
 
   resize() {
@@ -213,6 +228,11 @@ export class Gfx {
   /** Исходная поза машины в автосалоне. */
   showroomFrame(dt, spin = 0.35) {
     this.showroom.angle += dt * spin;
+    // машина должна помещаться в просвет между боковыми панелями (≈710 px)
+    const vw = this.canvas.clientWidth || window.innerWidth;
+    const gap = Math.max(0.3, Math.min(0.62, (vw - 720) / vw));
+    const want = 5.2 / (gap * 0.85 * 2 * Math.tan(21 * Math.PI / 180) * this.camera.aspect);
+    this.showroom.camDist += (Math.max(8.5, Math.min(24, want)) - this.showroom.camDist) * Math.min(1, dt * 4);
     const a = this.showroom.angle, d = this.showroom.camDist;
     this.camera.position.set(Math.sin(a) * d, 2.6, Math.cos(a) * d);
     this.camera.lookAt(0, 0.7, 0);
