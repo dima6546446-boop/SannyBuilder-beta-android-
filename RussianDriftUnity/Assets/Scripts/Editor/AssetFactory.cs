@@ -84,8 +84,6 @@ namespace RussianDrift.EditorTools
         }
 
         // ------------------------------------------------------------------ prefabs
-        public class ModelAssets : ScriptableObject { }
-
         /// <summary>
         /// Builds one visual prefab per car. Procedural meshes/materials are stored as sub-assets of a ModelAssets container
         /// so the prefab keeps valid references (gameplay still builds cars at runtime from the same CarBuilder).
