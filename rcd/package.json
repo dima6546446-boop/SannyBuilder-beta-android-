@@ -1,0 +1,21 @@
+{
+  "name": "rcd-drift",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Дрифт-игра в духе Russian Car Drift (собственные ассеты и названия)",
+  "scripts": {
+    "start": "vite --host --open=false",
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "test": "vitest run",
+    "e2e": "node tests/e2e.mjs"
+  },
+  "dependencies": {
+    "playwright-core": "^1.63.0",
+    "three": "^0.186.1",
+    "vite": "^8.3.3",
+    "vitest": "^5.0.3"
+  }
+}
